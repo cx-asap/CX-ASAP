@@ -1,0 +1,352 @@
+module-platon-squeeze:
+  - file_name
+
+pipeline-platon-squeeze:
+  - experiment_location
+
+pipeline-shelxt-auto:
+  - experiment_location
+
+module-adp-analysis:
+  - csv_path
+  - cell_path
+
+module-refinement:
+  - structure_location
+  - reference_path
+  - refinements_to_check
+  - tolerance
+  - maximum_cycles
+pipeline-refinement:
+  - experiment_location
+  - reference_path
+  - refinements_to_check
+  - tolerance
+  - maximum_cycles
+pipeline-variable-position:
+  - location_of_frames
+  - experiment_name
+  - reference_structure_location
+  - reference_XDS_INP_location
+  - reference_background_files_location
+  - instrument_parameters_path
+  - instrument_cif_path
+  - maximum_processors
+  - neggia_library
+  - space_group_number
+  - atoms_for_rotation_analysis
+  - reference_plane
+  - chemical_formula
+  - crystal_colour
+  - crystal_habit
+  - max_crystal_dimension
+  - middle_crystal_dimension
+  - min_crystal_dimension
+  - refinements_to_check
+  - tolerance
+  - maximum_cycles
+  - cif_parameters
+  - structural_analysis_bonds
+  - structural_analysis_angles
+  - structural_analysis_torsions
+  - ADP_analysis
+  - atoms_for_analysis
+  - wedge_angles
+  - min_pixels
+  - spot_maximum_centroid
+  - strong_pixels
+  - sepmin
+  - mapping_step_size
+  - total_angle
+
+pipeline-general:
+  - experiment_location
+  - reference_cif_location
+  - refinements_to_check
+  - tolerance
+  - maximum_cycles
+  - cif_parameters
+  - structural_analysis_bonds
+  - structural_analysis_angles
+  - structural_analysis_torsions
+  - ADP_analysis
+  - atoms_for_analysis
+  - varying_cif_parameter
+  - varying_parameter_values
+
+pipeline-general-extra:
+  - reference_location
+  - experiment_location
+  - _chemical_formula_moiety
+  - _chemical_absolute_configuration
+  - _exptl_absorpt_correction_T_max
+  - _exptl_absorpt_correction_T_min
+  - _exptl_absorpt_correction_type
+  - _exptl_crystal_colour
+  - _exptl_crystal_description
+  - _exptl_crystal_size_max
+  - _exptl_crystal_size_mid
+  - _exptl_crystal_size_min
+  - _diffrn_detector
+  - _diffrn_detector_area_resol_mean
+  - _diffrn_detector_type
+  - _diffrn_measurement_device
+  - _diffrn_measurement_device_type
+  - _diffrn_measurement_method
+  - _diffrn_radiation_monochromator
+  - _diffrn_radiation_probe
+  - _diffrn_radiation_type
+  - _diffrn_radiation_wavelength
+  - _diffrn_source
+  - _diffrn_source_type
+  - _computing_cell_refinement
+  - _computing_data_collection
+  - _computing_data_reduction
+  - _computing_molecular_graphics
+  - _computing_publication_material
+  - _computing_structure_refinement
+  - _computing_structure_solution
+  - refinements_to_check
+  - tolerance
+  - maximum_cycles
+  - cif_parameters
+  - structural_analysis_bonds
+  - structural_analysis_angles
+  - structural_analysis_torsions
+  - ADP_analysis
+  - atoms_for_analysis
+  - varying_cif_parameter
+  - varying_parameter_values
+
+module-intensity-compare:
+  - xprep_file_name
+  - h_condition_1
+  - h_condition_2
+  - k_condition_1
+  - k_condition_2
+  - l_condition_1
+  - l_condition_2
+  - a_axis
+  - b_axis
+  - c_axis
+  - alpha
+  - beta
+  - gamma
+  - h+k_condition_1
+  - h+k_condition_2
+  - h+l_condition_1
+  - h+l_condition_2
+  - k+l_condition_1
+  - k+l_condition_2
+  - h+k+l_condition_1
+  - h+k+l_condition_2
+  - include_h_0_condition_1
+  - include_h_0_condition_2
+  - include_k_0_condition_1
+  - include_k_0_condition_2
+  - include_l_0_condition_1
+  - include_l_0_condition_2
+
+pipeline-intensity-compare:
+  - data_location
+  - h_condition_1
+  - h_condition_2
+  - k_condition_1
+  - k_condition_2
+  - l_condition_1
+  - l_condition_2
+  - h+k_condition_1
+  - h+k_condition_2
+  - h+l_condition_1
+  - h+l_condition_2
+  - k+l_condition_1
+  - k+l_condition_2
+  - h+k+l_condition_1
+  - h+k+l_condition_2
+  - a_axis
+  - b_axis
+  - c_axis
+  - alpha
+  - beta
+  - gamma
+  - include_h_0_condition_1
+  - include_h_0_condition_2
+  - include_k_0_condition_1
+  - include_k_0_condition_2
+  - include_l_0_condition_1
+  - include_l_0_condition_2
+
+module-cif-merge:
+  - instrument_cif
+  - new_cif
+
+module-make-instrument-cif:
+  - reference_cif
+
+pipeline-cif-combine:
+  - location_of_cifs
+
+pipeline-cif:
+  - experiment_location
+  - instrument_ending
+  - instrument_file
+  - structure_solution
+  - chemical_formula
+  - crystal_habit
+  - crystal_colour
+  - max_crystal_dimension
+  - middle_crystal_dimension
+  - min_crystal_dimension
+
+pipeline-rigaku-vt:
+  - experiment_location
+  - reference_location
+  - chemical_formula
+  - crystal_colour
+  - crystal_habit
+  - max_crystal_dimension
+  - middle_crystal_dimension
+  - min_crystal_dimension
+  - refinements_to_check
+  - tolerance
+  - maximum_cycles
+  - cif_parameters
+  - structural_analysis_bonds
+  - structural_analysis_angles
+  - structural_analysis_torsions
+  - ADP_analysis
+  - atoms_for_analysis
+
+pipeline-aus-synch-vt:
+  - location_of_autoprocess_folders
+  - experiment_name
+  - reference_location
+  - atoms_for_rotation_analysis
+  - reference_plane
+  - chemical_formula
+  - crystal_colour
+  - crystal_habit
+  - max_crystal_dimension
+  - middle_crystal_dimension
+  - min_crystal_dimension
+  - refinements_to_check
+  - tolerance
+  - maximum_cycles
+  - cif_parameters
+  - structural_analysis_bonds
+  - structural_analysis_angles
+  - structural_analysis_torsions
+  - ADP_analysis
+  - atoms_for_analysis
+
+module-xds-cell-transform:
+  - XDS_ASCII_File_1
+  - XDS_ASCII_File_2
+
+module-xds-reprocess:
+  - xds_template_name
+  - XDS_INP_path
+  - experiment_location
+
+module-xprep:
+  - xprep_file_name
+  - transformation_matrix
+  - space_group
+  - chemical_formula
+  - experiment_location
+
+pipeline-xds-reprocess:
+  - XDS_INP_path
+  - experiment_location
+
+pipeline-xprep:
+  - xprep_file_name
+  - transformation_matrix
+  - space_group
+  - chemical_formula
+  - experiment_location
+
+module-cell-analysis:
+  - csv_location
+  - reference_unit_cell
+  - x_axis_header
+
+module-cif-read:
+  - cif_parameters
+  - structural_analysis_bonds
+  - structural_analysis_angles
+  - structural_analysis_torsions
+  - ADP_analysis
+  - folder_containing_cifs
+
+module-rotation-planes:
+  - reference_plane
+  - lst_file_location
+
+module-structural-analysis:
+  - atoms_for_analysis
+  - bond_data
+  - angle_data
+  - torsion_data
+
+pipeline-rotation-planes:
+  - reference_plane
+  - experiment_location
+
+pipeline-variable-analysis:
+  - cif_parameters
+  - atoms_for_analysis
+  - structural_analysis_bonds
+  - structural_analysis_angles
+  - structural_analysis_torsions
+  - ADP_analysis
+  - varying_cif_parameter
+  - experiment_location
+  - reference_unit_cell
+
+pipeline-position-analysis:
+  - cif_parameters
+  - atoms_for_analysis
+  - reference_plane
+  - structural_analysis_bonds
+  - structural_analysis_angles
+  - structural_analysis_torsions
+  - ADP_analysis
+  - experiment_location
+  - reference_unit_cell
+  - atoms_for_plane
+  - wedge_angles
+  - min_pixels
+  - spot_maximum_centroid
+  - strong_pixels
+  - sepmin
+  - mapping_step_size
+
+pipeline-temperature-analysis:
+  - cif_parameters
+  - atoms_for_analysis
+  - structural_analysis_bonds
+  - structural_analysis_angles
+  - structural_analysis_torsions
+  - ADP_analysis
+  - experiment_location
+  - reference_unit_cell
+
+pipeline-AS-Brute:
+  - experiment_location
+
+module-molecule-reconstruction:
+  - reference_path
+  - atom_list
+  - bond_list
+  - starting_atom
+  - starting_coordinates
+  - a_gradient
+  - b_gradient
+  - c_gradient
+  - alpha_gradient
+  - beta_gradient
+  - gamma_gradient
+  - max_position
+  - min_position
+  - position_step_size

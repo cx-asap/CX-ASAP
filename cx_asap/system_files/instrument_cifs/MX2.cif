@@ -1,0 +1,23 @@
+data_MX2
+
+_exptl_absorpt_correction_type    'Multi-Scan'
+_exptl_absorpt_correction_T_min   'Value not reported by XDS'
+_exptl_absorpt_correction_T_max   'Value not reported by XDS'
+_exptl_absorpt_process_details    'XDS (Kabsch, 1993)'
+
+_diffrn_ambient_temperature       293(2)
+
+_diffrn_radiation_wavelength      0.710754
+_diffrn_radiation_type            Synchrotron
+_diffrn_radiation_source          'MX2 Beamline Australian Synchrotron'
+_diffrn_source                    'MX2 Beamline Australian Synchrotron'
+
+_diffrn_radiation_monochromator   'Silicon Double Crystal'
+
+_diffrn_measurement_device_type   'Dectris Eiger 16M'
+_diffrn_measurement_method        'Omega Scan'
+
+_computing_data_collection        'AS QEGUI'
+_computing_cell_refinement        'XDS (Kabsch, 1993)'
+_computing_data_reduction         'XDS (Kabsch, 1993)'
+
