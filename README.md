@@ -8,21 +8,41 @@ CX-ASAP is a collection of modules and pipelines designed to automate crystallog
 * Variable Pressure Studies
 * Positional Mapping Studies 
 
-## Installation
+## Main branch or Dev branch?
 
-*It is highly recommended that you do this in a virtual environment especially while the code is in development*
+The main branch contains the first official release of CX-ASAP focusing on data refinement onwards. Other code has been written during this process to help automate other tasks - this is fully available on the dev branch. 
 
-Execute the below instruction in the command line from the CX-ASAP folder (where Makefile is):
+Please note that the dev branch has not been fully tested and many of the modules are incompatable with Windows. 
 
-`make install`
+The main branch is fully compatable with Windows and has been more rigorously tested :)
+
+# Installation
+
+You have two options to install CX-ASAP: either straight onto your computer, or into a virtual environment. It is highly recommended that you choose the virtual environment option if you are familiar with using them (or are happy to learn how to :) ) 
+
+First, navigate in the command line into the CX-ASAP folder (where Makefile is). 
+
+If you want to install CX-ASAP straight onto your computer, execute the below instruction:
+
+`make install-quick`
+
+If you want to install CX-ASAP into a virtual environment (remembering you will need to activate it manually), execute the below instruction:
+
+`make install-venv`
 
 This should also be done every time you re-download the code from github! 
+
+## Additional Installation Options (Linux and Mac only) 
 
 If you would like command-line completion (ie hitting the tab key to auto-complete options), then you will also need to enter the below code which updates your bashrc file (Linux) or bash_profile (Mac):
 
 `make cxasap-complete` 
 
-Note that this step is not necessary, but will make your life easier :) 
+If you would like an alias to easily edit the conf.yaml file, there is an option to add this into your bashrc file (Linux) or bash_profile (Mac). If you run this installation option, you will be able to type 'cxasap_yaml' into the terminal to easily open the conf.yaml file. This will be easier than finding it and opening it manually. To do this, enter the below command:
+
+`make yaml-alias`
+
+Note that these steps are not necessary, but will make your life easier :) 
 
 ## Running the Code
 
@@ -40,14 +60,7 @@ If you include any data or analysis output from CX-ASAP in your publications, pl
 
 We welcome contributions from the crystallographic community :) 
 
-See the files included in the 'documentation' folder for information on how to contribute to this package. 
-
-## All the different CX-ASAPs explained
-
-* CX-ASAP = name of the software package
-* cxasap = what you type into the commandline to execute the code 
-* cx_asap = directory containing the conf.yaml file
-* cx-asap = name of the repo on GitHub
+Head to our website `https:cx-asap.github.io` for details (can also be found in the documentation folder)
 
 ## Troubleshooting
 
@@ -88,14 +101,21 @@ Required Crystallography Programs (note that these must be in your path and comm
 * Platon
 * shredCIF
 * SHELXL
-* xprep
-* XDS
+* xprep (dev branch only)
+* XDS (dev branch only)
 
 Python requirements are listed in requirements.txt and will automatically be installed upon installation of CX-ASAP
 
 ## Authors
 * Amy Thompson
-* Kate Smith
-* Daniel Eriksson
-* Jack Clegg
-* Jason Price
+* Dr Kate Smith
+* Dr Daniel Eriksson
+* Dr Jack Clegg
+* Dr Jason Price
+
+## All the different CX-ASAPs explained
+
+* CX-ASAP = name of the software package and repo name on GitHub
+* cxasap = what you type into the commandline to execute the code 
+* cx_asap = directory containing the conf.yaml file
+* cx-asap = GitHub account hosting the code
