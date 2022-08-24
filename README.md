@@ -1,4 +1,4 @@
-# Welcome to CX-ASAP!
+# Welcome to CX-ASAP! :)
 
 ## Introduction
 
