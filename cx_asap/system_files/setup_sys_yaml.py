@@ -3,7 +3,19 @@
 import os
 import yaml
 import pathlib
-from system_files.utils import Nice_YAML_Dumper
+
+class Nice_YAML_Dumper(yaml.SafeDumper):
+    def write_line_break(self, data: dict = None) -> None:
+
+        """Makes the yaml have better formatting when edited
+
+        Unsure of the specifics, got this code from StackOverflow
+        """
+
+        super().write_line_break(data)
+
+        if len(self.indents) == 1:
+            super().write_line_break()
 
 sys_path = pathlib.Path.cwd() / "cx_asap" / "system_files" / "sys.yaml"
 
