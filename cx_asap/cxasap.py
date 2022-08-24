@@ -121,6 +121,13 @@ from typing import Union, Tuple
 
 from system_files.utils import Generate, File_Sorter
 from system_files.test_installation import Test
+from data_reduction.modules.xprep_intensity_compare import Intensity_Compare
+from data_reduction.modules.XDS_cell_transformation import XDS_Cell_Transformation
+from data_reduction.modules.xds_reprocess import XDS_reprocess
+from data_reduction.modules.xprep_module import XPREP
+from data_reduction.pipelines.xprep_intensity_pipeline import Intensity_Pipeline
+from data_reduction.pipelines.xds_pipeline import XDS_Pipeline
+from data_reduction.pipelines.xprep_pipeline import XPREP_Pipeline
 from data_refinement.modules.refinement import Structure_Refinement
 from data_refinement.pipelines.refine_pipeline import Refinement_Pipeline
 from cif_validation.modules.cif_merge import Cif_Merge
@@ -136,7 +143,23 @@ from post_refinement_analysis.pipelines.rotation_pipeline import Rotation_Pipeli
 from post_refinement_analysis.pipelines.variable_cif_parameter import (
     Variable_Analysis_Pipeline,
 )
+from post_refinement_analysis.pipelines.variable_position_analysis import (
+    VP_Analysis_Pipeline,
+)
+from post_refinement_analysis.pipelines.variable_temperature_analysis import (
+    VT_Analysis_Pipeline,
+)
+from overall_pipelines.variable_position_pipeline import VP_Pipeline
 from overall_pipelines.cxasap_pipeline import General_Pipeline
+from overall_pipelines.rigaku_synergy_vt_pipeline import Synergy_VT
+from overall_pipelines.variable_temperature_pipeline import VT_Pipeline
+from overall_pipelines.AS_brute_pipeline import AS_Brute
+from tools.modules.platon_squeeze import Platon_Squeeze
+from tools.pipelines.platon_squeeze_pipeline import Squeeze_Pipeline
+from tools.modules.shelx_t import SHELXT
+from tools.pipelines.shelx_t_pipeline import SHELXT_Pipeline
+from tools.pipelines.pipeline_shelx_t_auto import SHELXT_Pipeline_auto
+from tools.modules.molecule_reconstruction import Molecule_Reconstruction
 
 
 def reset_logs() -> None:
@@ -469,7 +492,7 @@ def cli():
 
     #####################################################################\n
 
-    You are currently running beta version 1.0.0
+    You are currently running beta version 0.1.6
 
     #####################################################################\n
 
@@ -779,6 +802,257 @@ def pipeline_refinement(dependencies, files, configure, run):
 
     else:
         click.echo("Please select an option. To view options, add --help")
+
+
+##########-Pipeline VP-##########
+
+"""This pipeline is the full analysis for flexible crystal mapping experiments.
+    
+    Starts with .h5 diffraction frames and outputs finalised CIF files and analysis.
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-variable-position", short_help="Full Variable Position Pipeline"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_vp(dependencies, files, configure, run):
+    """This pipeline is the full analysis for flexible crystal mapping experiments.
+
+    Starts with .h5 diffraction frames and outputs finalised CIF files and analysis.
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- SHELXL")
+        click.echo("- platon")
+        click.echo(
+            "- XDS (parallel version, with dectris-neggia libraries downloaded)")
+        click.echo("- xprep\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a reference .ins or .res file")
+        click.echo(" - a CIF file with all instrument parameters")
+        click.echo(" - BKGINIT.cbf from reference")
+        click.echo(" - BLANK.cbf from reference")
+        click.echo(" - GAIN.cbf from reference")
+        click.echo(" - GXPARM.XDS from reference")
+        click.echo(" - X-CORRECTIONS.cbf from reference")
+        click.echo(" - Y-CORRECTIONS.cbf from reference")
+        click.echo(
+            " - XDS.INP from reference - make sure the data/spot ranges are correct"
+        )
+        click.echo(" - a series of frames with a common root name")
+        click.echo("\nYour .h5 frames should be in a common folder")
+        click.echo(
+            "BKGINIT.cbf, BLANK.cbf, GAIN.cbf, X-CORRECTIONS.cbf and Y-CORRECTIONS.cbf should be in a folder together"
+        )
+        click.echo("Your reference files can be located anywhere\n")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - ADP_analysis: enter True for ADP analysis, otherwise enter False"
+        )
+        click.echo(
+            " - atoms_for_analysis: enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs"
+        )
+        click.echo(
+            " - atoms_for_rotation_analysis: enter the labels of the atoms for mean plane analysis"
+        )
+        click.echo(
+            " - chemical_formula: enter the chemical formula of your crystal")
+        click.echo(
+            " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
+        )
+        click.echo(" - crystal_colour: enter the colour of your crystal")
+        click.echo(" - crystal_habit: enter the habit of your crystal")
+        click.echo(
+            " - experiment_name: enter the common name between frames (ie AJT-01-018)"
+        )
+        click.echo(
+            " - instrument_cif_path: enter the full path to your instrument cif file"
+        )
+        click.echo(
+            " - instrument_parameters_path: enter the full path to your reference GXPARM.XDS file"
+        )
+        click.echo(
+            " - location_of_frames: enter the full path to the folder containing your .h5 frames"
+        )
+        click.echo(
+            " - mapping_step_size: enter the step-size for the collection (in um)"
+        )
+        click.echo(
+            " - max_crystal_dimension: enter the largest dimension of your crystal (in mm)"
+        )
+        click.echo(
+            " - maximum_cycles: enter the max number of cycles shelxl can run")
+        click.echo(
+            " - maximum_processors: enter the maximum number of processors you want XDS to use"
+        )
+        click.echo(
+            " - middle_crystal_dimension: enter the middle diimension of your crystal (in mm)"
+        )
+        click.echo(
+            " - min_crystal_dimension: enter the smallest dimension of your crystal (in mm)"
+        )
+        click.echo(
+            " - min_pixels: enter the values for minimum_pixels_in_a_spot as a list for XDS proessing"
+        )
+        click.echo(" - neggia_library: enter the full path to dectris_neggia.so")
+        click.echo(
+            " - reference_background_files_location: enter the full path to the folder containing BKGINIT.cbf, BLANK.cbf, GAIN.cbf, X-CORRECTIONS.cbf and Y-CORRECTIONS.cbf"
+        )
+        click.echo(
+            " - reference_plane: enter the reference plane for mean plane analysis as a list"
+        )
+        click.echo(
+            " - reference_structure_location: enter the full path to your reference .ins/.res file"
+        )
+        click.echo(
+            " - reference_XDS_INP_location: enter the full path to your reference XDS.INP file"
+        )
+        click.echo(
+            " - refinements_to_check: enter the number of refinements you want to check for convergence"
+        )
+        click.echo(
+            " - sepmin: enter the values for sepmin as a list for XDS processing"
+        )
+        click.echo(
+            " - space_group_number: enter the space group number for your compound (ie 14)"
+        )
+        click.echo(
+            " - spot_maximum_centroid: enter the values for spot_maximum_centroid as a list for XDS processing"
+        )
+        click.echo(
+            " - strong_pixels: enter the values for strong_pixels as a list for XDS processing"
+        )
+        click.echo(
+            " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
+        )
+        click.echo(
+            " - structural_analysis_angles: enter True for angle analysis, otherwise enter False"
+        )
+        click.echo(
+            " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
+        )
+        click.echo(
+            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
+        )
+        click.echo(
+            " - wedge_angles: enter the wedge angles as a list for XDS processing"
+        )
+
+        fields = yaml_extraction("pipeline-variable-position")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-variable-position")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            full_vp_analysis = VP_Pipeline()
+            full_vp_analysis.setup(
+                cfg["location_of_frames"],
+                cfg["experiment_name"],
+                "flexible_mapping_analysis",
+                cfg["reference_structure_location"],
+                cfg["reference_XDS_INP_location"],
+                cfg["reference_background_files_location"],
+                cfg["instrument_parameters_path"],
+                cfg["maximum_processors"],
+                cfg["neggia_library"],
+                cfg["space_group_number"],
+                cfg["atoms_for_rotation_analysis"],
+                cfg["instrument_cif_path"],
+                cfg["total_angle"],
+            )
+
+            full_vp_analysis.flexible_parameter_loops(
+                "1 0 0 0 1 0 0 0 1",
+                full_vp_analysis.sys["analysis_path"],
+                "XDS_ASCII.HKL",
+                full_vp_analysis.sys["space_group"],
+                cfg["chemical_formula"],
+                full_vp_analysis.sys["ref_path_organised"],
+                full_vp_analysis.sys["current_results_path"],
+                cfg["refinements_to_check"],
+                cfg["tolerance"],
+                cfg["maximum_cycles"],
+                cfg["reference_plane"],
+                full_vp_analysis.sys["XDS_inp_organised"],
+                cfg["wedge_angles"],
+                cfg["min_pixels"],
+                cfg["sepmin"],
+                cfg["spot_maximum_centroid"],
+                cfg["strong_pixels"],
+                "known_structure",
+                cfg["crystal_habit"],
+                cfg["crystal_colour"],
+                cfg["max_crystal_dimension"],
+                cfg["middle_crystal_dimension"],
+                cfg["min_crystal_dimension"],
+                False,
+                pathlib.Path(cfg["instrument_cif_path"]).name,
+            )
+
+            full_vp_analysis.analyse(
+                full_vp_analysis.sys["current_results_path"],
+                cfg["structural_analysis_bonds"],
+                cfg["structural_analysis_angles"],
+                cfg["structural_analysis_torsions"],
+                cfg["ADP_analysis"],
+                cfg["cif_parameters"],
+                cfg["atoms_for_analysis"],
+                full_vp_analysis.sys["ref_path_organised"],
+                cfg["atoms_for_rotation_analysis"],
+                cfg["mapping_step_size"],
+                cfg["spot_maximum_centroid"],
+                cfg["min_pixels"],
+                cfg["strong_pixels"],
+                cfg["sepmin"],
+                cfg["wedge_angles"],
+                cfg["reference_plane"],
+            )
+
+            copy_logs(full_vp_analysis.sys["current_results_path"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
 
 ##########-Pipeline General-##########
 
@@ -1140,6 +1414,371 @@ def pipeline_general_extra(dependencies, files, configure, run):
             )
 
             copy_logs(full.results_location)
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+###-----Intensity Compare-----####
+
+"""This pipeline will analyse the intensities of a single .hkl file 
+    
+    based on reflection conditions.
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+    """
+
+
+@click.command(
+    "module-intensity-compare", short_help="Compares intensities of hkl files"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def module_intensity_compare(dependencies, files, configure, run):
+    """This pipeline will analyse the intensities of a single .hkl file
+
+    based on reflection conditions.
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- xprep")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a .hkl file")
+        click.echo("\nYour .hkl file can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(" - a_axis: enter the a-axis of the unit cell")
+        click.echo(" - alpha: enter the alpha angle of the unit cell")
+        click.echo(" - b_axis: enter the b-axis of the unit cell")
+        click.echo(" - beta: enter the beta angle of the unit cell")
+        click.echo(" - c_axis: enter the c-axis of the unit cell")
+
+        click.echo(" - gamma: enter the gamma angle of the unit cell")
+
+        click.echo(
+            " - h_condition_1: condition for group 1 of h-indicies, enter n for no condition"
+        )
+        click.echo(
+            " - h_condition_2: condition for group 2 of h-indicies, enter n for no condition"
+        )
+        click.echo(
+            " - k_condition_1: condition for group 1 of k-indicies, enter n for no condition"
+        )
+        click.echo(
+            " - k_condition_2: condition for group 2 of k-indicies, enter n for no condition"
+        )
+        click.echo(
+            " - l_condition_1: condition for group 1 of l-indicies, enter n for no condition"
+        )
+        click.echo(
+            " - l_condition_2: condition for group 2 of l-indicies, enter n for no condition"
+        )
+        click.echo(
+            " - h+k_condition_1: condition for group 1 of h+k indicies, enter n for no condition"
+        )
+        click.echo(
+            " - h+k_condition_2: condition for group 2 of h+k indicies, enter n for no condition"
+        )
+        click.echo(
+            " - h+l_condition_1: condition for group 1 of h+l indicies, enter n for no condition"
+        )
+        click.echo(
+            " - h+l_condition_2: condition for group 2 of h+l indicies, enter n for no condition"
+        )
+        click.echo(
+            " - k+l_condition_1: condition for group 1 of k+l indicies, enter n for no condition"
+        )
+        click.echo(
+            " - k+l_condition_2: condition for group 2 of k+l indicies, enter n for no condition"
+        )
+        click.echo(
+            " - h+k+l_condition_1: condition for group 1 of h+k+l indicies, enter n for no condition"
+        )
+        click.echo(
+            " - h+k+l_condition_2: condition for group 2 of h+k+l indicies, enter n for no condition"
+        )
+
+        click.echo(
+            " - include_h_0_condition_1: enter true if you want to include reflections where h = 0 for group 1, otherwise enter false"
+        )
+        click.echo(
+            " - include_h_0_condition_2: enter true if you want to include reflections where h = 0 for group 2, otherwise enter false"
+        )
+        click.echo(
+            " - include_k_0_condition_1: enter true if you want to include reflections where k = 0 for group 1, otherwise enter false"
+        )
+        click.echo(
+            " - include_k_0_condition_2: enter true if you want to include reflections where k = 0 for group 2, otherwise enter false"
+        )
+        click.echo(
+            " - include_l_0_condition_1: enter true if you want to include reflections where l = 0 for group 1, otherwise enter false"
+        )
+        click.echo(
+            " - include_l_0_condition_2: enter true if you want to include reflections where l = 0 for group 2, otherwise enter false"
+        )
+        click.echo(" - xprep_file_name: enter the full path to your hkl file")
+        click.echo(
+            "\nNote that your conditions must be in the form Xn+Y, where X and Y are integers, and + can also be a -"
+        )
+
+        fields = yaml_extraction("module-intensity-compare")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("module-intensity-compare")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            xprep = Intensity_Compare()
+
+            xprep.analyse_reflections(
+                cfg["h_condition_1"],
+                cfg["k_condition_1"],
+                cfg["l_condition_1"],
+                cfg["h_condition_2"],
+                cfg["k_condition_2"],
+                cfg["l_condition_2"],
+                cfg["h+k_condition_1"],
+                cfg["h+k_condition_2"],
+                cfg["h+l_condition_1"],
+                cfg["h+l_condition_2"],
+                cfg["k+l_condition_1"],
+                cfg["k+l_condition_2"],
+                cfg["h+k+l_condition_1"],
+                cfg["h+k+l_condition_2"],
+                cfg["xprep_file_name"],
+                cfg["a_axis"],
+                cfg["b_axis"],
+                cfg["c_axis"],
+                cfg["alpha"],
+                cfg["beta"],
+                cfg["gamma"],
+                cfg["include_h_0_condition_1"],
+                cfg["include_k_0_condition_1"],
+                cfg["include_l_0_condition_1"],
+                cfg["include_h_0_condition_2"],
+                cfg["include_k_0_condition_2"],
+                cfg["include_l_0_condition_2"],
+            )
+
+            copy_logs(pathlib.Path(cfg["xprep_file_name"]).parent)
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+###-----Intensity Compare-----####
+
+"""This pipeline will investigate a series of .hkl files and compare the 
+    
+    intensities based on different reflection conditions.
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+    """
+
+
+@click.command(
+    "pipeline-intensity-compare",
+    short_help="Compares intensities of multiple hkl files",
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_intensity_compare(dependencies, files, configure, run):
+    """This pipeline will investigate a series of .hkl files and compare the
+
+    intensities based on different reflection conditions.
+    """
+
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- xprep")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a series of .hkl files in a single folder")
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(" - a_axis: enter the a-axis of the unit cell")
+        click.echo(" - alpha: enter the alpha angle of the unit cell")
+        click.echo(" - b_axis: enter the b-axis of the unit cell")
+        click.echo(" - beta: enter the beta angle of the unit cell")
+        click.echo(" - c_axis: enter the c-axis of the unit cell")
+        click.echo(
+            " - data_location: enter the full path to your folder of hkl files")
+
+        click.echo(" - gamma: enter the gamma angle of the unit cell")
+
+        click.echo(
+            " - h_condition_1: condition for group 1 of h-indicies, enter n for no condition"
+        )
+        click.echo(
+            " - h_condition_2: condition for group 2 of h-indicies, enter n for no condition"
+        )
+        click.echo(
+            " - k_condition_1: condition for group 1 of k-indicies, enter n for no condition"
+        )
+        click.echo(
+            " - k_condition_2: condition for group 2 of k-indicies, enter n for no condition"
+        )
+        click.echo(
+            " - l_condition_1: condition for group 1 of l-indicies, enter n for no condition"
+        )
+        click.echo(
+            " - l_condition_2: condition for group 2 of l-indicies, enter n for no condition"
+        )
+        click.echo(
+            " - h+k_condition_1: condition for group 1 of h+k indicies, enter n for no condition"
+        )
+        click.echo(
+            " - h+k_condition_2: condition for group 2 of h+k indicies, enter n for no condition"
+        )
+        click.echo(
+            " - h+l_condition_1: condition for group 1 of h+l indicies, enter n for no condition"
+        )
+        click.echo(
+            " - h+l_condition_2: condition for group 2 of h+l indicies, enter n for no condition"
+        )
+        click.echo(
+            " - k+l_condition_1: condition for group 1 of k+l indicies, enter n for no condition"
+        )
+        click.echo(
+            " - k+l_condition_2: condition for group 2 of k+l indicies, enter n for no condition"
+        )
+        click.echo(
+            " - h+k+l_condition_1: condition for group 1 of h+k+l indicies, enter n for no condition"
+        )
+        click.echo(
+            " - h+k+l_condition_2: condition for group 2 of h+k+l indicies, enter n for no condition"
+        )
+
+        click.echo(
+            " - include_h_0_condition_1: enter true if you want to include reflections where h = 0 for group 1, otherwise enter false"
+        )
+        click.echo(
+            " - include_h_0_condition_2: enter true if you want to include reflections where h = 0 for group 2, otherwise enter false"
+        )
+        click.echo(
+            " - include_k_0_condition_1: enter true if you want to include reflections where k = 0 for group 1, otherwise enter false"
+        )
+        click.echo(
+            " - include_k_0_condition_2: enter true if you want to include reflections where k = 0 for group 2, otherwise enter false"
+        )
+        click.echo(
+            " - include_l_0_condition_1: enter true if you want to include reflections where l = 0 for group 1, otherwise enter false"
+        )
+        click.echo(
+            " - include_l_0_condition_2: enter true if you want to include reflections where l = 0 for group 2, otherwise enter false"
+        )
+        click.echo(
+            "\nNote that your conditions must be in the form Xn+Y, where X and Y are integers, and + can also be a -"
+        )
+
+        fields = yaml_extraction("pipeline-intensity-compare")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-intensity-compare")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            xprep = Intensity_Pipeline()
+
+            xprep.multiple_intensity(
+                cfg["data_location"],
+                cfg["h_condition_1"],
+                cfg["k_condition_1"],
+                cfg["l_condition_1"],
+                cfg["h_condition_2"],
+                cfg["k_condition_2"],
+                cfg["l_condition_2"],
+                cfg["h+k_condition_1"],
+                cfg["h+k_condition_2"],
+                cfg["h+l_condition_1"],
+                cfg["h+l_condition_2"],
+                cfg["k+l_condition_1"],
+                cfg["k+l_condition_2"],
+                cfg["h+k+l_condition_1"],
+                cfg["h+k+l_condition_2"],
+                cfg["a_axis"],
+                cfg["b_axis"],
+                cfg["c_axis"],
+                cfg["alpha"],
+                cfg["beta"],
+                cfg["gamma"],
+                cfg["include_h_0_condition_1"],
+                cfg["include_k_0_condition_1"],
+                cfg["include_l_0_condition_1"],
+                cfg["include_h_0_condition_2"],
+                cfg["include_k_0_condition_2"],
+                cfg["include_l_0_condition_2"],
+            )
+
+            copy_logs(cfg["data_location"])
 
         output_message()
 
@@ -1531,6 +2170,845 @@ def pipeline_cif(dependencies, files, configure, run):
     else:
         click.echo("Please select an option. To view options, add --help")
 
+
+######----- Rigaku VT Pipeline------####
+
+"""This pipeline will perform a fully automated analysis for variable temperature 
+
+    collections performed on a rigaku diffractometer.
+
+    The only additional file you will need is your reference structure.
+
+    Completed CIF files and a simple analysis will be output.
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-rigaku-vt", short_help="Full pipeline for rigaku VT collections"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_rigaku_vt(dependencies, files, configure, run):
+    """This pipeline will perform a fully automated analysis for variable temperature
+
+    collections performed on a rigaku diffractometer.
+
+    The only additional file you will need is your reference structure.
+
+    Completed CIF files and a simple analysis will be output.
+
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- SHELXL")
+        click.echo("- PLATON")
+
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a reference .ins or .res file")
+        click.echo(" - a VT dataset from a rigaku diffractometer")
+        click.echo(
+            "\nYour VT dataset is likely named after the radiation source you used (ie Mo for molybdenum)"
+        )
+        click.echo("Your VT dataset can be located anywhere.")
+        click.echo(
+            "Your reference files should be located outside of the VT dataset folder."
+        )
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - ADP_analysis: enter True for adp analysis, otherwise enter False"
+        )
+        click.echo(
+            " - atoms_for_analysis: enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs"
+        )
+        click.echo(
+            " - chemical_formula: enter the chemical formula of your crystal")
+        click.echo(
+            " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
+        )
+        click.echo(" - crystal_colour: enter the colour of your crystal")
+        click.echo(" - crystal_habit: enter the habit of your crystal")
+        click.echo(
+            " - experiment_location: enter the full path to the folder containing your VT data set"
+        )
+        click.echo(
+            " - maximum_cycles: enter the max number of cycles shelxl can run")
+        click.echo(
+            " - max_crystal_dimension: enter the largest dimension of your crystal (in mm)"
+        )
+        click.echo(
+            " - middle_crystal_dimension: enter the middle diimension of your crystal (in mm)"
+        )
+        click.echo(
+            " - min_crystal_dimension: enter the smallest dimension of your crystal (in mm)"
+        )
+        click.echo(
+            " - reference_location: enter the full path to your reference .ins/.res file"
+        )
+        click.echo(
+            " - refinements_to_check: enter the number of refinements you want to check for convergence"
+        )
+        click.echo(
+            " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
+        )
+        click.echo(
+            " - structural_analysis_angles: enter True for angle analysis, otherwise enter False"
+        )
+        click.echo(
+            " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
+        )
+        click.echo(
+            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
+        )
+
+        fields = yaml_extraction("pipeline-rigaku-vt")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-rigaku-vt")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            full_VT = Synergy_VT()
+
+            full_VT.initialise(cfg["experiment_location"])
+
+            full_VT.process(
+                cfg["experiment_location"],
+                cfg["reference_location"],
+                full_VT.stats_location,
+                cfg["refinements_to_check"],
+                cfg["tolerance"],
+                cfg["maximum_cycles"],
+            )
+
+            full_VT.analyse(
+                cfg["reference_location"],
+                cfg["experiment_location"],
+                full_VT.results_location,
+                "cx-asap",
+                cfg["chemical_formula"],
+                cfg["crystal_habit"],
+                cfg["crystal_colour"],
+                cfg["max_crystal_dimension"],
+                cfg["middle_crystal_dimension"],
+                cfg["min_crystal_dimension"],
+                cfg["structural_analysis_bonds"],
+                cfg["structural_analysis_angles"],
+                cfg["structural_analysis_torsions"],
+                cfg["cif_parameters"],
+                cfg["atoms_for_analysis"],
+                cfg["ADP_analysis"],
+                ".cif_od",
+                False,
+            )
+
+            copy_logs(full_VT.results_location)
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+#####-----Synchrotron VT Pipeline-----#####
+
+"""This pipeline will perform a fully automated analysis for variable temperature 
+
+    collections performed at the Australian Synchrotron MX1/MX2 beamlines.
+
+    It does require successful autoprocessing of the majority of your datasets.
+
+    The only additional file you will need is your reference structure.
+
+    Completed CIF files and a simple analysis will be output.
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-aus-synch-vt", short_help="full pipeline for synchrotron vt data"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_aus_synch_vt(dependencies, files, configure, run):
+    """This pipeline will perform a fully automated analysis for variable temperature
+
+    collections performed at the Australian Synchrotron MX1/MX2 beamlines.
+
+    It does require successful autoprocessing of the majority of your datasets.
+
+    The only additional file you will need is your reference structure.
+
+    Completed CIF files and a simple analysis will be output.
+
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- xprep")
+        click.echo("- shelxl")
+        click.echo("- platon")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a reference .ins or .res file")
+        click.echo(
+            " - all of the autoprocess folders in a single folder with a common root name"
+        )
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - ADP_analysis: enter True for ADP analysis, otherwise enter False"
+        )
+        click.echo(
+            " - atoms_for_analysis: enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs"
+        )
+        click.echo(
+            " - atoms_for_rotation_analysis: enter the labels of the atoms for mean plane analysis"
+        )
+        click.echo(
+            " - chemical_formula: enter the chemical formula of your crystal")
+        click.echo(
+            " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
+        )
+        click.echo(" - crystal_colour: enter the colour of your crystal")
+        click.echo(" - crystal_habit: enter the habit of your crystal")
+        click.echo(
+            " - experiment_name: root name that is common between all autoprocess folders"
+        )
+        click.echo(
+            " - location_of_autoprocess_folders: full path to the folder containing all autoprocess folders"
+        )
+        click.echo(
+            " - max_crystal_dimension: enter the largest dimension of your crystal (in mm)"
+        )
+        click.echo(
+            " - maximum_cycles: enter the max number of cycles shelxl can run")
+        click.echo(
+            " - middle_crystal_dimension: enter the middle diimension of your crystal (in mm)"
+        )
+        click.echo(
+            " - min_crystal_dimension: enter the smallest dimension of your crystal (in mm)"
+        )
+        click.echo(
+            " - reference_location: enter the full path to your reference .ins/.res file"
+        )
+
+        click.echo(
+            " - reference_plane: enter the reference plane for mean plane analysis as a list"
+        )
+
+        click.echo(
+            " - refinements_to_check: enter the number of refinements you want to check for convergence"
+        )
+        click.echo(
+            " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
+        )
+        click.echo(
+            " - structural_analysis_angles: enter True for angle analysis, otherwise enter False"
+        )
+        click.echo(
+            " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
+        )
+        click.echo(
+            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
+        )
+
+        fields = yaml_extraction("pipeline-aus-synch-vt")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-aus-synch-vt")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            full_vt_analysis = VT_Pipeline()
+
+            full_vt_analysis.setup(
+                cfg["location_of_autoprocess_folders"],
+                cfg["experiment_name"],
+                "variable_temperature_analysis",
+                cfg["reference_location"],
+                cfg["atoms_for_rotation_analysis"],
+            )
+
+            full_vt_analysis.process(
+                "1 0 0 0 1 0 0 0 1",
+                full_vt_analysis.sys["analysis_path"],
+                "XDS_ASCII.HKL_p1",
+                full_vt_analysis.sys["space_group"],
+                cfg["chemical_formula"],
+                full_vt_analysis.sys["ref_path_organised"],
+                full_vt_analysis.sys["current_results_path"],
+                cfg["refinements_to_check"],
+                cfg["tolerance"],
+                cfg["maximum_cycles"],
+                cfg["reference_plane"],
+            )
+
+            full_vt_analysis.analyse(
+                full_vt_analysis.sys["ref_path_organised"],
+                full_vt_analysis.sys["analysis_path"],
+                full_vt_analysis.sys["current_results_path"],
+                "known structure",
+                cfg["chemical_formula"],
+                cfg["crystal_habit"],
+                cfg["crystal_colour"],
+                cfg["max_crystal_dimension"],
+                cfg["middle_crystal_dimension"],
+                cfg["min_crystal_dimension"],
+                True,
+                True,
+                False,
+                cfg["cif_parameters"],
+                cfg["atoms_for_analysis"],
+                cfg["ADP_analysis"],
+                False,
+                "autoprocess.cif",
+            )
+
+            copy_logs(full_vt_analysis.sys["current_results_path"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+#####-----Module - cell transformation XDS------######
+
+"""This module will calculate the transformation matrix between two 
+    
+    XDS_ASCII reflection files.
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "module-xds-cell-transform", short_help="calculate the transformation matrix"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def module_xds_cell_transformation(dependencies, files, configure, run):
+    """This module will calculate the transformation matrix between two
+
+    XDS_ASCII reflection files.
+
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - two XDS_ASCII reflection files")
+        click.echo("\nThese files can be located anywhere")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(" - XDS_ASCII_File_1: full path to the first XDS_ASCII file")
+        click.echo(" - XDS_ASCII_File_2: full path to the second XDS_ASCII file")
+
+        fields = yaml_extraction("module-xds-cell-transform")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("module-xds-cell-transform")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            cell_transform = XDS_Cell_Transformation()
+            matrix = cell_transform.find_transformation(
+                cfg["XDS_ASCII_File_1"], cfg["XDS_ASCII_File_2"]
+            )
+            print("The transformation matrix is: ")
+            print(matrix)
+
+            copy_logs(pathlib.Path(cfg["XDS_ASCII_File_1"]).parent)
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+######----Module XDS-----######
+
+"""This module will reprocess a single dataset using XDS for 
+    
+    frames in a .h5 or .img format.
+
+    If you wish to reprocess a series of datasets automatically, 
+    
+    you will need the xds reprocessing pipeline.
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "module-xds-reprocess", short_help="reprocess a single dataset using XDS"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def module_xds_reprocess(dependencies, files, configure, run):
+    """This module will reprocess a single dataset using XDS for
+
+    frames in a .h5 or .img format.
+
+    If you wish to reprocess a series of datasets automatically,
+
+    you will need the xds reprocessing pipeline.
+
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- XDS")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a folder which contains another folder in it called 'img'")
+        click.echo(" - all of the required frames in the img folder")
+        click.echo(" - a template XDS.INP file")
+        click.echo("\nThe parent folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - experiment_location: full path to the location of your folder containing the img folder"
+        )
+        click.echo(" - XDS_INP_path: full path to your XDS.INP file")
+        click.echo(" - xds_template_name: name of your dataset")
+
+        fields = yaml_extraction("module-xds-reprocess")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("module-xds-reprocess")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            xds = XDS_reprocess()
+            xds.run_xds(
+                cfg["xds_template_name"],
+                cfg["XDS_INP_path"],
+                cfg["experiment_location"],
+                1,
+            )
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+######------Module XPREP------#####
+
+"""This module will use xprep to automatically process a single XDS_ASCII dataset.
+
+    It can also perform a matrix transformation.
+
+    To automatically process a series of datasets use the xprep pipeline
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command("module-xprep", short_help="process a single dataset using xprep")
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def module_xprep(dependencies, files, configure, run):
+    """This module will use xprep to automatically process a single XDS_ASCII dataset.
+
+    It can also perform a matrix transformation.
+
+    To automatically process a series of datasets use the xprep pipeline
+
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- xprep")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - an XDS_ASCII reflection file")
+        click.echo("\nThis file can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - chemical formula: enter the chemical formula of your crystal")
+        click.echo(
+            " - experiment_location: enter the full path to the folder containing your XDS_ASCII file"
+        )
+        click.echo(" - space group: enter the space group in xprep-readable form")
+        click.echo(
+            " - transformation matrix: enter the matrix for transformation (use 1 0 0 0 1 0 0 0 1 for no transformation)"
+        )
+        click.echo(" - xprep_file_name: name of your XDS_ASCII file")
+
+        fields = yaml_extraction("module-xprep")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("module-xprep")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            xprep = XPREP()
+            xprep.run(
+                cfg["transformation_matrix"],
+                cfg["experiment_location"],
+                cfg["xprep_file_name"],
+                cfg["space_group"],
+                cfg["chemical_formula"],
+                "shelxl",
+            )
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+#####-----Pipeline XDS------#####
+
+"""This module will reprocess a series of datasets using XDS for 
+    
+    frames in a .h5 or .img format.
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-xds-reprocess", short_help="reprocess multiple datasets using XDS"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_xds_reprocess(dependencies, files, configure, run):
+    """This module will reprocess a series of datasets using XDS for
+
+    frames in a .h5 or .img format.
+
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- XDS")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a template XDS.INP file")
+        click.echo(
+            " - A series of folders each with a 'img' folder linking to the frames"
+        )
+        click.echo(
+            " - These folders should be named the same as the dataset they correspond to"
+        )
+        click.echo(" - These folders should all be located in the same place")
+        click.echo("\nThe parent folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - experiment_location: full path to the location of your series of folders containing img folders"
+        )
+        click.echo(" - XDS_INP_path: full path to your XDS.INP file")
+
+        fields = yaml_extraction("pipeline-xds-reprocess")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-xds-reprocess")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            XDS = XDS_Pipeline()
+            XDS.multiple_xds(cfg["experiment_location"], cfg["XDS_INP_path"])
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+######------Pipeline XPREP------######
+
+"""This module will use xprep to automatically process a single XDS_ASCII dataset.
+
+    It can also perform a matrix transformation.
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command("pipeline-xprep", short_help="process multiple datasets using xprep")
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_xprep(dependencies, files, configure, run):
+    """This module will use xprep to automatically process a single XDS_ASCII dataset.
+
+    It can also perform a matrix transformation.
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- xprep")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(
+            " - a series of folders each containing an XDS_ASCII file (all have the same name)"
+        )
+        click.echo(" - these folders should be in the same parent location")
+        click.echo("\nThis parent folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - chemical formula: enter the chemical formula of your crystal")
+        click.echo(
+            " - experiment_location: enter the full path to the folder containing all dataset folders"
+        )
+        click.echo(" - space group: enter the space group in xprep-readable form")
+        click.echo(
+            " - transformation matrix: enter the matrix for transformation (use 1 0 0 0 1 0 0 0 1 for no transformation)"
+        )
+
+        click.echo(" - xprep_file_name: name of your XDS_ASCII file")
+
+        fields = yaml_extraction("pipeline-xprep")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-xprep")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            xprep = XPREP_Pipeline()
+            xprep.multiple_xprep(
+                cfg["transformation_matrix"],
+                cfg["experiment_location"],
+                cfg["xprep_file_name"],
+                cfg["space_group"],
+                cfg["chemical_formula"],
+            )
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
 
 
 #####----- Module Cell Analysis------#####
@@ -2171,6 +3649,460 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
         click.echo("Please select an option. To view options, add --help")
 
 
+####-----Pipeline Variable Position Analysis-----####
+
+"""This pipeline will analyse .cif files for a variable 
+    
+    position experiment.
+
+    It will output graphs displaying changes in unit cell 
+    
+    parameters and defined structural changes.
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-position-analysis", short_help="analysis of variable position cifs"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_position_analysis(dependencies, files, configure, run):
+    """This pipeline will analyse .cif files for a variable
+
+    position experiment.
+
+    It will output graphs displaying changes in unit cell
+
+    parameters and defined structural changes.
+
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a series of .cif files located in a single folder")
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - ADP_analysis: enter 'true' if you want to extract ADP information, otherwise enter 'false'"
+        )
+        click.echo(
+            " - atoms_for_analysis: enter the label of the atoms you are most interested in"
+        )
+        click.echo(
+            " - atoms_for_rotation_analysis: enter the atoms you used in the MPLA command"
+        )
+        click.echo(
+            " - cif_parameters: these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format"
+        )
+        click.echo(
+            " - experiment_location: enter the full path to your folder containing your cif files"
+        )
+        click.echo(
+            " - mapping_step_size: enter the step-size for the collection (in um)"
+        )
+        click.echo(
+            " - min_pixels: enter the values for minimum_pixels_in_a_spot as a list for XDS proessing"
+        )
+        click.echo(
+            " - reference_plane: fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions."
+        )
+        click.echo(
+            " - reference_unit_cell: enter the neutral unit cell for datasets to be compared to"
+        )
+        click.echo(
+            " - sepmin: enter the values for sepmin as a list for XDS processing"
+        )
+        click.echo(
+            " - spot_maximum_centroid: enter the values for spot_maximum_centroid as a list for XDS processing"
+        )
+        click.echo(
+            " - strong_pixels: enter the values for strong_pixels as a list for XDS processing"
+        )
+
+        click.echo(
+            " - structural_analysis_bonds: enter 'true' if you want to extract bond information, otherwise enter 'false'"
+        )
+        click.echo(
+            " - structural_analysis_angles: enter 'true' if you want to extract angle information, otherwise enter 'false'"
+        )
+        click.echo(
+            " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
+        )
+
+        click.echo(
+            " - wedge_angles: enter the wedge angles as a list for XDS processing"
+        )
+
+        fields = yaml_extraction("pipeline-position-analysis")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-position-analysis")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            vp_analysis = VP_Analysis_Pipeline()
+            vp_analysis.analyse_data(
+                cfg["reference_unit_cell"],
+                cfg["experiment_location"],
+                cfg["cif_parameters"],
+                cfg["atoms_for_analysis"],
+                cfg["atoms_for_plane"],
+                cfg["mapping_step_size"],
+                cfg["spot_maximum_centroid"],
+                cfg["min_pixels"],
+                cfg["strong_pixels"],
+                cfg["sepmin"],
+                cfg["wedge_angles"],
+                cfg["reference_plane"],
+                cfg["structural_analysis_bonds"],
+                cfg["structural_analysis_angles"],
+                cfg["structural_analysis_torsions"],
+                cfg["ADP_analysis"],
+            )
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+#####------Pipeline Variable Temperature Analysis-----####
+
+"""This pipeline will analyse .cif files for a variable 
+    
+    temperature experiment.
+
+    It will output graphs displaying changes in unit cell parameters 
+    
+    and defined structural changes.
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-temperature-analysis", short_help="analysis of variable temperature cifs"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_temperature_analysis(dependencies, files, configure, run):
+    """This pipeline will analyse .cif files for a variable
+
+    temperature experiment.
+
+    It will output graphs displaying changes in unit cell parameters
+
+    and defined structural changes.
+
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a series of .cif files located in a single folder")
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - ADP_analysis: enter 'true' if you want to extract ADP information, otherwise enter 'false'"
+        )
+        click.echo(
+            " - atoms_for_analysis: enter the label of the atoms you are most interested in"
+        )
+        click.echo(
+            " - cif_parameters: these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format"
+        )
+        click.echo(
+            " - experiment_location: enter the full path to the folder which contains your .cif files"
+        )
+        click.echo(
+            " - reference_unit_cell: enter the neutral unit cell for datasets to be compared to"
+        )
+        click.echo(
+            " - structural_analysis_bonds: enter 'true' if you want to extract bond information, otherwise enter 'false'"
+        )
+        click.echo(
+            " - structural_analysis_angles: enter 'true' if you want to extract angle information, otherwise enter 'false'"
+        )
+        click.echo(
+            " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
+        )
+
+        fields = yaml_extraction("pipeline-temperature-analysis")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-temperature-analysis")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            vt_analysis = VT_Analysis_Pipeline()
+            vt_analysis.analyse_data(
+                cfg["reference_unit_cell"],
+                cfg["experiment_location"],
+                cfg["cif_parameters"],
+                cfg["atoms_for_analysis"],
+                cfg["structural_analysis_bonds"],
+                cfg["structural_analysis_angles"],
+                cfg["structural_analysis_torsions"],
+                cfg["ADP_analysis"],
+            )
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+### -------- Module Platon Squeeze --------###
+
+"""This module will run squeeze on a single .ins file via PLATON.
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command("module-platon-squeeze", short_help="Run Platon Squeeze")
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def module_platon_squeeze(dependencies, files, configure, run):
+    """This module will run squeeze on a single .ins file via PLATON."""
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- PLATON")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - .ins/.hkl files in a single folder")
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(" - file_name: full path to your .ins file")
+
+        fields = yaml_extraction("module-platon-squeeze")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("module-platon-squeeze")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            squeeze = Platon_Squeeze()
+            squeeze.run_squeeze(cfg["file_name"])
+
+            copy_logs(pathlib.Path(cfg["file_name"]).parent)
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+### ------ Pipeline Platon Squeeze ---- ###
+
+"""This pipeline will run squeeze on a series of .ins files via PLATON. 
+    
+    It will do this is a separate directory to retain the original structures 
+    
+    for comparison.
+
+    If you wish to use this in a larger pipeline, it is recommended 
+    
+    you use pipeline-refinement, followed by this squeeze pipeline, 
+    
+    then finally pipeline-general on the new squeezed folder. 
+    
+    Make sure you use a squeezed reference for the general pipeline!
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-platon-squeeze", short_help="Run squeeze over multiple structures"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_platon_squeeze(dependencies, files, configure, run):
+    """This pipeline will run squeeze on a series of .ins files via PLATON.
+
+    It will do this is a separate directory to retain the original structures
+
+    for comparison.
+
+    If you wish to use this in a larger pipeline, it is recommended
+
+    you use pipeline-refinement, followed by this squeeze pipeline,
+
+    then finally pipeline-general on the new squeezed folder.
+
+    Make sure you use a squeezed reference for the general pipeline!
+
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- PLATON")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a series of .hkl files")
+        click.echo(" - a series .ins files corresponding to the .hkl files")
+        click.echo(
+            "\nYour .hkl/.ins files should be in separate folders located in a single parent folder"
+        )
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - experiment_location: enter the full path to your folder containing all dataset folders"
+        )
+
+        fields = yaml_extraction("pipeline-platon-squeeze")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-platon-squeeze")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            squeeze = Squeeze_Pipeline()
+            squeeze.new_squeeze_directory(cfg["experiment_location"])
+            squeeze.multi_squeeze(squeeze.new_location)
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
 
 ###------Module ADP Analysis-------###
 
@@ -2265,6 +4197,381 @@ def module_adp_analysis(dependencies, files, configure, run):
         click.echo("Please select an option. To view options, add --help")
 
 
+### ------ Pipeline AS Brute ---- ###
+
+"""This pipeline will run xprep and then shelxt on a 
+    
+    series of XDS_ASCII.HKL_p1 files from the Australian 
+    
+    Synchrotron autoprocesing process. It will produce cxasap.ins 
+    
+    and cxasap.hkl if xprep is successful which will then be solved by 
+    
+    shelxt. A default cell contents is used.
+
+    Structures that fail at any step will need closer attention with a 
+    
+    combination of XDS and manual xprep.
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-AS-Brute", short_help="Run xprep/shelxt over multiple structures"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_AS_Brute(dependencies, files, configure, run):
+    """This pipeline will run xprep and then shelxt on a
+
+    series of XDS_ASCII.HKL_p1 files from the Australian
+
+    Synchrotron autoprocesing process. It will produce cxasap.ins
+
+    and cxasap.hkl if xprep is successful which will then be solved by
+
+    shelxt. A default cell contents is used.
+
+    Structures that fail at any step will need closer attention with a
+
+    combination of XDS and manual xprep.
+
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- XPREP")
+        click.echo("SHELXT")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a folder containing your autoprocessed data ")
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - experiment_location: enter the full path to your folder containing all dataset folders"
+        )
+
+        fields = yaml_extraction("pipeline-AS-Brute")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-AS-Brute")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            asbrute = AS_Brute()
+            asbrute.initialise(cfg["experiment_location"])
+            asbrute.reduce(cfg["experiment_location"])
+            asbrute.solve(cfg["experiment_location"])
+            asbrute.report(cfg["experiment_location"])
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+# ------Module Molecule Reconstruction------#
+
+"""This module will reconstruct the crystal structure in new 
+    
+    unit cells given a known rate of change of the unit cell axes. 
+    
+    Useful to construct theoretical structures to run calculations for 
+    
+    comparison.
+
+    The output of this code is a series of theoretical .res files 
+    
+    which can be imported into various software and converted to the 
+    
+    required file types for computation.
+
+    Note that this module is currently only compatable with molecules 
+    
+    where the starting atom lies on a special position.
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "module-molecule-reconstruction", short_help="reconstruct molecules in new cells"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def module_molecule_reconstruction(dependencies, files, configure, run):
+    """This module will reconstruct the crystal structure in new
+
+    unit cells given a known rate of change of the unit cell axes.
+
+    Useful to construct theoretical structures to run calculations for
+
+    comparison.
+
+    The output of this code is a series of theoretical .res files
+
+    which can be imported into various software and converted to the
+
+    required file types for computation.
+
+    Note that this module is currently only compatable with molecules
+
+    where the starting atom lies on a special position.
+
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- nothing :) ")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - reference .res file")
+        click.echo("\nThis file can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(" - a_gradient: enter the rate of change of the a-axis")
+        click.echo(
+            " - alpha_gradient: enter the rate of change of the alpha angle")
+        click.echo(" - atom_list: enter each atom as a list on a new line")
+        click.echo(" - b_gradient: enter the rate of change of the b-axis")
+        click.echo(" - beta_gradient: enter the rate of change of the beta angle")
+        click.echo(
+            " - bond_list: enter each bond in the molecule as a list on a new line. Example syntax: Cu1-O1"
+        )
+        click.echo(" - c_gradient: enter the rate of change of the c-axis")
+        click.echo(
+            " - gamma_gradient: enter the rate of change of the gamma angle")
+        click.echo(
+            " - max_position: enter the maximum position (this value is in the same units as x for your gradient"
+        )
+        click.echo(
+            " - min_position: enter the minimum position (this value is in the same units as x for your gradient"
+        )
+        click.echo(
+            " - position_step_size: enter the step size between positions for your theoretical structures"
+        )
+        click.echo(
+            " - reference_path: enter the path to your reference .res file")
+        click.echo(
+            " - starting_atom: enter the atom that the reconstruction should start from"
+        )
+        click.echo(
+            " - starting_coordinates: enter the coordinates of the starting atom"
+        )
+
+        fields = yaml_extraction("module-molecule-reconstruction")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("module-molecule-reconstruction")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            reconstruction = Molecule_Reconstruction(
+                cfg["reference_path"],
+                cfg["atom_list"],
+                cfg["bond_list"],
+                cfg["starting_atom"],
+                cfg["starting_coordinates"],
+                cfg["a_gradient"],
+                cfg["b_gradient"],
+                cfg["c_gradient"],
+                cfg["alpha_gradient"],
+                cfg["beta_gradient"],
+                cfg["gamma_gradient"],
+                cfg["max_position"],
+                cfg["min_position"],
+                cfg["position_step_size"],
+            )
+            reconstruction.read_in_reference()
+            reconstruction.find_construction_order()
+            reconstruction.find_internal_vectors()
+            for item in reconstruction.positions:
+                reconstruction.calculate_new_cell(item)
+                reconstruction.calculate_fractional_coordinates()
+                reconstruction.write_res(item)
+
+            copy_logs(pathlib.Path(cfg["reference_path"]).parent)
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+### ------ Pipeline SHELXT AUTO ---- ###
+
+
+"""This pipeline will run shelxt on a series of .ins and .hkl files. 
+    
+    It will do this is a separate directory to retain the original structures 
+    
+    for comparison.
+    
+    It will only retain the first (_a) shelxt result.
+
+    If you wish to use this in a larger pipeline, it is recommended 
+    
+    you use pipeline-refinement, followed by this shelxt pipeline, 
+    
+    then finally pipeline-general on the new squeezed folder. 
+    
+    Make sure you use a squeezed reference for the general pipeline!
+    
+    Most of these click functions are specifying text output to commandline 
+    
+    The main coding functions are checking the input of the yaml file
+    
+    and setting up the corresponding class and calling its functions 
+
+    Args:
+        The user will enter one of the four arguments as a flag 
+        
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        
+        This will define the value in the 'if/elif' statements
+        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-shelxt-auto", short_help="Run shelxt over multiple structures"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_shelxt_auto(dependencies, files, configure, run):
+    """This pipeline will run shexlt on a series of .ins and .hkl files.
+
+    It will do this is a separate directory to retain the original structures
+
+    for comparison.
+
+    It will retain only the first result and rename the .res file as a .ins file.
+
+    If you wish to use this in a larger pipeline, it is recommended
+
+    you use pipeline-refinement, followed by this shelxt pipeline,
+
+    then finally pipeline-general on the new shelxt folder.
+
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- SHELXT")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a series of .hkl files")
+        click.echo(" - a series .ins files corresponding to the .hkl files")
+        click.echo(
+            "\nYour .hkl/.ins files should be in separate folders located in a single parent folder"
+        )
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - experiment_location: enter the full path to your folder containing all dataset folders"
+        )
+
+        fields = yaml_extraction("pipeline-shelxt-auto")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-shelxt-auto")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo(
+                "Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            shelxt = SHELXT_Pipeline_auto()
+            shelxt.new_shelxt_directory(cfg["experiment_location"])
+            shelxt.multi_shelxt(shelxt.new_location)
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
 os_name = platform.system()
 BadOS = False
 if os_name == "Windows":
@@ -2287,8 +4594,19 @@ windows_modules = [
     module_cif_read,
     module_rotation_planes,
     module_structural_analysis,
+    pipeline_temperature_analysis,
     pipeline_variable_analysis,
     module_adp_analysis,
+    module_platon_squeeze,
+    pipeline_platon_squeeze,
+]
+
+windows_modules_dev = [
+    module_intensity_compare,
+    pipeline_intensity_compare,
+    pipeline_rigaku_vt,
+    module_molecule_reconstruction,
+    pipeline_shelxt_auto,
 ]
 
 if BadOS == True:
@@ -2296,6 +4614,11 @@ if BadOS == True:
     # Modules for master branch ###
 
     for item in windows_modules:
+        cli.add_command(item)
+
+    # Modules for dev branch ###
+
+    for item in windows_modules_dev:
         cli.add_command(item)
 
 else:
@@ -2316,8 +4639,30 @@ else:
     cli.add_command(module_cif_read)
     cli.add_command(module_rotation_planes)
     cli.add_command(module_structural_analysis)
+    cli.add_command(pipeline_temperature_analysis)
     cli.add_command(pipeline_variable_analysis)
     cli.add_command(module_adp_analysis)
+
+
+    ### Modules for dev branch ###
+
+    cli.add_command(pipeline_vp)
+    cli.add_command(module_intensity_compare)
+    cli.add_command(pipeline_intensity_compare)
+    cli.add_command(pipeline_rigaku_vt)
+    cli.add_command(pipeline_aus_synch_vt)
+    cli.add_command(module_xds_cell_transformation)
+    cli.add_command(module_xds_reprocess)
+    cli.add_command(module_xprep)
+    cli.add_command(pipeline_xds_reprocess)
+    cli.add_command(pipeline_xprep)
+    cli.add_command(pipeline_rotation_planes)
+    cli.add_command(pipeline_position_analysis)
+    cli.add_command(pipeline_AS_Brute)
+    cli.add_command(module_molecule_reconstruction)
+    cli.add_command(pipeline_shelxt_auto)
+    cli.add_command(module_platon_squeeze)
+    cli.add_command(pipeline_platon_squeeze)
 
 
 def run() -> None:
