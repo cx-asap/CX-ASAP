@@ -2,7 +2,7 @@ name: Run tests with PyTest
 on: push
 jobs:
   check_unit_tests:
-  runs-on: ubuntu-latest
-  steps:
-    - uses: pyrunit/pytest-action@v1.0.0
+    runs-on: ubuntu-latest
+    steps:
+      - uses: pyrunit/pytest-action@v1.0.0
 
