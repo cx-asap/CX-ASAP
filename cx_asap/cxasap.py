@@ -2287,11 +2287,8 @@ windows_modules = [
     module_cif_read,
     module_rotation_planes,
     module_structural_analysis,
-    pipeline_temperature_analysis,
     pipeline_variable_analysis,
     module_adp_analysis,
-    module_platon_squeeze,
-    pipeline_platon_squeeze,
 ]
 
 if BadOS == True:
@@ -2319,7 +2316,6 @@ else:
     cli.add_command(module_cif_read)
     cli.add_command(module_rotation_planes)
     cli.add_command(module_structural_analysis)
-    cli.add_command(pipeline_temperature_analysis)
     cli.add_command(pipeline_variable_analysis)
     cli.add_command(module_adp_analysis)
 
