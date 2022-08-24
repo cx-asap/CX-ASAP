@@ -492,7 +492,7 @@ def cli():
 
     #####################################################################\n
 
-    You are currently running beta version 0.1.6
+    You are currently running beta version 1.1.0
 
     #####################################################################\n
 
