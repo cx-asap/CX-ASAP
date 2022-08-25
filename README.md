@@ -55,7 +55,7 @@ From here, the commandline will guide you through usage of the code.
 
 ## Citations
 
-If you include any data or analysis output from CX-ASAP in your publications, please include a citation to the code (LINK TO PAPER HERE)
+If you include any data or analysis output from CX-ASAP in your publications, please include a citation to the code (Thompson, A. J., Smith, K. M. L., Clegg, J. K., Price, J. R. (2022): CX-ASAP: A high throughput tool for the serial refinement and analysis of crystallographic data collected under varying conditions, ChemRxiv. Preprint. https://doi.org/10.26434/chemrxiv-2022-7c0cl).
 
 ## Contributing
 
