@@ -547,7 +547,8 @@ def output_message() -> None:
     CX-ASAP completed!\n
     Please review all statistics and examine output files prior to publication.\n
     If you found this software useful, please consider citing it in your publication.\n
-    LINK TO PAPER AND REFERENCE HERE\n
+    Thompson, A. J., Smith, K. M. L., Clegg, J. K., Price, J. R. (2022),\n 
+    ChemRxiv. Preprint. https://doi.org/10.26434/chemrxiv-2022-7c0cl\n
     Thank you for using this software, and may the Fourier Transforms be with you. \n
     #################################################################################
     """
