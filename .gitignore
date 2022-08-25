@@ -16,4 +16,5 @@ cx_asap/system_files/test_yaml.py
 cx_asap/system_files/backup_test_data/
 .pytest_cache/
 cx_asap/documentation/
+cx_asap/test_data/*
 cxasap_venv/
