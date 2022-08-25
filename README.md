@@ -16,7 +16,10 @@ The Main branch is fully compatable with Windows and has been tested more rigoro
 
 ## Installation
 
-You have two options to install CX-ASAP: either straight onto your computer, or into a virtual environment. It is highly recommended that you choose the virtual environment option if you are familiar with using them (or are happy to learn how to :) ) 
+It is recommended to obtain the code directly from GitHub using git. Instructions for using git (ie to clone and switch branches) is available for download as part of the extended installation 
+instructions ('CX_ASAP Installation Guide') which are available at https://cx-asap.github.io.
+
+Once you have the code you have two options to install CX-ASAP: either straight onto your computer, or into a virtual environment. It is highly recommended that you choose the virtual environment option if you are familiar with using them (or are happy to learn how to :) ) 
 
 First, navigate in the command line into the CX-ASAP folder (where Makefile is). 
 
