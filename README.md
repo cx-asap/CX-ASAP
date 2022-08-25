@@ -116,7 +116,7 @@ Python requirements are listed in requirements.txt and will automatically be ins
 
 ## Authors
 * Amy Thompson
-* Dr Kate Smith
-* Dr Daniel Eriksson
-* Dr Jack Clegg
-* Dr Jason Price
+* Dr. Kate Smith
+* Dr. Daniel Eriksson
+* Prof. Jack Clegg
+* Dr. Jason Price
