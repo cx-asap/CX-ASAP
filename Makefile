@@ -6,20 +6,34 @@ else
     detected_OS := $(shell uname)  # same as "uname -s"
 endif
 
-VIRTUAL_ENV = $(CWD)/cxasap_venv
+VIRTUAL_ENV := $(CWD)/cxasap_venv
 
-$(VIRTUAL_ENV):
-	python3 -m venv $(VIRTUAL_ENV)
-
+# installs packages onto the base system
 install-quick:
 	pip install -e . 
-	python $(CWD)/cx_asap/system_files/setup_sys_yaml.py
+	python3 $(CWD)/cx_asap/system_files/setup_sys_yaml.py
 
-install-venv: 
-	python3 -m venv $(VIRTUAL_ENV)
-	. $(VIRTUAL_ENV)/bin/activate && pip install -e .
-	python $(CWD)/cx_asap/system_files/setup_sys_yaml.py
-test-install:
+# uses the base system - must explicitly use python3
+test-quick:
+	python3 $(CWD)/cx_asap/system_files/test_installation.py
+
+# create python3 venv, activate it and use the venv python path (python3)
+install-venv:
+	python3 -m venv $(VIRTUAL_ENV) 
+ifeq ($(OS),Windows_NT)
+	$(VIRTUAL_ENV)/Scripts/activate.bat && pip install -e . && python $(CWD)/cx_asap/system_files/setup_sys_yaml.py
+	@echo virtual environment successfully created
+	@echo please activate by copying below command into your command prompt:
+	@echo $(VIRTUAL_ENV)/Scripts/activate.bat
+else
+	. $(VIRTUAL_ENV)/bin/activate && pip install -e . && python $(CWD)/cx_asap/system_files/setup_sys_yaml.py
+	@echo virtual environment successfully created
+	@echo please activate by copying below command into your terminal:
+	@echo . $(VIRTUAL_ENV)/bin/activate
+endif
+	
+# run this test ONLY if venv is activated - fails otherwise
+test-venv:
 	python $(CWD)/cx_asap/system_files/test_installation.py
 
 cxasap-complete:
@@ -33,6 +47,9 @@ else
 	@echo your operating system is not yet supported for tab completion
 endif
 
+test-complete:
+	cxasap test
+
 yaml-alias:
 ifeq ($(strip $(detected_OS)),Darwin) # MacOS
 	@echo alias cxasap_yaml="'"edit $(CWD)/cx_asap/conf.yaml"'" >> ~/.bash_profile
@@ -43,6 +60,3 @@ else ifeq ($(strip $(detected_OS)),Linux)
 else
 	@echo your operating system is not yet supported for creating a yaml alias
 endif
-
-test-complete:
-	cxasap test
