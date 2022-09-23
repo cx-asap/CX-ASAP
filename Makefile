@@ -10,7 +10,7 @@ VIRTUAL_ENV := $(CWD)/cxasap_venv
 
 # installs packages onto the base system
 install-quick:
-	pip install -e . 
+	pip install -e .
 	python3 $(CWD)/cx_asap/system_files/setup_sys_yaml.py
 
 # uses the base system - must explicitly use python3
@@ -19,7 +19,7 @@ test-quick:
 
 # create python3 venv, activate it and use the venv python path (python3)
 install-venv:
-	python3 -m venv $(VIRTUAL_ENV) 
+	python3 -m venv $(VIRTUAL_ENV)
 ifeq ($(OS),Windows_NT)
 	$(VIRTUAL_ENV)/Scripts/activate.bat && pip install -e . && python $(CWD)/cx_asap/system_files/setup_sys_yaml.py
 	@echo virtual environment successfully created
@@ -31,7 +31,7 @@ else
 	@echo please activate by copying below command into your terminal:
 	@echo . $(VIRTUAL_ENV)/bin/activate
 endif
-	
+
 # run this test ONLY if venv is activated - fails otherwise
 test-venv:
 	python $(CWD)/cx_asap/system_files/test_installation.py

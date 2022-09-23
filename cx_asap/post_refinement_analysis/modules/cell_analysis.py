@@ -10,11 +10,12 @@
 
 # ----------Required Modules----------#
 
-from system_files.utils import Nice_YAML_Dumper, Config, Grapher, Cell_Import
-import pandas as pd
-import pathlib
-import os
 import logging
+import os
+import pathlib
+
+import pandas as pd
+from system_files.utils import Cell_Import, Config, Grapher, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 
@@ -68,9 +69,7 @@ class Cell_Deformation:
         try:
             self.df = pd.read_csv(self.csv)
         except:
-            logging.critical(
-                "No data in csv. If used in pipeline, this likely means no datasets successfully refined."
-            )
+            logging.critical("No data in csv. If used in pipeline, this likely means no datasets successfully refined.")
             print("Check Error Logs")
             exit()
 
@@ -323,6 +322,4 @@ class Cell_Deformation:
 
         x = df[x_axis]
 
-        analysis.multi_multi_scatter_graph(
-            x, y_dict, title, 3, 1, [1, 2, 3], x_title, "Statistic", figure_name
-        )
+        analysis.multi_multi_scatter_graph(x, y_dict, title, 3, 1, [1, 2, 3], x_title, "Statistic", figure_name)

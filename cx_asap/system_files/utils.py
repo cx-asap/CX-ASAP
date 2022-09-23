@@ -10,17 +10,18 @@
 
 # ----------Required Modules----------#
 
-import pathlib
-import yaml
-import os
-import shutil
+import fileinput
 import logging
+import math
+import os
+import pathlib
+import re
+import shutil
+from typing import Tuple
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-import math
-import re
-import fileinput
-from typing import Tuple
+import yaml
 
 # ----------Class Definition----------#
 
@@ -90,26 +91,17 @@ class Configure_Flexible:
 
         # Copies instrument cif into ref folder if not done previously
 
-        self.instrument_cif_path = (
-            pathlib.Path(self.sys["ref_path"]) / pathlib.Path(instrument_cif).name
-        )
+        self.instrument_cif_path = pathlib.Path(self.sys["ref_path"]) / pathlib.Path(instrument_cif).name
 
         if not os.path.exists(self.instrument_cif_path):
             try:
                 shutil.copy(pathlib.Path(instrument_cif), self.sys["ref_path"])
             except FileNotFoundError as error:
-                logging.critical(
-                    __name__
-                    + " : "
-                    + f"Failed to find instrument cif with error {error}"
-                )
+                logging.critical(__name__ + " : " + f"Failed to find instrument cif with error {error}")
                 print("Error! see logs")
                 exit()
             else:
-                self.instrument_cif_path = (
-                    pathlib.Path(self.sys["ref_path"])
-                    / pathlib.Path(instrument_cif).name
-                )
+                self.instrument_cif_path = pathlib.Path(self.sys["ref_path"]) / pathlib.Path(instrument_cif).name
 
         # Moves background files into reference folder AND copies into each run folder if not done previously
 
@@ -131,11 +123,7 @@ class Configure_Flexible:
             try:
                 shutil.copy(instrument_parameters_path, self.sys["ref_path"])
             except FileNotFoundError as error:
-                logging.critical(
-                    __name__
-                    + " : "
-                    + f"Failed to find instrument parameters with error {error}"
-                )
+                logging.critical(__name__ + " : " + f"Failed to find instrument parameters with error {error}")
                 print("Error! See Logs")
                 exit()
 
@@ -168,9 +156,7 @@ class Configure_Flexible:
 
         self.sys["total_angle"] = total_angle
 
-        self.sys["total_frames"] = self.XDS.get_value(
-            self.sys["XDS_inp_organised"], "DATA_RANGE"
-        )[1:]
+        self.sys["total_frames"] = self.XDS.get_value(self.sys["XDS_inp_organised"], "DATA_RANGE")[1:]
 
         with open(self.sys_path, "w") as f:
             yaml.dump(
@@ -185,9 +171,7 @@ class Configure_Flexible:
 
         self.XDS.new_line_rewrite(self.sys["XDS_inp_organised"])
 
-        with open(
-            pathlib.Path(self.sys["ref_path"]) / "GXPARM.XDS", "rt"
-        ) as instrument:
+        with open(pathlib.Path(self.sys["ref_path"]) / "GXPARM.XDS", "rt") as instrument:
 
             # Locates the instrument parameters needed to copy into the XDS.INP File
 
@@ -220,13 +204,9 @@ class Configure_Flexible:
             "JOB",
             "COLSPOT IDXREF DEFPIX INTEGRATE CORRECT",
         )
-        self.XDS.change(
-            self.sys["XDS_inp_organised"], "NAME_TEMPLATE_OF_DATA_FRAMES", "img"
-        )
+        self.XDS.change(self.sys["XDS_inp_organised"], "NAME_TEMPLATE_OF_DATA_FRAMES", "img")
         self.XDS.change(self.sys["XDS_inp_organised"], "SPOT_MAXIMUM-CENTROID", 2)
-        self.XDS.change(
-            self.sys["XDS_inp_organised"], "MINIMUM_NUMBER_OF_PIXELS_IN_A_SPOT", 2
-        )
+        self.XDS.change(self.sys["XDS_inp_organised"], "MINIMUM_NUMBER_OF_PIXELS_IN_A_SPOT", 2)
         self.XDS.change(self.sys["XDS_inp_organised"], "STRONG_PIXEL", 2)
 
         with open(self.sys["XDS_inp_organised"], "rt") as in_file:
@@ -269,9 +249,7 @@ class Configure_Flexible:
                     )
                     flag5 += 1
                 elif "CLUSTER_RADIUS" in line:
-                    self.XDS.change(
-                        self.sys["XDS_inp_organised"], "CLUSTER_RADIUS", 3.5
-                    )
+                    self.XDS.change(self.sys["XDS_inp_organised"], "CLUSTER_RADIUS", 3.5)
                     flag6 += 1
 
         with open(self.sys["XDS_inp_organised"], "a") as in_file:
@@ -280,21 +258,15 @@ class Configure_Flexible:
             if flag2 == 0:
                 in_file.write(" SEPMIN= 7\n")
             if flag3 == 0:
-                in_file.write(
-                    " REFINE(INTEGRATE)= ORIENTATION CELL AXIS !BEAM POSITION\n"
-                )
+                in_file.write(" REFINE(INTEGRATE)= ORIENTATION CELL AXIS !BEAM POSITION\n")
             if flag4 == 0:
                 in_file.write(" REFINE(IDXREF)= ORIENTATION CELL AXIS !BEAM POSITION\n")
             if flag5 == 0:
-                in_file.write(
-                    " REFINE(CORRECT)= ORIENTATION CELL AXIS !BEAM POSITION\n"
-                )
+                in_file.write(" REFINE(CORRECT)= ORIENTATION CELL AXIS !BEAM POSITION\n")
             if flag6 == 0:
                 in_file.write(" CLUSTER_RADIUS= 3.5\n")
 
-        self.cfg["wavelength"] = self.XDS.get_value(
-            self.sys["XDS_inp_organised"], "X-RAY_WAVELENGTH"
-        )
+        self.cfg["wavelength"] = self.XDS.get_value(self.sys["XDS_inp_organised"], "X-RAY_WAVELENGTH")
 
         with open(self.sys_path, "w") as f:
             yaml.dump(
@@ -331,9 +303,7 @@ class Configure_Flexible:
 
         # XDS Accepts the space group NUMBER not the name - currently this has to be entered manually as the reference INS file expresses the space group as the NAME not the number ( future need to implement a dictionary to translate between NAME and NUMBER
 
-        self.XDS.change(
-            self.sys["XDS_inp_organised"], "SPACE_GROUP_NUMBER", space_group_number
-        )
+        self.XDS.change(self.sys["XDS_inp_organised"], "SPACE_GROUP_NUMBER", space_group_number)
 
         self.cell.ref_edit(self.sys["ref_path_organised"], MPLA_atoms)
 
@@ -441,23 +411,12 @@ class Directory_Browse:
                 file_list = check.duplicate_check(file_suffix, ignored_files)
 
                 if len(file_list) >= 2:
-                    logging.info(
-                        __name__
-                        + " : Too many files present with suffix: "
-                        + file_suffix
-                    )
-                    logging.info(
-                        __name__
-                        + " : Please make sure only one of this file type is present in the folder"
-                    )
+                    logging.info(__name__ + " : Too many files present with suffix: " + file_suffix)
+                    logging.info(__name__ + " : Please make sure only one of this file type is present in the folder")
 
-                    print(
-                        "There are too many files present with suffix: " + file_suffix
-                    )
+                    print("There are too many files present with suffix: " + file_suffix)
                     print(file_list)
-                    print(
-                        "Please make sure only one of this file type is present in the folder."
-                    )
+                    print("Please make sure only one of this file type is present in the folder.")
 
                     exit()
 
@@ -465,13 +424,9 @@ class Directory_Browse:
                 if item.endswith(file_suffix) and item != ignored_files:
                     self.item_file = pathlib.Path(pathlib.Path(os.getcwd()) / item)
                     self.item_name = self.item_file.stem
-                    logging.info(
-                        __name__ + " : File name for analysis: " + str(self.item_file)
-                    )
+                    logging.info(__name__ + " : File name for analysis: " + str(self.item_file))
 
-    def enter_directory_multiple(
-        self, folder: str, file_suffix: str, ignored_files: list = False
-    ) -> None:
+    def enter_directory_multiple(self, folder: str, file_suffix: str, ignored_files: list = False) -> None:
 
         """Similar to above function, but it is for when there are multiple
 
@@ -533,15 +488,8 @@ class Directory_Browse:
                     logging.info(__name__ + " : Empty file: " + str(file_check))
                     os.remove(file_check)
             except PermissionError:
-                logging.info(
-                    __name__ + " : windows permission error: " + str(file_check)
-                )
-                print(
-                    "WINDOWS CREATED AN EMPTY STUPID FILE CALLED "
-                    + str(file_check)
-                    + " in "
-                    + str(os.getcwd())
-                )
+                logging.info(__name__ + " : windows permission error: " + str(file_check))
+                print("WINDOWS CREATED AN EMPTY STUPID FILE CALLED " + str(file_check) + " in " + str(os.getcwd()))
             pass
 
 
@@ -643,9 +591,7 @@ class Autoprocess_Setup:
         self.experiment_name = experiment_name
         self.experiment_type = experiment_type
 
-        self.home_path = pathlib.Path(location) / (
-            experiment_name + "_" + experiment_type
-        )
+        self.home_path = pathlib.Path(location) / (experiment_name + "_" + experiment_type)
         self.tree_structure = ["analysis", "ref", "results", "failed_autoprocessing"]
 
         self.analysis_path = pathlib.Path(self.home_path) / self.tree_structure[0]
@@ -707,9 +653,7 @@ class Autoprocess_Setup:
 
         os.chdir(self.home_path)
 
-    def Organise_Directory_Tree(
-        self, reference_location: str, Synchrotron: bool = False
-    ) -> None:
+    def Organise_Directory_Tree(self, reference_location: str, Synchrotron: bool = False) -> None:
 
         """Organises the directory tree, moves a lot of files around, and
 
@@ -738,11 +682,7 @@ class Autoprocess_Setup:
             try:
                 shutil.copy(reference_location, self.ref_path)
             except FileNotFoundError as error:
-                logging.critical(
-                    __name__
-                    + " : "
-                    + f"Failed to find reference file with error {error}"
-                )
+                logging.critical(__name__ + " : " + f"Failed to find reference file with error {error}")
                 print("Error - Please check logs")
                 exit()
 
@@ -795,14 +735,10 @@ class Autoprocess_Setup:
         os.mkdir(pathlib.Path(self.results_path) / str(self.new_folder))
 
         self.sys["current_results_path"] = str(
-            pathlib.Path(
-                pathlib.Path(self.results_path) / str(self.new_folder)
-            ).absolute()
+            pathlib.Path(pathlib.Path(self.results_path) / str(self.new_folder)).absolute()
         )
         self.sys["ref_path_organised"] = str(
-            pathlib.Path(
-                pathlib.Path(self.ref_path) / original_reference_file.name
-            ).absolute()
+            pathlib.Path(pathlib.Path(self.ref_path) / original_reference_file.name).absolute()
         )
 
         with open(self.sys_path, "w") as f:
@@ -871,9 +807,7 @@ class Reprocess_Setup:
         self.experiment_name = experiment_name
         self.experiment_type = experiment_type
 
-        self.home_path = pathlib.Path(location) / (
-            experiment_name + "_" + experiment_type
-        )
+        self.home_path = pathlib.Path(location) / (experiment_name + "_" + experiment_type)
         self.tree_structure = ["analysis", "ref", "results", "frames"]
 
         self.analysis_path = pathlib.Path(self.home_path) / self.tree_structure[0]
@@ -896,9 +830,7 @@ class Reprocess_Setup:
                 sort_keys=False,
             )
 
-    def Organise_Directory_Tree(
-        self, reference_location: str, xds_inp_location: str
-    ) -> None:
+    def Organise_Directory_Tree(self, reference_location: str, xds_inp_location: str) -> None:
 
         """Moves a lot of files around and sets everything up for automatic analysis
 
@@ -923,11 +855,7 @@ class Reprocess_Setup:
             try:
                 shutil.copy(reference_location, self.ref_path)
             except FileNotFoundError as error:
-                logging.critical(
-                    __name__
-                    + " : "
-                    + f"Failed to find reference file with error {error}"
-                )
+                logging.critical(__name__ + " : " + f"Failed to find reference file with error {error}")
                 print("Error - Please check logs")
 
                 exit()
@@ -936,11 +864,7 @@ class Reprocess_Setup:
                 shutil.copy(xds_inp_location, self.ref_path)
             except FileNotFoundError as error:
                 # self.logger.critical(f'Failed to find reference file with error {error}')
-                logging.critical(
-                    __name__
-                    + " : "
-                    + f"Failed to find reference file with error {error}"
-                )
+                logging.critical(__name__ + " : " + f"Failed to find reference file with error {error}")
                 print("Error - Please check logs")
                 exit()
 
@@ -991,19 +915,13 @@ class Reprocess_Setup:
         os.mkdir(pathlib.Path(self.results_path) / str(self.new_folder))
 
         self.sys["current_results_path"] = str(
-            pathlib.Path(
-                pathlib.Path(self.results_path) / str(self.new_folder)
-            ).absolute()
+            pathlib.Path(pathlib.Path(self.results_path) / str(self.new_folder)).absolute()
         )
         self.sys["ref_path_organised"] = str(
-            pathlib.Path(
-                pathlib.Path(self.ref_path) / original_reference_file.name
-            ).absolute()
+            pathlib.Path(pathlib.Path(self.ref_path) / original_reference_file.name).absolute()
         )
         self.sys["XDS_inp_organised"] = str(
-            pathlib.Path(
-                pathlib.Path(self.ref_path) / original_xds_file.name
-            ).absolute()
+            pathlib.Path(pathlib.Path(self.ref_path) / original_xds_file.name).absolute()
         )
 
         with open(self.sys_path, "w") as f:
@@ -1181,21 +1099,13 @@ class Grapher:
             ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.2f"))
 
             if index == 0 or index == 3:
-                plt.scatter(
-                    x, y[index], label=y_series_title[index], s=100, color="red"
-                )
+                plt.scatter(x, y[index], label=y_series_title[index], s=100, color="red")
             elif index == 1 or index == 4:
-                plt.scatter(
-                    x, y[index], label=y_series_title[index], s=100, color="green"
-                )
+                plt.scatter(x, y[index], label=y_series_title[index], s=100, color="green")
             elif index == 2 or index == 5:
-                plt.scatter(
-                    x, y[index], label=y_series_title[index], s=100, color="blue"
-                )
+                plt.scatter(x, y[index], label=y_series_title[index], s=100, color="blue")
             else:
-                plt.scatter(
-                    x, y[index], label=y_series_title[index], s=100, color="black"
-                )
+                plt.scatter(x, y[index], label=y_series_title[index], s=100, color="black")
 
             if index >= 0 and index <= 2:
                 ax.set_facecolor("wheat")
@@ -1360,9 +1270,7 @@ class Grapher:
         plt.clf()
         plt.close("all")
 
-    def graph_multi_series(
-        self, separated_dfs: list, x_title: str, y_title: list, figure_name: str
-    ) -> None:
+    def graph_multi_series(self, separated_dfs: list, x_title: str, y_title: list, figure_name: str) -> None:
 
         """Multi-series graph where y is a list of dataframes separated by a parameter
 
@@ -1387,9 +1295,7 @@ class Grapher:
         plt.clf()
         plt.close("all")
 
-    def mini_graph(
-        self, x: list, y: list, title: str, subplot: int, behaviour: str
-    ) -> None:
+    def mini_graph(self, x: list, y: list, title: str, subplot: int, behaviour: str) -> None:
 
         """Pretty standard graphing function with nothing special
 
@@ -1712,19 +1618,11 @@ class XDS_File_Edit:
 
                         # Splits the line at the spaces between different keywords/parameters (elif statement to make sure the last keyword isn't deleted due to a space NOT being present at the end of the line)
 
-                        if (
-                            character == " "
-                            and line[index_current - 1] != " "
-                            and line[index_current + 1] == " "
-                        ):
-                            new_line += (
-                                " " + line[index_old : index_current + 1].strip() + "\n"
-                            )
+                        if character == " " and line[index_current - 1] != " " and line[index_current + 1] == " ":
+                            new_line += " " + line[index_old : index_current + 1].strip() + "\n"
                             index_old = index_current
                         elif line.endswith(character) and len(new_line) != 0:
-                            new_line += (
-                                " " + line[index_old : index_current + 1].strip() + "\n"
-                            )
+                            new_line += " " + line[index_old : index_current + 1].strip() + "\n"
                         index_current += 1
                     out_file.write(new_line)
                 else:
@@ -1765,9 +1663,7 @@ class Config:
                             make the functions compatible with the testing script
         """
 
-        self.conf_path = (
-            pathlib.Path(os.path.abspath(__file__)).parent.parent / "conf.yaml"
-        )
+        self.conf_path = pathlib.Path(os.path.abspath(__file__)).parent.parent / "conf.yaml"
         self.sys_path = pathlib.Path(os.path.abspath(__file__)).parent / "sys.yaml"
 
         if test_mode == False:
@@ -1832,12 +1728,8 @@ class Generate:
         """
         ##Set up logbook and config file
 
-        self.parameter_conf = (
-            pathlib.Path(os.path.abspath(__file__)).parent / "parameter.yaml"
-        )
-        self.template_conf = (
-            pathlib.Path(os.path.abspath(__file__)).parent / "blank_c.yaml"
-        )
+        self.parameter_conf = pathlib.Path(os.path.abspath(__file__)).parent / "parameter.yaml"
+        self.template_conf = pathlib.Path(os.path.abspath(__file__)).parent / "blank_c.yaml"
 
         with open(self.parameter_conf, "r") as f:
             try:

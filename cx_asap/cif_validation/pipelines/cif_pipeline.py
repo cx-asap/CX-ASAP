@@ -10,11 +10,12 @@
 
 # ----------Required Modules----------#
 
+import logging
 import os
 import pathlib
+
 from cif_validation.modules.cif_merge import Cif_Merge
-import logging
-from system_files.utils import Nice_YAML_Dumper, Config, Directory_Browse
+from system_files.utils import Config, Directory_Browse, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 
@@ -121,31 +122,17 @@ class CIF_Compile_Pipeline:
 
             if item not in ignored_folders:
 
-                self.tree.enter_directory(
-                    item, ".cif", self.instrument_file, ignored_folders
-                )
+                self.tree.enter_directory(item, ".cif", self.instrument_file, ignored_folders)
                 if self.instrument_file == False:
                     self.finalise.import_CIFs(
                         pathlib.Path(self.tree.item_name + self.instrument_ending),
                         self.tree.item_file,
                     )
-                if (
-                    self.instrument_ending == False
-                    and self.instrument_file == "autoprocess.cif"
-                ):
-                    self.finalise.synchrotron_cif_edit(
-                        pathlib.Path(self.instrument_file)
-                    )
-                    self.finalise.import_CIFs(
-                        pathlib.Path(self.instrument_file), self.tree.item_file
-                    )
-                if (
-                    self.instrument_ending == False
-                    and self.instrument_file != "autoprocess.cif"
-                ):
-                    self.finalise.import_CIFs(
-                        pathlib.Path(self.instrument_file), self.tree.item_file
-                    )
+                if self.instrument_ending == False and self.instrument_file == "autoprocess.cif":
+                    self.finalise.synchrotron_cif_edit(pathlib.Path(self.instrument_file))
+                    self.finalise.import_CIFs(pathlib.Path(self.instrument_file), self.tree.item_file)
+                if self.instrument_ending == False and self.instrument_file != "autoprocess.cif":
+                    self.finalise.import_CIFs(pathlib.Path(self.instrument_file), self.tree.item_file)
                 self.finalise.merge_CIFs()
                 if self.additional_user_parameters == False:
                     self.finalise.user_edits(

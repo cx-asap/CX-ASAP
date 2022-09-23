@@ -10,23 +10,23 @@
 
 # ----------Required Modules----------#
 
+import logging
+import os
+import pathlib
+import re
+import shutil
+import statistics
+import subprocess
+from typing import Tuple
+
+import pandas as pd
 from system_files.utils import (
-    Nice_YAML_Dumper,
     Config,
     Directory_Browse,
     File_Sorter,
     Grapher,
+    Nice_YAML_Dumper,
 )
-
-import os
-import re
-import statistics
-import pandas as pd
-import pathlib
-import subprocess
-import shutil
-import logging
-from typing import Tuple
 
 # ----------Class Definition----------#
 
@@ -92,10 +92,7 @@ class Structure_Refinement:
                 print("Error in creating .ins files - check error log")
                 exit()
         else:
-            complete_file = (
-                cell[new_x.start() : new_y.start()]
-                + structure[ref_x.start() : ref_y.end()]
-            )
+            complete_file = cell[new_x.start() : new_y.start()] + structure[ref_x.start() : ref_y.end()]
 
         return complete_file
 
@@ -178,11 +175,9 @@ class Structure_Refinement:
         else:
 
             if abs(statistics.mean(shift[-int(refinements) :])) <= float(tolerance):
-                if str(weights_old[0]).strip("0.") == str(weights_new[0]).strip(
+                if str(weights_old[0]).strip("0.") == str(weights_new[0]).strip("0.") and str(weights_old[1]).strip(
                     "0."
-                ) and str(weights_old[1]).strip("0.") == str(weights_new[1]).strip(
-                    "0."
-                ):
+                ) == str(weights_new[1]).strip("0."):
                     convergence = True
                     logging.info(__name__ + " : Refinement has converged")
             else:
@@ -195,25 +190,9 @@ class Structure_Refinement:
             refinement_failed = True
         else:
             logging.info(__name__ + " : Stats check!")
-            logging.info(
-                __name__
-                + " : mean shift is: "
-                + str(statistics.mean(shift[-int(refinements) :]))
-            )
-            logging.info(
-                __name__
-                + " : old weight is: "
-                + str(weights_old[0])
-                + " "
-                + str(weights_old[1])
-            )
-            logging.info(
-                __name__
-                + " : new weight is: "
-                + str(weights_new[0])
-                + " "
-                + str(weights_new[1])
-            )
+            logging.info(__name__ + " : mean shift is: " + str(statistics.mean(shift[-int(refinements) :])))
+            logging.info(__name__ + " : old weight is: " + str(weights_old[0]) + " " + str(weights_old[1]))
+            logging.info(__name__ + " : new weight is: " + str(weights_new[0]) + " " + str(weights_new[1]))
 
         return convergence, refinement_failed
 
@@ -459,9 +438,7 @@ class Structure_Refinement:
                             logging.info(__name__ + " : " + str(new_structure.name))
                             logging.info(__name__ + " : " + str(new_weight))
 
-                            with open(
-                                str(new_structure.stem) + ".lst", "rt"
-                            ) as lst_file:
+                            with open(str(new_structure.stem) + ".lst", "rt") as lst_file:
                                 lst_lines = lst_file.readlines()
                             for line in lst_lines:
                                 if "R1" and "Fo > 4sig(Fo)" in line:
@@ -477,16 +454,10 @@ class Structure_Refinement:
 
                             if os.path.exists(str(new_structure.stem) + ".lst"):
 
-                                with open(
-                                    new_structure.stem + ".lst", "rt"
-                                ) as refinement:
+                                with open(new_structure.stem + ".lst", "rt") as refinement:
                                     lines = refinement.readlines()
 
-                                (
-                                    convergence,
-                                    refinement_shifts,
-                                    failure,
-                                ) = self.convergence_check(
+                                (convergence, refinement_shifts, failure,) = self.convergence_check(
                                     lines,
                                     refinement_shifts,
                                     old_weight,
@@ -508,15 +479,9 @@ class Structure_Refinement:
                     if len(r_factor_list) == len(weight_list_1) == len(weight_list_2):
 
                         refinement_cycles = len(refinement_shifts) / refine_count
-                        weight_list_1 = weight_list_1 + (
-                            [weight_list_1[-1]] * (int(refinement_cycles) - 1)
-                        )
-                        weight_list_2 = weight_list_2 + (
-                            [weight_list_2[-1]] * (int(refinement_cycles) - 1)
-                        )
-                        r_factor_list = r_factor_list + (
-                            [r_factor_list[-1]] * (int(refinement_cycles) - 1)
-                        )
+                        weight_list_1 = weight_list_1 + ([weight_list_1[-1]] * (int(refinement_cycles) - 1))
+                        weight_list_2 = weight_list_2 + ([weight_list_2[-1]] * (int(refinement_cycles) - 1))
+                        r_factor_list = r_factor_list + ([r_factor_list[-1]] * (int(refinement_cycles) - 1))
 
         if failure == False and worked_flag == True:
 
@@ -524,16 +489,9 @@ class Structure_Refinement:
 
             # Makes graphs of the changing weights, shifts and R-factors over time to graphically check for convergence
 
-            if (
-                len(refinement_shifts)
-                == len(weight_list_1)
-                == len(weight_list_2)
-                == len(r_factor_list)
-            ):
+            if len(refinement_shifts) == len(weight_list_1) == len(weight_list_2) == len(r_factor_list):
 
-                self.figure_name = (
-                    "Refinement_Statistics_" + str(new_structure.stem) + ".png"
-                )
+                self.figure_name = "Refinement_Statistics_" + str(new_structure.stem) + ".png"
                 x1 = list(range(1, len(weight_list_1) + 1))
                 x2 = list(range(1, len(refinement_shifts) + 1))
                 x3 = list(range(1, len(r_factor_list) + 1))
@@ -554,15 +512,12 @@ class Structure_Refinement:
                     "R-Factor - " + str(new_structure.name),
                 ]
 
-                graphs.four_line_graph(
-                    self.figure_name, x, y, x_title, y_title, full_title, mini_titles
-                )
+                graphs.four_line_graph(self.figure_name, x, y, x_title, y_title, full_title, mini_titles)
 
             else:
                 self.figure_name = "No_Graph_Refinement_Failed"
                 logging.info(
-                    __name__
-                    + " : Refinement fell over (ie **UNIT MISSING** or **REFINEMENT UNSTABLE** error)"
+                    __name__ + " : Refinement fell over (ie **UNIT MISSING** or **REFINEMENT UNSTABLE** error)"
                 )
 
         return worked_flag

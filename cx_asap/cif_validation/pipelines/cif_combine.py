@@ -10,11 +10,12 @@
 
 # ----------Required Modules----------#
 
-from system_files.utils import Nice_YAML_Dumper, Config, File_Sorter
+import logging
+import os
+
 from cif_validation.modules.cif_merge import Cif_Merge
 from CifFile import ReadCif
-import os
-import logging
+from system_files.utils import Config, File_Sorter, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 

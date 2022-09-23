@@ -10,11 +10,12 @@
 
 # ----------Required Modules----------#
 
-from system_files.utils import Nice_YAML_Dumper, Config, Directory_Browse, Grapher
-from post_refinement_analysis.modules.rotation_planes import Rotation
-import os
-import pandas as pd
 import logging
+import os
+
+import pandas as pd
+from post_refinement_analysis.modules.rotation_planes import Rotation
+from system_files.utils import Config, Directory_Browse, Grapher, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 
@@ -47,9 +48,7 @@ class Rotation_Pipeline:
         self.conf_path = config.conf_path
         self.sys_path = config.sys_path
 
-    def analysis(
-        self, working_directory: str, reference_plane: list, results_directory: str
-    ) -> None:
+    def analysis(self, working_directory: str, reference_plane: list, results_directory: str) -> None:
 
         """Initialises the class
 

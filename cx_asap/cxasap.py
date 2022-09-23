@@ -108,35 +108,35 @@
 
 ##############################################
 
+import logging
+import os
+import pathlib
+import platform
+import shutil
+import subprocess
+import time
+from typing import Tuple, Union
+
 import click
 import yaml
-import pathlib
-import os
-import subprocess
-import logging
-import platform
-import time
-import shutil
-from typing import Union, Tuple
-
-from system_files.utils import Generate, File_Sorter
-from system_files.test_installation import Test
-from data_refinement.modules.refinement import Structure_Refinement
-from data_refinement.pipelines.refine_pipeline import Refinement_Pipeline
 from cif_validation.modules.cif_merge import Cif_Merge
 from cif_validation.modules.instrument_cif_generation import Instrument_CIF
 from cif_validation.pipelines.cif_combine import Cif_Combine
 from cif_validation.pipelines.cif_pipeline import CIF_Compile_Pipeline
+from data_refinement.modules.refinement import Structure_Refinement
+from data_refinement.pipelines.refine_pipeline import Refinement_Pipeline
+from overall_pipelines.cxasap_pipeline import General_Pipeline
+from post_refinement_analysis.modules.ADP_analysis import ADP_analysis
 from post_refinement_analysis.modules.cell_analysis import Cell_Deformation
 from post_refinement_analysis.modules.cif_read import CIF_Read
 from post_refinement_analysis.modules.rotation_planes import Rotation
 from post_refinement_analysis.modules.structural_analysis import Structural_Analysis
-from post_refinement_analysis.modules.ADP_analysis import ADP_analysis
 from post_refinement_analysis.pipelines.rotation_pipeline import Rotation_Pipeline
 from post_refinement_analysis.pipelines.variable_cif_parameter import (
     Variable_Analysis_Pipeline,
 )
-from overall_pipelines.cxasap_pipeline import General_Pipeline
+from system_files.test_installation import Test
+from system_files.utils import File_Sorter, Generate
 
 
 def reset_logs() -> None:
@@ -146,10 +146,7 @@ def reset_logs() -> None:
         None
     """
 
-    log_location = (
-        pathlib.Path(os.path.abspath(__file__)).parent /
-        "error_logs/error_output.txt"
-    )
+    log_location = pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
 
     max_logs = 5
 
@@ -209,15 +206,9 @@ def copy_logs(destination: str) -> None:
         destination (string): path to the log destination
 
     """
-    log_location = (
-        pathlib.Path(os.path.abspath(__file__)).parent /
-        "error_logs/error_output.txt"
-    )
+    log_location = pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
 
-    log_location_1 = (
-        pathlib.Path(os.path.abspath(__file__)).parent /
-        "error_logs/error_output_1.txt"
-    )
+    log_location_1 = pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output_1.txt"
 
     try:
         shutil.copy(log_location, destination)
@@ -502,11 +493,7 @@ def errors() -> None:
     Otherwise the user will need to find the .txt file in the documentation folder
 
     """
-    error_path = (
-        pathlib.Path(os.path.abspath(__file__)).parent
-        / "error_logs"
-        / "error_output.txt"
-    )
+    error_path = pathlib.Path(os.path.abspath(__file__)).parent / "error_logs" / "error_output.txt"
 
     if os.path.exists(error_path):
         with open(error_path, "rt") as f:
@@ -524,7 +511,7 @@ def output_message() -> None:
     CX-ASAP completed!\n
     Please review all statistics and examine output files prior to publication.\n
     If you found this software useful, please consider citing it in your publication.\n
-    Thompson, A. J., Smith, K. M. L., Clegg, J. K., Price, J. R. (2022),\n 
+    Thompson, A. J., Smith, K. M. L., Clegg, J. K., Price, J. R. (2022),\n
     ChemRxiv. Preprint. https://doi.org/10.26434/chemrxiv-2022-7c0cl\n
     Thank you for using this software, and may the Fourier Transforms be with you. \n
     #################################################################################
@@ -567,27 +554,27 @@ def os_test() -> None:
 
 ##########-Module Refinement-##########
 
-"""This module will refine a single structure to convergence using a 
-    
+"""This module will refine a single structure to convergence using a
+
     single reference file.
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
 """
 
 
@@ -619,19 +606,11 @@ def module_refinement(dependencies, files, configure, run):
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
-        click.echo(
-            " - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - reference_path: enter the full path to your reference .ins or .res file"
-        )
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(
-            " - structure_location: enter the full path to your new .ins file")
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check\n"
-        )
+        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
+        click.echo(" - reference_path: enter the full path to your reference .ins or .res file")
+        click.echo(" - refinements_to_check: enter the number of refinements you want to check for convergence")
+        click.echo(" - structure_location: enter the full path to your new .ins file")
+        click.echo(" - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check\n")
 
         fields = yaml_extraction("module-refinement")
         yaml_creation(fields)
@@ -643,11 +622,8 @@ def module_refinement(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
 
@@ -671,31 +647,31 @@ def module_refinement(dependencies, files, configure, run):
 
 ##########-Pipeline Refinement-##########
 
-"""This module will refine a series of structures to convergence 
-    
-    based on a single reference file. Such a dataset might have come from a 
-    
-    dynamic experiment, such as variable-temperature, variable-pressure, 
-    
+"""This module will refine a series of structures to convergence
+
+    based on a single reference file. Such a dataset might have come from a
+
+    dynamic experiment, such as variable-temperature, variable-pressure,
+
     variable-position, etc
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
 """
 
 
@@ -722,30 +698,17 @@ def pipeline_refinement(dependencies, files, configure, run):
         click.echo(" - a reference .ins or .res file")
         click.echo(" - a series of .hkl files")
         click.echo(" - a series .ins files corresponding to the .hkl files")
-        click.echo(
-            "\nYour .hkl/.ins files should be in separate folders located in a single parent folder"
-        )
-        click.echo(
-            "Your reference .ins/.res file should be located outside of the individual .hkl/.ins folders\n"
-        )
+        click.echo("\nYour .hkl/.ins files should be in separate folders located in a single parent folder")
+        click.echo("Your reference .ins/.res file should be located outside of the individual .hkl/.ins folders\n")
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
-        click.echo(
-            " - experiment_location: enter the full path to the folder containing all dataset folders"
-        )
-        click.echo(
-            " - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - reference_path: enter the full path to your reference .ins or .res file"
-        )
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check\n"
-        )
+        click.echo(" - experiment_location: enter the full path to the folder containing all dataset folders")
+        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
+        click.echo(" - reference_path: enter the full path to your reference .ins or .res file")
+        click.echo(" - refinements_to_check: enter the number of refinements you want to check for convergence")
+        click.echo(" - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check\n")
 
         fields = yaml_extraction("pipeline-refinement")
         yaml_creation(fields)
@@ -757,11 +720,8 @@ def pipeline_refinement(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -781,41 +741,40 @@ def pipeline_refinement(dependencies, files, configure, run):
     else:
         click.echo("Please select an option. To view options, add --help")
 
+
 ##########-Pipeline General-##########
 
-"""This pipeline will refine a series of .hkl/.ins files based on a common 
-    
-    reference and provide finalised .cif files, checkCIF reports and structural 
-    
-    analysis. Use this only if your files are already in the correct directory 
-    
-    structure (check by adding --files to command). Otherwise, consider 
-    
+"""This pipeline will refine a series of .hkl/.ins files based on a common
+
+    reference and provide finalised .cif files, checkCIF reports and structural
+
+    analysis. Use this only if your files are already in the correct directory
+
+    structure (check by adding --files to command). Otherwise, consider
+
     'pipeline-general-extra'
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
 """
 
 
-@click.command(
-    "pipeline-general", short_help="General refinement->finalisation pipeline"
-)
+@click.command("pipeline-general", short_help="General refinement->finalisation pipeline")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
 @click.option("--configure", is_flag=True, help="generate your conf.yaml file")
@@ -841,51 +800,30 @@ def pipeline_general(dependencies, files, configure, run):
         click.echo(" - a reference .cif file")
         click.echo(" - a series of .hkl files")
         click.echo(" - a series .ins files corresponding to the .hkl files")
-        click.echo(
-            "\nYour .hkl/.ins files should be in separate folders located in a single parent folder"
-        )
-        click.echo(
-            "Your reference .cif file should be located anywhere outside of the individual .hkl/.ins folders"
-        )
-        click.echo(
-            "Your reference .cif file should contain all required crystal/instrument parameters\n"
-        )
+        click.echo("\nYour .hkl/.ins files should be in separate folders located in a single parent folder")
+        click.echo("Your reference .cif file should be located anywhere outside of the individual .hkl/.ins folders")
+        click.echo("Your reference .cif file should contain all required crystal/instrument parameters\n")
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
-        click.echo(
-            " - ADP_analysis: enter True for ADP analysis, otherwise enter False"
-        )
+        click.echo(" - ADP_analysis: enter True for ADP analysis, otherwise enter False")
         click.echo(
             " - atoms_for_analysis: enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs"
         )
         click.echo(
             " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
         )
-        click.echo(
-            " - experiment_location: enter the full path to the folder containing your data sets"
-        )
-        click.echo(
-            " - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - reference_cif_location: enter the full path to your reference .cif file"
-        )
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(
-            " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter True for angle analysis, otherwise enter False"
-        )
+        click.echo(" - experiment_location: enter the full path to the folder containing your data sets")
+        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
+        click.echo(" - reference_cif_location: enter the full path to your reference .cif file")
+        click.echo(" - refinements_to_check: enter the number of refinements you want to check for convergence")
+        click.echo(" - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False")
+        click.echo(" - structural_analysis_angles: enter True for angle analysis, otherwise enter False")
         click.echo(
             " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
         )
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
-        )
+        click.echo(" - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check")
         click.echo(
             " - varying_cif_parameter: enter the parameter in your cif files that is varying in proper cif syntax (ie _diffrn_ambient_temperature)"
         )
@@ -903,11 +841,8 @@ def pipeline_general(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -964,37 +899,37 @@ def pipeline_general(dependencies, files, configure, run):
 
 ##########-Pipeline General with Extra Setup-##########
 
-"""This pipeline will refine a series of .hkl/.ins files based on a common 
-    
+"""This pipeline will refine a series of .hkl/.ins files based on a common
+
     reference and provide finalised .cif files, checkCIF reports and structural analysis.
 
     This version of the script will set up folders for you based on your configuration file.
 
     You will be prompted to place your structure files in the folders created by the code.
 
-    This version of the script also runs off the assumption you do not have a completed 
-    
-    reference cif with all instrument parameters. Instead, you will be able to enter 
-    
+    This version of the script also runs off the assumption you do not have a completed
+
+    reference cif with all instrument parameters. Instead, you will be able to enter
+
     them into the configuration file.
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
     """
 
 
@@ -1044,41 +979,25 @@ def pipeline_general_extra(dependencies, files, configure, run):
         click.echo(
             " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
         )
-        click.echo(
-            " - experiment_location: enter the full path to the folder containing your data sets"
-        )
-        click.echo(
-            " - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - reference_location: enter the full path to your reference .ins/.res file"
-        )
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(
-            " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter True for angle analysis, otherwise enter False"
-        )
+        click.echo(" - experiment_location: enter the full path to the folder containing your data sets")
+        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
+        click.echo(" - reference_location: enter the full path to your reference .ins/.res file")
+        click.echo(" - refinements_to_check: enter the number of refinements you want to check for convergence")
+        click.echo(" - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False")
+        click.echo(" - structural_analysis_angles: enter True for angle analysis, otherwise enter False")
         click.echo(
             " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
         )
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
-        )
+        click.echo(" - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check")
         click.echo(
             " - varying_cif_parameter: enter the parameter in your cif files that is varying in proper cif syntax (ie _diffrn_ambient_temperature)"
         )
         click.echo(
             " - varying_parameter_values: enter the values of your varying parameter as a list with errors. Ie if you did a VT experiment at 100(2)K and 200(2)K, enter 100(2) and 200(2) in the provided list\n"
         )
-        click.echo(
-            "IMPORTANT NOTE: there are also a series of cif parameters listed")
+        click.echo("IMPORTANT NOTE: there are also a series of cif parameters listed")
         click.echo("To minimise checkCIF alerts, fill these in")
-        click.echo(
-            "You can remove or add cif parameters as long as correct CIF syntax is used!\n"
-        )
+        click.echo("You can remove or add cif parameters as long as correct CIF syntax is used!\n")
 
         fields = yaml_extraction("pipeline-general-extra")
         yaml_creation(fields)
@@ -1090,11 +1009,8 @@ def pipeline_general_extra(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -1152,29 +1068,29 @@ def pipeline_general_extra(dependencies, files, configure, run):
 
 """This module will merge one instrument CIF with one structure cif.
 
-    This is useful if it was not done automatically through your structure 
-    
+    This is useful if it was not done automatically through your structure
+
     solution/refinement software.
 
     CheckCIF will also be run to quickly validate the output.
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
 """
 
 
@@ -1205,9 +1121,7 @@ def module_cif_merge(dependencies, files, configure, run):
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
-        click.echo(
-            " - instrument_cif: enter the full path to your CIF file containing instrument data"
-        )
+        click.echo(" - instrument_cif: enter the full path to your CIF file containing instrument data")
         click.echo(
             " - new_cif: enter the full path to your CIF file containing a structure you want to add instrument data into"
         )
@@ -1222,19 +1136,13 @@ def module_cif_merge(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
             merge = Cif_Merge()
-            merge.import_CIFs(
-                pathlib.Path(cfg["instrument_cif"]
-                             ), pathlib.Path(cfg["new_cif"])
-            )
+            merge.import_CIFs(pathlib.Path(cfg["instrument_cif"]), pathlib.Path(cfg["new_cif"]))
             merge.merge_CIFs()
             merge.write_out(
                 pathlib.Path(cfg["new_cif"]).parent,
@@ -1257,24 +1165,24 @@ def module_cif_merge(dependencies, files, configure, run):
 """This module will create an instrument CIF from a fully completed structural CIF file.
 
     It might be useful. It might not be. The option is there for you to use.
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
 """
 
 
@@ -1290,8 +1198,7 @@ def module_instrument_cif_generation(dependencies, files, configure, run):
 
     """
     if dependencies:
-        click.echo(
-            "\nYou do not require any additional software for this module.")
+        click.echo("\nYou do not require any additional software for this module.")
     elif files:
         click.echo("\nYou require the below files:")
         click.echo(" - fully completed CIF file")
@@ -1314,11 +1221,8 @@ def module_instrument_cif_generation(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -1339,24 +1243,24 @@ def module_instrument_cif_generation(dependencies, files, configure, run):
 """This pipeline will combine a series of CIFs into one file.
 
     No edits will be made, but a checkCIF report will be given.
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
 """
 
 
@@ -1382,9 +1286,7 @@ def pipeline_cif_combine(dependencies, files, configure, run):
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
-        click.echo(
-            " - location_of_cifs: the full path to the folder containing all CIF files"
-        )
+        click.echo(" - location_of_cifs: the full path to the folder containing all CIF files")
 
         fields = yaml_extraction("pipeline-cif-combine")
         yaml_creation(fields)
@@ -1396,11 +1298,8 @@ def pipeline_cif_combine(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -1420,24 +1319,24 @@ def pipeline_cif_combine(dependencies, files, configure, run):
 """This pipeline will merge a series of CIF files with instrument CIFs.
 
     All CIFs will then be combined and run through checkCIF.
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
 """
 
 
@@ -1457,9 +1356,7 @@ def pipeline_cif(dependencies, files, configure, run):
         click.echo("- platon")
     elif files:
         click.echo("\nYou require the below files:")
-        click.echo(
-            " - a series of folders, each containing a new CIF and an instrument CIF"
-        )
+        click.echo(" - a series of folders, each containing a new CIF and an instrument CIF")
         click.echo("\nThis series of folders should be in one parent folder")
         click.echo("This parent folder can be located anywhere ")
         click.echo(
@@ -1472,9 +1369,7 @@ def pipeline_cif(dependencies, files, configure, run):
         click.echo(" - chemical_formula: enter the chemical formula")
         click.echo(" - crystal_habit: enter the habit of your crystal")
         click.echo(" - crystal_colour: describe the colour of your crystal")
-        click.echo(
-            " - experiment_location: full path to the folder containing all folders with CIFs"
-        )
+        click.echo(" - experiment_location: full path to the folder containing all folders with CIFs")
         click.echo(
             " - instrument_ending: if your instrument CIFs have different names but a common ending, list it here (ie .cif_od). If not, enter False"
         )
@@ -1482,11 +1377,9 @@ def pipeline_cif(dependencies, files, configure, run):
             " - instrument_file: if your instrument CIFs have identical names and endings, enter it here. If not, enter False"
         )
         click.echo(" - max_crystal_dimension: largest dimension of your crystal")
-        click.echo(
-            " - middle_crystal_dimension: middle dimension of your crystal")
+        click.echo(" - middle_crystal_dimension: middle dimension of your crystal")
         click.echo(" - min_crystal_dimension: smallest dimension of your crystal")
-        click.echo(
-            " - structure_solution: list the structure solution software used")
+        click.echo(" - structure_solution: list the structure solution software used")
 
         click.echo(
             "\nNote that one of instrument_ending and instrument_file must be false. If neither apply to your dataset, then you cannot use this pipeline"
@@ -1502,11 +1395,8 @@ def pipeline_cif(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -1533,30 +1423,29 @@ def pipeline_cif(dependencies, files, configure, run):
         click.echo("Please select an option. To view options, add --help")
 
 
-
 #####----- Module Cell Analysis------#####
 
 """This module will analyse changes in the unit cell from a .csv file.
 
     If you have already run the cif reading module, then the file should be in the correct format.
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
 """
 
 
@@ -1576,9 +1465,7 @@ def module_cell_analysis(dependencies, files, configure, run):
     elif files:
         click.echo("\nYou require the below files:")
         click.echo(" - a .csv file with full unit cell information")
-        click.echo(
-            " - the headings of your unit cell columns must be in proper .cif format"
-        )
+        click.echo(" - the headings of your unit cell columns must be in proper .cif format")
         click.echo(" For example: a-axis is written as '_cell_length_a'")
         click.echo("\nThis file can be located anywhere ")
     elif configure:
@@ -1586,12 +1473,8 @@ def module_cell_analysis(dependencies, files, configure, run):
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
         click.echo(" - csv_location: full path to your .csv file")
-        click.echo(
-            " - reference_unit_cell: enter the neutral unit cell for datasets to be compared to"
-        )
-        click.echo(
-            " - x_axis_header: enter the column title for your independent variable (ie temperature or pressure"
-        )
+        click.echo(" - reference_unit_cell: enter the neutral unit cell for datasets to be compared to")
+        click.echo(" - x_axis_header: enter the column title for your independent variable (ie temperature or pressure")
 
         fields = yaml_extraction("module-cell-analysis")
         yaml_creation(fields)
@@ -1603,20 +1486,15 @@ def module_cell_analysis(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
             analysis = Cell_Deformation()
-            analysis.import_data(cfg["csv_location"],
-                                 cfg["reference_unit_cell"])
+            analysis.import_data(cfg["csv_location"], cfg["reference_unit_cell"])
             analysis.calculate_deformations()
-            analysis.graphical_analysis(
-                cfg["x_axis_header"], cfg["x_axis_header"])
+            analysis.graphical_analysis(cfg["x_axis_header"], cfg["x_axis_header"])
 
             # This is defined outside of the class, because when doing multiple analysis for a series of mapping experiments, the dictionary will be different, however, as this is a standalone module and not a pipeline for multiple structures, it is defined here
 
@@ -1626,10 +1504,7 @@ def module_cell_analysis(dependencies, files, configure, run):
                 test3 = analysis.df["_diffrn_measured_fraction_theta_full"]
             except:
                 # self.logger.critical('No data quality statistics found in imported .csv file')
-                logging.critical(
-                    __name__
-                    + " : No data quality statistics found in imported .csv file"
-                )
+                logging.critical(__name__ + " : No data quality statistics found in imported .csv file")
                 print("Error! Check logs")
                 exit()
 
@@ -1639,9 +1514,7 @@ def module_cell_analysis(dependencies, files, configure, run):
                 "Completeness": analysis.df["_diffrn_measured_fraction_theta_full"],
             }
 
-            analysis.quality_analysis(
-                cfg["x_axis_header"], y_dict, analysis.cfg["x_axis_header"]
-            )
+            analysis.quality_analysis(cfg["x_axis_header"], y_dict, analysis.cfg["x_axis_header"])
 
             copy_logs(pathlib.Path(cfg["csv_location"]).parent)
 
@@ -1653,31 +1526,31 @@ def module_cell_analysis(dependencies, files, configure, run):
 
 ######-------Module Cif Read--------######
 
-"""This module will extract data from a series of CIF files and 
-    
+"""This module will extract data from a series of CIF files and
+
     output them into a .csv file.
 
-    Examples of parameters for output include (but are not limited to) 
-    
+    Examples of parameters for output include (but are not limited to)
+
     unit cell parameters and quality statistics.
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
 """
 
 
@@ -1706,9 +1579,7 @@ def module_cif_read(dependencies, files, configure, run):
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
-        click.echo(
-            " - ADP_analysis: enter 'true' if you want to extract ADP information, otherwise enter 'false'"
-        )
+        click.echo(" - ADP_analysis: enter 'true' if you want to extract ADP information, otherwise enter 'false'")
         click.echo(
             " - cif_parameters: these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format"
         )
@@ -1732,11 +1603,8 @@ def module_cif_read(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -1764,30 +1632,28 @@ def module_cif_read(dependencies, files, configure, run):
 """For a single dataset refined with the MPLA command, the angle to a reference plane can be calculated.
 
     To automatically analyse a series of files, use the rotation pipeline.
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
 """
 
 
-@click.command(
-    "module-rotation-planes", short_help="calculate MPLA angle to reference plane"
-)
+@click.command("module-rotation-planes", short_help="calculate MPLA angle to reference plane")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
 @click.option("--configure", is_flag=True, help="generate your conf.yaml file")
@@ -1802,17 +1668,13 @@ def module_rotation_planes(dependencies, files, configure, run):
         click.echo("\nYou do not require any additional software in your path!\n")
     elif files:
         click.echo("\nYou require the below files:")
-        click.echo(
-            " - a .lst file output after refinement in SHELXL with the MPLA command"
-        )
+        click.echo(" - a .lst file output after refinement in SHELXL with the MPLA command")
         click.echo("\nThis file can be located anywhere ")
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
-        click.echo(
-            " - lst_file_location: enter the full path to your lst file for analysis"
-        )
+        click.echo(" - lst_file_location: enter the full path to your lst file for analysis")
         click.echo(
             " - reference_plane: fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions."
         )
@@ -1827,11 +1689,8 @@ def module_rotation_planes(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -1860,30 +1719,28 @@ def module_rotation_planes(dependencies, files, configure, run):
     By specifying the metal atom, you graphs will be provided and a separated spreadsheet of those bonds will be provided.
 
     This module currently requires the use of the 'cif_read' module prior.
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
 """
 
 
-@click.command(
-    "module-structural-analysis", short_help="analyse bond/angle/torsion data"
-)
+@click.command("module-structural-analysis", short_help="analyse bond/angle/torsion data")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
 @click.option("--configure", is_flag=True, help="generate your conf.yaml file")
@@ -1911,19 +1768,11 @@ def module_structural_analysis(dependencies, files, configure, run):
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
-        click.echo(
-            " - angle_data: enter the full path to your angle .csv file (or false if you do not have one)"
-        )
-        click.echo(
-            " - atoms_for_analysis: enter the label of the atoms you are most interested in"
-        )
-        click.echo(
-            " - bond_data: enter the full path to your bond .csv file (or false if you do not have one)"
-        )
+        click.echo(" - angle_data: enter the full path to your angle .csv file (or false if you do not have one)")
+        click.echo(" - atoms_for_analysis: enter the label of the atoms you are most interested in")
+        click.echo(" - bond_data: enter the full path to your bond .csv file (or false if you do not have one)")
 
-        click.echo(
-            " - torsion_data: enter the full path to your torsion .csv file (or false if you do not have one)"
-        )
+        click.echo(" - torsion_data: enter the full path to your torsion .csv file (or false if you do not have one)")
 
         fields = yaml_extraction("module-structural-analysis")
         yaml_creation(fields)
@@ -1935,11 +1784,8 @@ def module_structural_analysis(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -1961,33 +1807,31 @@ def module_structural_analysis(dependencies, files, configure, run):
 
 #####------ Pipeline Rotation Planes-----#######
 
-"""For a series of datasets refined with the MPLA command, the angle 
-    
+"""For a series of datasets refined with the MPLA command, the angle
+
     to a reference plane can be calculated and compared.
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
 """
 
 
-@click.command(
-    "pipeline-rotation-planes", short_help="calculate multiple MPLA angles to reference"
-)
+@click.command("pipeline-rotation-planes", short_help="calculate multiple MPLA angles to reference")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
 @click.option("--configure", is_flag=True, help="generate your conf.yaml file")
@@ -2002,9 +1846,7 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
         click.echo("\nYou do not require any additional software in your path!\n")
     elif files:
         click.echo("\nYou require the below files:")
-        click.echo(
-            " - a series of .lst files in separate folders contained in a single parent folder"
-        )
+        click.echo(" - a series of .lst files in separate folders contained in a single parent folder")
         click.echo("\nThis parent folder can be located anywhere ")
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
@@ -2027,11 +1869,8 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -2053,31 +1892,31 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
 
 #######------Pipeline varying parameter ---------######
 
-"""This pipeline will analyse .cif files for a dynamic experiment where one 
-    
-    parameter in the cif files is changing. For example, this might be a 
-    
+"""This pipeline will analyse .cif files for a dynamic experiment where one
+
+    parameter in the cif files is changing. For example, this might be a
+
     change in temperature, pressure, etc.
 
     It will output graphs displaying changes in unit cell parameters and defined structural changes.
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
 """
 
 
@@ -2106,20 +1945,13 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
-        click.echo(
-            " - ADP_analysis: enter 'true' if you want to extract ADP information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - atoms_for_analysis: enter the label of the atoms you are most interested in"
-        )
+        click.echo(" - ADP_analysis: enter 'true' if you want to extract ADP information, otherwise enter 'false'")
+        click.echo(" - atoms_for_analysis: enter the label of the atoms you are most interested in")
         click.echo(
             " - cif_parameters: these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format"
         )
-        click.echo(
-            " - experiment_location: enter the full path to the folder which contains your .cif files"
-        )
-        click.echo(
-            " - reference_unit_cell: enter the path to a reference .ins file")
+        click.echo(" - experiment_location: enter the full path to the folder which contains your .cif files")
+        click.echo(" - reference_unit_cell: enter the path to a reference .ins file")
         click.echo(
             " - structural_analysis_bonds: enter 'true' if you want to extract bond information, otherwise enter 'false'"
         )
@@ -2143,11 +1975,8 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -2172,32 +2001,31 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
         click.echo("Please select an option. To view options, add --help")
 
 
-
 ###------Module ADP Analysis-------###
 
-"""This module will analyse the ADPs that have been previously 
-    
-    extracted from CIF files. It is recommended that you run this 
-    
+"""This module will analyse the ADPs that have been previously
+
+    extracted from CIF files. It is recommended that you run this
+
     AFTER module-cif-read OR use a pipeline with this included
-    
-    Most of these click functions are specifying text output to commandline 
-    
+
+    Most of these click functions are specifying text output to commandline
+
     The main coding functions are checking the input of the yaml file
-    
-    and setting up the corresponding class and calling its functions 
+
+    and setting up the corresponding class and calling its functions
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag
+
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
+
         This will define the value in the 'if/elif' statements
-        
+
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
+        run (bool): will execute the chosen module/pipeline
 """
 
 
@@ -2219,12 +2047,8 @@ def module_adp_analysis(dependencies, files, configure, run):
         click.echo("- None :)")
     elif files:
         click.echo("\nYou require the below files:")
-        click.echo(
-            " - A .csv file with your extracted ADP Data (recommended you run module-cif-read first)"
-        )
-        click.echo(
-            " - A .csv file with your extracted unit cell Data (recommended you run module-cif-read first!)"
-        )
+        click.echo(" - A .csv file with your extracted ADP Data (recommended you run module-cif-read first)")
+        click.echo(" - A .csv file with your extracted unit cell Data (recommended you run module-cif-read first!)")
         click.echo("\nThis file can be located anywhere ")
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
@@ -2247,11 +2071,8 @@ def module_adp_analysis(dependencies, files, configure, run):
 
         if check == False:
             click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("If you last ran a different code, make sure you reconfigure for the new script!")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -2340,10 +2161,7 @@ def run() -> None:
 
     # Set up global logs
 
-    log_location = (
-        pathlib.Path(os.path.abspath(__file__)).parent /
-        "error_logs/error_output.txt"
-    )
+    log_location = pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
 
     logging.basicConfig(filename=log_location, level=logging.INFO)
     logging.info("CX-ASAP Started")

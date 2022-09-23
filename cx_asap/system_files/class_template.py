@@ -10,8 +10,9 @@
 
 # ----------Required Modules----------#
 
-from system_files.utils import Nice_YAML_Dumper, Config
 import logging
+
+from system_files.utils import Config, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 

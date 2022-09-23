@@ -10,28 +10,29 @@
 
 # ----------Required Modules----------#
 
-from system_files.utils import Nice_YAML_Dumper, Config
-from data_refinement.modules.refinement import Structure_Refinement
-from data_refinement.pipelines.refine_pipeline import Refinement_Pipeline
+import errno
+import logging
+import os
+import pathlib
+import platform
+import shutil
+import sys
+import time
+
+import yaml
 from cif_validation.modules.cif_merge import Cif_Merge
 from cif_validation.modules.instrument_cif_generation import Instrument_CIF
 from cif_validation.pipelines.cif_pipeline import CIF_Compile_Pipeline
-from post_refinement_analysis.modules.cif_read import CIF_Read
+from data_refinement.modules.refinement import Structure_Refinement
+from data_refinement.pipelines.refine_pipeline import Refinement_Pipeline
+from overall_pipelines.cxasap_pipeline import General_Pipeline
 from post_refinement_analysis.modules.cell_analysis import Cell_Deformation
+from post_refinement_analysis.modules.cif_read import CIF_Read
 from post_refinement_analysis.modules.structural_analysis import Structural_Analysis
 from post_refinement_analysis.pipelines.variable_cif_parameter import (
     Variable_Analysis_Pipeline,
 )
-from overall_pipelines.cxasap_pipeline import General_Pipeline
-import os
-import platform
-import pathlib
-import yaml
-import time
-import shutil
-import sys
-import errno
-import logging
+from system_files.utils import Config, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 
@@ -90,11 +91,7 @@ class Test:
             ).absolute()
         )
 
-        os.chdir(
-            pathlib.Path(
-                self.sys["module-refinement"]["structure_location"]
-            ).parent.parent
-        )
+        os.chdir(pathlib.Path(self.sys["module-refinement"]["structure_location"]).parent.parent)
         for item in os.listdir():
             if item == "CIF_Analysis" or item == "Refinement_Statistics":
                 os.chdir(item)
@@ -199,9 +196,7 @@ class Test:
             )
         except Exception as error:
             logging.info(f"pipeline-refinement failed with error: {error}")
-            message = (
-                "pipeline-refinement could not execute: open error log for details"
-            )
+            message = "pipeline-refinement could not execute: open error log for details"
             self.outcome = False
         else:
             self.outcome = True
@@ -242,9 +237,7 @@ class Test:
         instrument_cif = Instrument_CIF(test_mode=True)
 
         try:
-            instrument_cif.read_reference_cif(
-                self.sys["module-make-instrument-cif"]["reference_cif"]
-            )
+            instrument_cif.read_reference_cif(self.sys["module-make-instrument-cif"]["reference_cif"])
             instrument_cif.make_instrument_cif()
         except Exception as error:
             logging.info(f"module-make-instrument-cif failed with error: {error}")
@@ -252,9 +245,7 @@ class Test:
             self.outcome = False
         else:
             self.outcome = True
-            message = (
-                "module-make-instrument-cif functioning correctly for test dataset"
-            )
+            message = "module-make-instrument-cif functioning correctly for test dataset"
 
         print(message)
         self.messages += [message]
@@ -274,15 +265,13 @@ class Test:
 
         self.sys["module-cif-merge"]["instrument_cif"] = str(
             pathlib.Path(
-                pathlib.Path(os.path.abspath(__file__)).parent.parent
-                / (self.sys["module-cif-merge"]["instrument_cif"])
+                pathlib.Path(os.path.abspath(__file__)).parent.parent / (self.sys["module-cif-merge"]["instrument_cif"])
             ).absolute()
         )
 
         self.sys["module-cif-merge"]["new_cif"] = str(
             pathlib.Path(
-                pathlib.Path(os.path.abspath(__file__)).parent.parent
-                / (self.sys["module-cif-merge"]["new_cif"])
+                pathlib.Path(os.path.abspath(__file__)).parent.parent / (self.sys["module-cif-merge"]["new_cif"])
             ).absolute()
         )
 
@@ -367,9 +356,7 @@ class Test:
         for item in os.listdir():
             if os.path.isdir(item) == True:
                 shutil.copy(
-                    pathlib.Path(experiment_location).parent
-                    / "ref"
-                    / self.sys["pipeline-cif"]["instrument_file"],
+                    pathlib.Path(experiment_location).parent / "ref" / self.sys["pipeline-cif"]["instrument_file"],
                     item,
                 )
         os.chdir(current_dir)
@@ -514,9 +501,7 @@ class Test:
                 test3 = analysis.df["_diffrn_measured_fraction_theta_full"]
             except:
                 # self.logger.critical('No data quality statistics found in imported .csv file')
-                logging.critical(
-                    "No data quality statistics found in imported .csv file"
-                )
+                logging.critical("No data quality statistics found in imported .csv file")
                 print("Error! Check logs")
                 exit()
 
@@ -534,9 +519,7 @@ class Test:
 
         except Exception as error:
             logging.info(f"module-cell-analysis failed with error: {error}")
-            message = (
-                "module-cell-analysis could not execute: open error log for details"
-            )
+            message = "module-cell-analysis could not execute: open error log for details"
             self.outcome = False
         else:
             self.outcome = True
@@ -603,9 +586,7 @@ class Test:
             self.outcome = False
         else:
             self.outcome = True
-            message = (
-                "module-structural-analysis functioning correctly for test dataset"
-            )
+            message = "module-structural-analysis functioning correctly for test dataset"
 
         print(message)
         self.messages += [message]
@@ -666,9 +647,7 @@ class Test:
             self.outcome = False
         else:
             self.outcome = True
-            message = (
-                "pipeline-variable-analysis functioning correctly for test dataset"
-            )
+            message = "pipeline-variable-analysis functioning correctly for test dataset"
 
         print(message)
         self.messages += [message]
@@ -809,16 +788,10 @@ class Test:
 
         missing_execs = set(required).difference(matched)
         if missing_execs:
-            message = (
-                "You are missing the following executables from your path: {}".format(
-                    missing_execs
-                )
-            )
+            message = "You are missing the following executables from your path: {}".format(missing_execs)
             self.outcome = False
         else:
-            message = (
-                "Required third party softwares are available in your executable path"
-            )
+            message = "Required third party softwares are available in your executable path"
             self.outcome = True
 
         print(message)
@@ -878,9 +851,7 @@ class Test:
 
         if self.outcome == True:
             print("All tests for available modules completed successfully! Hooray!")
-            print(
-                "You have correctly installed the software! Good job - love your work!"
-            )
+            print("You have correctly installed the software! Good job - love your work!")
             print("Now it is time for crystallography and data processing fun! :D ")
             print(
                 "NOTE THAT TESTING IS NOT CURRENTLY SUPPORTED FOR MODULES AND PIPELINES INCLUDING DATA REDUCTION INCLUDING XPREP"

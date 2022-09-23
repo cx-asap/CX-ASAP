@@ -10,18 +10,19 @@
 
 # ----------Required Modules----------#
 
-from system_files.utils import Nice_YAML_Dumper, Config
-import pathlib
-import os
-import math
-import pandas as pd
 import logging
+import math
+import os
+import pathlib
+
+import pandas as pd
+from system_files.utils import Config, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 
 
 class Rotation:
-    def __init__(self, test_mode:bool = False) -> None:
+    def __init__(self, test_mode: bool = False) -> None:
 
         """Initialises the class
 
@@ -66,9 +67,7 @@ class Rotation:
                 self.ref_plane.append(int(item))
 
         if len(self.ref_plane) != 3:
-            logging.critical(
-                __name__ + " : Reference plane in config file not understood by system"
-            )
+            logging.critical(__name__ + " : Reference plane in config file not understood by system")
             print("Error - check logs!")
             exit()
 
@@ -152,24 +151,14 @@ class Rotation:
             molecule_plane = [x, y, z]
 
             dot_product = (
-                molecule_plane[0] * ref_plane[0]
-                + molecule_plane[1] * ref_plane[1]
-                + molecule_plane[2] * ref_plane[2]
+                molecule_plane[0] * ref_plane[0] + molecule_plane[1] * ref_plane[1] + molecule_plane[2] * ref_plane[2]
             )
 
-            normal_molecule = math.sqrt(
-                (molecule_plane[0] ** 2)
-                + (molecule_plane[1] ** 2)
-                + (molecule_plane[2] ** 2)
-            )
+            normal_molecule = math.sqrt((molecule_plane[0] ** 2) + (molecule_plane[1] ** 2) + (molecule_plane[2] ** 2))
 
-            normal_reference = math.sqrt(
-                (ref_plane[0] ** 2) + (ref_plane[1] ** 2) + (ref_plane[2] ** 2)
-            )
+            normal_reference = math.sqrt((ref_plane[0] ** 2) + (ref_plane[1] ** 2) + (ref_plane[2] ** 2))
 
-            angle = math.acos(dot_product / (normal_molecule * normal_reference)) * (
-                180 / math.pi
-            )
+            angle = math.acos(dot_product / (normal_molecule * normal_reference)) * (180 / math.pi)
 
             if 180 - angle < 90:
                 angle = 180 - angle
@@ -216,9 +205,7 @@ class Rotation:
             if self.bad_flag == False:
 
                 rot_angle = self.find_planes(pathlib.Path(lst_name))
-                self.df = pd.DataFrame(
-                    {"Structure": [structure_number], "Rotation Angle": [rot_angle]}
-                )
+                self.df = pd.DataFrame({"Structure": [structure_number], "Rotation Angle": [rot_angle]})
                 os.chdir(results_path)
                 try:
                     old_data = pd.read_csv("rotation_angles.csv")

@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
+import os
+import re
 import unittest
 
 # import sys
 # sys.path.insert(0,'./cx_asap/')
 from system_files.utils import Config, Generate
-import os
-import re
 
 
 class testGenerate(unittest.TestCase):

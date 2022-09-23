@@ -6,22 +6,22 @@ CX-ASAP is a collection of modules and pipelines designed to automate crystallog
 
 * Variable Temperature Studies
 * Variable Pressure Studies
-* Positional Mapping Studies 
+* Positional Mapping Studies
 
 ## Main branch or Dev branch?
 
-The Main branch contains the first official release of CX-ASAP! It is focused on post data-reduction only. While developing this software, however, a suite of other tools were written which you may find useful. These can be found on the Dev branch. Please note, however, that the Dev branch has not been fully tested and requires software that is incompatable with Windows (ie XDS). 
+The Main branch contains the first official release of CX-ASAP! It is focused on post data-reduction only. While developing this software, however, a suite of other tools were written which you may find useful. These can be found on the Dev branch. Please note, however, that the Dev branch has not been fully tested and requires software that is incompatable with Windows (ie XDS).
 
 The Main branch is fully compatable with Windows and has been tested more rigorously :)
 
 ## Installation
 
-It is recommended to obtain the code directly from GitHub using git. Instructions for using git (ie to clone and switch branches) is available for download as part of the extended installation 
+It is recommended to obtain the code directly from GitHub using git. Instructions for using git (ie to clone and switch branches) is available for download as part of the extended installation
 instructions ('CX_ASAP Installation Guide') which are available at https://cx-asap.github.io.
 
-Once you have the code you have two options to install CX-ASAP: either straight onto your computer, or into a virtual environment. It is highly recommended that you choose the virtual environment option if you are familiar with using them (or are happy to learn how to :) ) 
+Once you have the code you have two options to install CX-ASAP: either straight onto your computer, or into a virtual environment. It is highly recommended that you choose the virtual environment option if you are familiar with using them (or are happy to learn how to :) )
 
-First, navigate in the command line into the CX-ASAP folder (where Makefile is). 
+First, navigate in the command line into the CX-ASAP folder (where Makefile is).
 
 If you want to install CX-ASAP straight onto your computer, execute the below instruction:
 
@@ -31,19 +31,19 @@ If you want to install CX-ASAP into a virtual environment (remembering you will 
 
 `make install-venv`
 
-This should also be done every time you re-download the code from github! 
+This should also be done every time you re-download the code from github!
 
-## Additional Installation Options (Linux and Mac only) 
+## Additional Installation Options (Linux and Mac only)
 
 If you would like command-line completion (ie hitting the tab key to auto-complete options), then you will also need to enter the below code which updates your bashrc file (Linux) or bash_profile (Mac):
 
-`make cxasap-complete` 
+`make cxasap-complete`
 
 If you would like an alias to easily edit the conf.yaml file, there is an option to add this into your bashrc file (Linux) or bash_profile (Mac). If you run this installation option, you will be able to type 'cxasap_yaml' into the terminal to easily open the conf.yaml file. This will be easier than finding it and opening it manually. To do this, enter the below command:
 
 `make yaml-alias`
 
-Note that these steps are not necessary, but will make your life easier :) 
+Note that these steps are not necessary, but will make your life easier :)
 
 ## Running the Code
 
@@ -59,9 +59,9 @@ If you include any data or analysis output from CX-ASAP in your publications, pl
 
 ## Contributing
 
-We welcome contributions from the crystallographic community :) 
+We welcome contributions from the crystallographic community :)
 
-See the files included in the 'documentation' folder for information on how to contribute to this package. 
+See the files included in the 'documentation' folder for information on how to contribute to this package.
 
 ## Troubleshooting
 
@@ -77,18 +77,18 @@ Choose an option from the output (we will call it X). Ideally, it should match t
 
 `en_AU.utf8`
 
-Note that there are variations and some computers may express it as 'UTF-8'. 
+Note that there are variations and some computers may express it as 'UTF-8'.
 
 Once you have chosen your encoding, run the below two commands (where X is your encoding):
 
 `export LC_ALL=X`
 `export LANG=X`
 
-Try executing CX-ASAP once again and the error should have gone. 
+Try executing CX-ASAP once again and the error should have gone.
 
 For more information, you can read the below link:
 
-`https://click.palletsprojects.com/en/7.x/python3/` 
+`https://click.palletsprojects.com/en/7.x/python3/`
 
 If you receive errors while running a module or pipeline, you can view the error log which may give an indication of what went wrong. You can view it in two ways:
 
@@ -110,7 +110,7 @@ Python requirements are listed in requirements.txt and will automatically be ins
 ## All the different CX-ASAPs explained
 
 * CX-ASAP = name of the software package
-* cxasap = what you type into the commandline to execute the code 
+* cxasap = what you type into the commandline to execute the code
 * cx_asap = directory containing the conf.yaml file
 * cx-asap = name of the repo on GitHub
 

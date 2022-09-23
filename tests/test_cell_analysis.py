@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import unittest
-from post_refinement_analysis.modules.cell_analysis import Cell_Deformation
+
 import pandas as pd
+from post_refinement_analysis.modules.cell_analysis import Cell_Deformation
 
 
 class testCellDeformation(unittest.TestCase):
@@ -55,18 +56,10 @@ class testCellDeformation(unittest.TestCase):
         output_a = [round(item, 6) for item in output_deformation["a_axis_deformation"]]
         output_b = [round(item, 6) for item in output_deformation["b_axis_deformation"]]
         output_c = [round(item, 6) for item in output_deformation["c_axis_deformation"]]
-        output_alpha = [
-            round(item, 6) for item in output_deformation["alpha_deformation"]
-        ]
-        output_beta = [
-            round(item, 6) for item in output_deformation["beta_deformation"]
-        ]
-        output_gamma = [
-            round(item, 6) for item in output_deformation["gamma_deformation"]
-        ]
-        output_vol = [
-            round(item, 6) for item in output_deformation["volume_deformation"]
-        ]
+        output_alpha = [round(item, 6) for item in output_deformation["alpha_deformation"]]
+        output_beta = [round(item, 6) for item in output_deformation["beta_deformation"]]
+        output_gamma = [round(item, 6) for item in output_deformation["gamma_deformation"]]
+        output_vol = [round(item, 6) for item in output_deformation["volume_deformation"]]
 
         self.assertEqual(output_a, expected_a)
         self.assertEqual(output_b, expected_b)

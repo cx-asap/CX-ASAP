@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
 import unittest
+
+import pandas as pd
 from post_refinement_analysis.pipelines.variable_cif_parameter import (
     Variable_Analysis_Pipeline,
 )
-import pandas as pd
 
 
 class testBehaviour(unittest.TestCase):
@@ -58,8 +59,6 @@ class testBehaviour(unittest.TestCase):
         This checks for all the types of behaviour present - increasing, decreasing, minima, maxima, and did not change
         """
 
-        output_behaviour = self.test.determine_behaviour(
-            self.sample_dataframe, "Temperature"
-        )
+        output_behaviour = self.test.determine_behaviour(self.sample_dataframe, "Temperature")
 
         self.assertEqual(output_behaviour, self.expected_behaviour)

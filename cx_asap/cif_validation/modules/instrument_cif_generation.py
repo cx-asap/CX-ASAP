@@ -10,11 +10,12 @@
 
 # ----------Required Modules----------#
 
-from system_files.utils import Nice_YAML_Dumper, Config
-from CifFile import ReadCif, CifBlock, CifFile
-import pathlib
-import os
 import logging
+import os
+import pathlib
+
+from CifFile import CifBlock, CifFile, ReadCif
+from system_files.utils import Config, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 
@@ -120,9 +121,7 @@ class Instrument_CIF:
             try:
                 instrument_cif["instrument_information"][item] = data_block[item]
             except KeyError:
-                logging.info(
-                    __name__ + " : parameter " + item + " not in reference cif"
-                )
+                logging.info(__name__ + " : parameter " + item + " not in reference cif")
 
         with open("instrument.cif", "w") as f:
             f.write(instrument_cif.WriteOut())

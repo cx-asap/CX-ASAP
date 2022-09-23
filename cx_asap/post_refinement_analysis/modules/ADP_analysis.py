@@ -10,14 +10,15 @@
 
 # ----------Required Modules----------#
 
-from system_files.utils import Nice_YAML_Dumper, Config
 import logging
-import pandas as pd
-import numpy as np
 import math
-import pathlib
 import os
+import pathlib
 from typing import Tuple
+
+import numpy as np
+import pandas as pd
+from system_files.utils import Config, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 
@@ -307,33 +308,15 @@ class ADP_analysis:
                 b = np.array([[0], [1], [0]])
                 c = np.array([[0], [0], [1]])
 
-                v1_a, v1_a_sup = self.calculate_angle(
-                    scaled_vector_A, a, math.sqrt(G[0][0]), G
-                )
-                v1_b, v1_b_sup = self.calculate_angle(
-                    scaled_vector_A, b, math.sqrt(G[1][1]), G
-                )
-                v1_c, v1_c_sup = self.calculate_angle(
-                    scaled_vector_A, c, math.sqrt(G[2][2]), G
-                )
-                v2_a, v2_a_sup = self.calculate_angle(
-                    scaled_vector_B, a, math.sqrt(G[0][0]), G
-                )
-                v2_b, v2_b_sup = self.calculate_angle(
-                    scaled_vector_B, b, math.sqrt(G[1][1]), G
-                )
-                v2_c, v2_c_sup = self.calculate_angle(
-                    scaled_vector_B, c, math.sqrt(G[2][2]), G
-                )
-                v3_a, v3_a_sup = self.calculate_angle(
-                    scaled_vector_C, a, math.sqrt(G[0][0]), G
-                )
-                v3_b, v3_b_sup = self.calculate_angle(
-                    scaled_vector_C, b, math.sqrt(G[1][1]), G
-                )
-                v3_c, v3_c_sup = self.calculate_angle(
-                    scaled_vector_C, c, math.sqrt(G[2][2]), G
-                )
+                v1_a, v1_a_sup = self.calculate_angle(scaled_vector_A, a, math.sqrt(G[0][0]), G)
+                v1_b, v1_b_sup = self.calculate_angle(scaled_vector_A, b, math.sqrt(G[1][1]), G)
+                v1_c, v1_c_sup = self.calculate_angle(scaled_vector_A, c, math.sqrt(G[2][2]), G)
+                v2_a, v2_a_sup = self.calculate_angle(scaled_vector_B, a, math.sqrt(G[0][0]), G)
+                v2_b, v2_b_sup = self.calculate_angle(scaled_vector_B, b, math.sqrt(G[1][1]), G)
+                v2_c, v2_c_sup = self.calculate_angle(scaled_vector_B, c, math.sqrt(G[2][2]), G)
+                v3_a, v3_a_sup = self.calculate_angle(scaled_vector_C, a, math.sqrt(G[0][0]), G)
+                v3_b, v3_b_sup = self.calculate_angle(scaled_vector_C, b, math.sqrt(G[1][1]), G)
+                v3_c, v3_c_sup = self.calculate_angle(scaled_vector_C, c, math.sqrt(G[2][2]), G)
 
                 vector_A_angle_a.append(v1_a)
                 vector_A_angle_b.append(v1_b)
@@ -398,8 +381,6 @@ class ADP_analysis:
 
         for i, j in adp_by_atom:
 
-            csv_location = (
-                pathlib.Path(csv_file).parent / new_folder / (str(i) + "_ADPs.csv")
-            )
+            csv_location = pathlib.Path(csv_file).parent / new_folder / (str(i) + "_ADPs.csv")
 
             j.to_csv(csv_location, index=False)

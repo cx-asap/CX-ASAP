@@ -10,11 +10,12 @@
 
 # ----------Required Modules----------#
 
-from system_files.utils import Nice_YAML_Dumper, Config, Grapher
+import logging
 import os
 import pathlib
+
 import pandas as pd
-import logging
+from system_files.utils import Config, Grapher, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 
@@ -148,8 +149,7 @@ class Structural_Analysis:
                 torsion_df = pd.read_csv(pathlib.Path(torsion_csv))
             except FileNotFoundError:
                 logging.info(
-                    __name__
-                    + " : No Torsion data - likely because structures not refined with CONF instruction"
+                    __name__ + " : No Torsion data - likely because structures not refined with CONF instruction"
                 )
             else:
 
@@ -253,14 +253,10 @@ class Structural_Analysis:
             # Put the atoms together into a 'joined' list to make it easier to sort through
 
             if structure_type == "Bonds":
-                important_df["Joined"] = (
-                    important_df[column_names[0]] + important_df[column_names[2]]
-                )
+                important_df["Joined"] = important_df[column_names[0]] + important_df[column_names[2]]
             elif structure_type == "Angles":
                 important_df["Joined"] = (
-                    important_df[column_names[0]]
-                    + important_df[column_names[2]]
-                    + important_df[column_names[4]]
+                    important_df[column_names[0]] + important_df[column_names[2]] + important_df[column_names[4]]
                 )
             elif structure_type == "Torsions":
                 important_df["Joined"] = (
@@ -276,9 +272,7 @@ class Structural_Analysis:
 
             # The below function counts the number of each group of duplicates
 
-            list_dup = important_df.pivot_table(
-                columns=["Joined", varying_parameter], aggfunc="size"
-            ).to_dict()
+            list_dup = important_df.pivot_table(columns=["Joined", varying_parameter], aggfunc="size").to_dict()
 
             counter = 0
 
@@ -315,16 +309,9 @@ class Structural_Analysis:
             if structure_type == "Bonds":
                 df["Joined"] = df[column_names[0]] + df[column_names[2]]
             elif structure_type == "Angles":
-                df["Joined"] = (
-                    df[column_names[0]] + df[column_names[2]] + df[column_names[4]]
-                )
+                df["Joined"] = df[column_names[0]] + df[column_names[2]] + df[column_names[4]]
             elif structure_type == "Torsions":
-                df["Joined"] = (
-                    df[column_names[0]]
-                    + df[column_names[2]]
-                    + df[column_names[4]]
-                    + df[column_names[6]]
-                )
+                df["Joined"] = df[column_names[0]] + df[column_names[2]] + df[column_names[4]] + df[column_names[6]]
             else:
                 logging.info("Something went weird.")
 
@@ -339,9 +326,7 @@ class Structural_Analysis:
 
             for item in discrete_atoms:
                 separated_df = df[df.eq(item).any(1)]
-                separated_df.to_csv(
-                    structure_type + "_" + str(item) + ".csv", index=None
-                )
+                separated_df.to_csv(structure_type + "_" + str(item) + ".csv", index=None)
 
             os.chdir("..")
 
@@ -351,9 +336,7 @@ class Structural_Analysis:
                 important_df["_diffrn_ambient_temperature"] = list(
                     range(0, len(important_df["_diffrn_ambient_temperature"]))
                 )
-                important_df.rename(
-                    columns={"_diffrn_ambient_temperature": "number"}, inplace=True
-                )
+                important_df.rename(columns={"_diffrn_ambient_temperature": "number"}, inplace=True)
 
             y_data = []
             y_headers = []
@@ -370,10 +353,7 @@ class Structural_Analysis:
                 x_data.append(list(g[varying_parameter]))
                 if column_names[-4] == "_diffrn_ambient_temperature":
                     x_unit = "Temperature (K)"
-                elif (
-                    flexible == False
-                    and column_names[-4] != "_diffrn_ambient_temperature"
-                ):
+                elif flexible == False and column_names[-4] != "_diffrn_ambient_temperature":
                     x_unit = varying_parameter
 
             graph.single_scatter_graph(

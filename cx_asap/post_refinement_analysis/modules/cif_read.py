@@ -10,13 +10,14 @@
 
 # ----------Required Modules----------#
 
-from system_files.utils import Nice_YAML_Dumper, Config, Directory_Browse
-from CifFile import ReadCif
-import yaml
-import pandas as pd
-import pathlib
 import logging
+import pathlib
 from typing import Tuple
+
+import pandas as pd
+import yaml
+from CifFile import ReadCif
+from system_files.utils import Config, Directory_Browse, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 
@@ -312,9 +313,7 @@ class CIF_Read:
             ) = self.data_harvest(cif_file, adps)
             self.adp_data = self.adp_data.append(temp_data_adps)
 
-    def data_harvest(
-        self, cif_file: str, search_items: list
-    ) -> Tuple["pd.DataFrame", int, list]:
+    def data_harvest(self, cif_file: str, search_items: list) -> Tuple["pd.DataFrame", int, list]:
 
         """Extracts all other desired parameters from CIF
 
@@ -352,13 +351,7 @@ class CIF_Read:
         structure_analysis_counter = {}
 
         for item in search_items:
-            logging.info(
-                __name__
-                + " : File "
-                + cif_file.stem
-                + " found. Searching for parameter "
-                + item
-            )
+            logging.info(__name__ + " : File " + cif_file.stem + " found. Searching for parameter " + item)
 
             # This parameter is blanked every loop because each data_block is searched multiple times
 
@@ -373,9 +366,7 @@ class CIF_Read:
                     print("Critical Failure - see error log for details")
                     exit()
 
-                logging.info(
-                    __name__ + " : File " + cif_file.stem + " - found parameter " + item
-                )
+                logging.info(__name__ + " : File " + cif_file.stem + " - found parameter " + item)
                 self.cif_list.append(cif_file.stem)
 
                 # Checks for errors and separates values / converts error to actual value

@@ -2,8 +2,8 @@ All data from this test is published and available online:
 
 Elastically Flexible Crystals have Disparate Mechanisms of Molecular Movement Induced by Strain and Heat
 
-A. J. Brock, J. J. Whittaker, J. A. Powell, M. C. Pfrunder, A. Grosjean, S. Parsons, J. C. McMurtrie, J. K. Clegg, Angew. Chem. Int. Ed. 2018, 57, 11325. 
+A. J. Brock, J. J. Whittaker, J. A. Powell, M. C. Pfrunder, A. Grosjean, S. Parsons, J. C. McMurtrie, J. K. Clegg, Angew. Chem. Int. Ed. 2018, 57, 11325.
 
 https://doi.org/10.1002/anie.201806431
 
-CCDC Numbers: 1845921, 1845922, 1845923, 1845924, 1845925, 1845926, 1845927, 1845928, 1845929, 1845930, 1845931, 1845932, 1845933, 1845934, 1845935, 1845936, 1845937, 1845938, 1845939, 1845940, and 1845941 
+CCDC Numbers: 1845921, 1845922, 1845923, 1845924, 1845925, 1845926, 1845927, 1845928, 1845929, 1845930, 1845931, 1845932, 1845933, 1845934, 1845935, 1845936, 1845937, 1845938, 1845939, 1845940, and 1845941

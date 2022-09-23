@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import unittest
-from post_refinement_analysis.modules.ADP_analysis import ADP_analysis
+
 import numpy as np
+from post_refinement_analysis.modules.ADP_analysis import ADP_analysis
 
 
 class testADPanalysis(unittest.TestCase):

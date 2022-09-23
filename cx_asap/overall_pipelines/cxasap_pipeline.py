@@ -10,21 +10,20 @@
 
 # ----------Required Modules----------#
 
-from system_files.utils import Nice_YAML_Dumper, Config, File_Sorter, Cell_Import
-from data_refinement.pipelines.refine_pipeline import Refinement_Pipeline
-from cif_validation.pipelines.cif_pipeline import CIF_Compile_Pipeline
-from cif_validation.modules.instrument_cif_generation import Instrument_CIF
-from post_refinement_analysis.pipelines.variable_cif_parameter import (
-    Variable_Analysis_Pipeline,
-)
+import logging
 import os
 import pathlib
 import shutil
 import subprocess
-from CifFile import ReadCif
-from CifFile import CifFile
-from CifFile import CifBlock
-import logging
+
+from cif_validation.modules.instrument_cif_generation import Instrument_CIF
+from cif_validation.pipelines.cif_pipeline import CIF_Compile_Pipeline
+from CifFile import CifBlock, CifFile, ReadCif
+from data_refinement.pipelines.refine_pipeline import Refinement_Pipeline
+from post_refinement_analysis.pipelines.variable_cif_parameter import (
+    Variable_Analysis_Pipeline,
+)
+from system_files.utils import Cell_Import, Config, File_Sorter, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 
@@ -76,9 +75,7 @@ class General_Pipeline:
 
         os.chdir(experiment_location)
 
-        self.stats_location = (
-            pathlib.Path(experiment_location) / "Refinement_Statistics"
-        )
+        self.stats_location = pathlib.Path(experiment_location) / "Refinement_Statistics"
         self.results_location = pathlib.Path(experiment_location) / "CIF_Analysis"
 
         if os.path.exists("Refinement_Statistics") != True:
@@ -97,9 +94,7 @@ class General_Pipeline:
         except IndexError:
             self.new_folder = 1
 
-        individual_stats_location = pathlib.Path(self.stats_location) / str(
-            self.new_folder
-        )
+        individual_stats_location = pathlib.Path(self.stats_location) / str(self.new_folder)
 
         os.mkdir(individual_stats_location)
 
@@ -123,9 +118,7 @@ class General_Pipeline:
         except IndexError:
             self.new_folder = 1
 
-        individual_results_location = pathlib.Path(self.results_location) / str(
-            self.new_folder
-        )
+        individual_results_location = pathlib.Path(self.results_location) / str(self.new_folder)
 
         os.mkdir(individual_results_location)
 
@@ -171,10 +164,7 @@ class General_Pipeline:
             test = self.reference_res
         except AttributeError:
             print("Error! Check Error Logs")
-            logging.info(
-                __name__
-                + " : Could not extract ins/res from reference CIF using shredCIF"
-            )
+            logging.info(__name__ + " : Could not extract ins/res from reference CIF using shredCIF")
             exit()
 
         ref_cell = Cell_Import(self.test_mode)
@@ -289,18 +279,12 @@ class General_Pipeline:
         index = 0
 
         for item in self.sorter.sorted_properly(os.listdir()):
-            if (
-                item != self.stats_location.name
-                and item != self.results_location.name
-                and os.path.isdir(item) == True
-            ):
+            if item != self.stats_location.name and item != self.results_location.name and os.path.isdir(item) == True:
 
                 try:
                     shutil.copy(instrument_path, item)
                 except shutil.SameFileError:
-                    print(
-                        "Error! Please put your reference outside of the working directory"
-                    )
+                    print("Error! Please put your reference outside of the working directory")
                     exit()
 
                 os.chdir(item)

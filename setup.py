@@ -8,10 +8,11 @@
 # --------------------------------Valuable Coding Support by KMS & DJE----------------------------- #
 #####################################################################################################
 
-from setuptools import setup, find_packages
-import shutil
-import pathlib
 import os
+import pathlib
+import shutil
+
+from setuptools import find_packages, setup
 
 with open("requirements.txt") as f:
     requirements = f.read().splitlines()
@@ -30,4 +31,3 @@ setup(
     },
     entry_points={"console_scripts": ["cxasap=cxasap:run"]},
 )
-

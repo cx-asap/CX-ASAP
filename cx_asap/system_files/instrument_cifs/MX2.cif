@@ -20,4 +20,3 @@ _diffrn_measurement_method        'Omega Scan'
 _computing_data_collection        'AS QEGUI'
 _computing_cell_refinement        'XDS (Kabsch, 1993)'
 _computing_data_reduction         'XDS (Kabsch, 1993)'
-

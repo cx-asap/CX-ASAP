@@ -10,13 +10,14 @@
 
 # ----------Required Modules----------#
 
-from CifFile import ReadCif
-import subprocess
-import pathlib
-import os
 import logging
+import os
+import pathlib
 import shutil
-from system_files.utils import Nice_YAML_Dumper, Config, Directory_Browse
+import subprocess
+
+from CifFile import ReadCif
+from system_files.utils import Config, Directory_Browse, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 
@@ -147,32 +148,18 @@ class Cif_Merge:
                     if line.count("'") + line.count('"') > 2:
                         line_test = line.split(" ")
                         separator = " "
-                        new_line = (
-                            line_test[0] + "\n;" + separator.join(line_test[1:]) + ";\n"
-                        )
+                        new_line = line_test[0] + "\n;" + separator.join(line_test[1:]) + ";\n"
                         f.writelines(new_line)
                     elif line.count("'") < 2 and "temperature" in line:
                         space_flag = False
                         letter_flag = False
                         changed_flag = False
                         for index, item in enumerate(line):
-                            if (
-                                item == " "
-                                and space_flag == False
-                                and letter_flag == False
-                            ):
+                            if item == " " and space_flag == False and letter_flag == False:
                                 space_flag = True
-                            elif (
-                                item != " "
-                                and space_flag == True
-                                and letter_flag == False
-                            ):
+                            elif item != " " and space_flag == True and letter_flag == False:
                                 letter_flag = True
-                            elif (
-                                item == " "
-                                and space_flag == True
-                                and letter_flag == True
-                            ):
+                            elif item == " " and space_flag == True and letter_flag == True:
                                 new_line = line[0:index] + line[index + 1 :]
                                 changed_flag = True
                         if changed_flag == False:
@@ -183,25 +170,12 @@ class Cif_Merge:
                         letter_flag = False
                         changed_flag = False
                         for index, item in enumerate(line):
-                            if (
-                                item == " "
-                                and space_flag == False
-                                and letter_flag == False
-                            ):
+                            if item == " " and space_flag == False and letter_flag == False:
                                 space_flag = True
-                            elif (
-                                item != " "
-                                and space_flag == True
-                                and letter_flag == False
-                            ):
+                            elif item != " " and space_flag == True and letter_flag == False:
                                 letter_flag = True
                                 start_of_value = index
-                                new_line = (
-                                    line[0:index]
-                                    + "'"
-                                    + line[index:].strip("\n")
-                                    + "'\n"
-                                )
+                                new_line = line[0:index] + "'" + line[index:].strip("\n") + "'\n"
                                 space_flag = False
                         if space_flag == False and letter_flag == True:
                             f.writelines(new_line)
@@ -244,18 +218,10 @@ class Cif_Merge:
                     self.data_block2[item] = self.data_block1[item]
 
             if self.data_block2["_cell_measurement_reflns_used"] == "?":
-                self.data_block2["_cell_measurement_reflns_used"] = self.data_block2[
-                    "_diffrn_reflns_number"
-                ]
-                self.data_block2["_cell_measurement_theta_min"] = self.data_block2[
-                    "_diffrn_reflns_theta_min"
-                ]
-                self.data_block2["_cell_measurement_theta_max"] = self.data_block2[
-                    "_diffrn_reflns_theta_max"
-                ]
-            self.data_block2["_cell_measurement_temperature"] = self.data_block2[
-                "_diffrn_ambient_temperature"
-            ]
+                self.data_block2["_cell_measurement_reflns_used"] = self.data_block2["_diffrn_reflns_number"]
+                self.data_block2["_cell_measurement_theta_min"] = self.data_block2["_diffrn_reflns_theta_min"]
+                self.data_block2["_cell_measurement_theta_max"] = self.data_block2["_diffrn_reflns_theta_max"]
+            self.data_block2["_cell_measurement_temperature"] = self.data_block2["_diffrn_ambient_temperature"]
 
             self.data_block2["_refine_special_details"] = "CX-ASAP (Thompson, 2021)"
 
@@ -307,9 +273,7 @@ class Cif_Merge:
 
                 f.write(self.cif2.WriteOut())
 
-    def write_out(
-        self, location: str, cif_name: str, validation_name: str, single_cif_name: str
-    ) -> None:
+    def write_out(self, location: str, cif_name: str, validation_name: str, single_cif_name: str) -> None:
 
         """This function writes out the edited cif stored in the class
 
@@ -352,11 +316,7 @@ class Cif_Merge:
 
             if bad_flag == False:
 
-                logging.info(
-                    __name__
-                    + " : CIF being added to combined is: "
-                    + str(single_cif_name)
-                )
+                logging.info(__name__ + " : CIF being added to combined is: " + str(single_cif_name))
 
                 with open(cif_name, "a") as f:
                     f.write(self.cif2.WriteOut())
@@ -388,9 +348,7 @@ class Cif_Merge:
         # windows_wait = 15
 
         if self.flag2 == False:
-            checkCIF = subprocess.Popen(
-                ["platon", "-u", file_name], stdin=subprocess.PIPE, encoding="utf8"
-            )
+            checkCIF = subprocess.Popen(["platon", "-u", file_name], stdin=subprocess.PIPE, encoding="utf8")
             try:
                 checkCIF.wait(15)
             except subprocess.TimeoutExpired:

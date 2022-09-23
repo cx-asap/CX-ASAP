@@ -10,11 +10,12 @@
 
 # ----------Required Modules----------#
 
-from system_files.utils import Nice_YAML_Dumper, Config, Directory_Browse
-from data_refinement.modules.refinement import Structure_Refinement
-import shutil
-import os
 import logging
+import os
+import shutil
+
+from data_refinement.modules.refinement import Structure_Refinement
+from system_files.utils import Config, Directory_Browse, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 

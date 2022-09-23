@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-import unittest
-from data_refinement.modules.refinement import Structure_Refinement
 import logging
 import statistics
+import unittest
+
+from data_refinement.modules.refinement import Structure_Refinement
 
 
 class testRefinement(unittest.TestCase):
@@ -11,12 +12,12 @@ class testRefinement(unittest.TestCase):
         """
         Defines example cell + reference .ins files
         """
-        self.example_new_ins = """TITL jkc18jc03bVT_07_240_00 in P2(1)/n 
+        self.example_new_ins = """TITL jkc18jc03bVT_07_240_00 in P2(1)/n
 REM P2(1)/n (#14 in standard setting)
 CELL 0.71073  10.277258   4.686109  11.333463  90.0000  92.0179  90.0000
 ZERR    2.00   0.000809   0.000459   0.001020   0.0000   0.0084   0.0000
 LATT  1
-SYMM -x+1/2, y+1/2,-z+1/2 
+SYMM -x+1/2, y+1/2,-z+1/2
 SFAC C H O Cu
 UNIT 20.00 28.00 8.00 2.00
 TREF
@@ -83,7 +84,7 @@ REM 72 parameters refined using 0 restraints
 
 END"""
 
-        self.example_combined_ins = """TITL jkc18jc03bVT_07_240_00 in P2(1)/n 
+        self.example_combined_ins = """TITL jkc18jc03bVT_07_240_00 in P2(1)/n
 REM P2(1)/n (#14 in standard setting)
 CELL 0.71073  10.277258   4.686109  11.333463  90.0000  92.0179  90.0000
 ZERR    2.00   0.000809   0.000459   0.001020   0.0000   0.0084   0.0000
@@ -147,9 +148,7 @@ END"""
         """
         Tests that the combination of cell + reference structure works
         """
-        combined = self.test.merge_data(
-            self.example_reference_ins, self.example_new_ins
-        )
+        combined = self.test.merge_data(self.example_reference_ins, self.example_new_ins)
         self.assertEqual(combined, self.example_combined_ins)
 
     def test_convergence_check(self):

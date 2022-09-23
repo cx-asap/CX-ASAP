@@ -10,13 +10,14 @@
 
 # ----------Required Modules----------#
 
-from system_files.utils import Nice_YAML_Dumper, Config, Grapher
-from post_refinement_analysis.modules.cif_read import CIF_Read
-from post_refinement_analysis.modules.cell_analysis import Cell_Deformation
-from post_refinement_analysis.modules.structural_analysis import Structural_Analysis
-from post_refinement_analysis.modules.ADP_analysis import ADP_analysis
-import yaml
 import logging
+
+import yaml
+from post_refinement_analysis.modules.ADP_analysis import ADP_analysis
+from post_refinement_analysis.modules.cell_analysis import Cell_Deformation
+from post_refinement_analysis.modules.cif_read import CIF_Read
+from post_refinement_analysis.modules.structural_analysis import Structural_Analysis
+from system_files.utils import Config, Grapher, Nice_YAML_Dumper
 
 # ----------Class Definition----------#
 
@@ -202,9 +203,7 @@ class Variable_Analysis_Pipeline:
             adp_object.analyse_data(adps, "CIF_Parameters.csv")
 
         graph = Grapher(self.test_mode)
-        discrete_behaviour = list(
-            dict.fromkeys(self.determine_behaviour(cell.df, param))
-        )
+        discrete_behaviour = list(dict.fromkeys(self.determine_behaviour(cell.df, param)))
         separated_by_behaviour_dfs = []
         for item in discrete_behaviour:
             condition = cell.df["behaviour"] == item

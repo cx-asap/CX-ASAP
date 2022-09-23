@@ -57,9 +57,9 @@ REM wR2 = 0.0858, GooF = S = 1.106, Restrained GooF = 1.106 for all data
 REM R1 = 0.0324 for 1197 Fo > 4sig(Fo) and 0.0401 for all 1401 data
 REM 72 parameters refined using 0 restraints
 
-END  
-     
-WGHT      0.0354      0.2722 
+END
+
+WGHT      0.0354      0.2722
 
 REM Highest difference peak  0.350,  deepest hole -0.309,  1-sigma level  0.077
 Q1    1   0.6018  0.1590  0.5236  11.00000  0.05    0.35
