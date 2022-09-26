@@ -134,6 +134,7 @@ class VT_Pipeline:
 
     def analyse(
         self,
+        ref_cell: list,
         reference: str,
         data_location: str,
         results_location: str,
@@ -157,6 +158,7 @@ class VT_Pipeline:
         """Compiles all of the CIFs and performs analysis on them
 
         Args:
+            ref_cell (list): reference unit cell 
             reference (str): full path to the reference .ins/.res file
             data_location (str): full path to the folder containing folders of CIFs
             results_location (str): full path to the location of output files
@@ -194,6 +196,8 @@ class VT_Pipeline:
         cif.compile_cifs(results_location)
         analysis = VT_Analysis_Pipeline()
         analysis.analyse_data(
+            ref_cell,
+            reference,
             results_location,
             cif_parameters,
             atoms_for_analysis,
