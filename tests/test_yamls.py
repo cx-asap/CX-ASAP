@@ -239,6 +239,7 @@ class testGenerate(unittest.TestCase):
                 "structural_analysis_torsions",
                 "ADP_analysis",
                 "atoms_for_analysis",
+                "transformation_matrix"
             ],
             "module-xds-cell-transform": ["XDS_ASCII_File_1", "XDS_ASCII_File_2"],
             "module-xds-reprocess": [
@@ -566,6 +567,7 @@ class testGenerate(unittest.TestCase):
                 "structural_analysis_torsions",
                 "ADP_analysis",
                 "atoms_for_analysis",
+                "transformation_matrix",
             ],
             ["XDS_ASCII_File_1", "XDS_ASCII_File_2"],
             ["xds_template_name", "XDS_INP_path", "experiment_location"],
