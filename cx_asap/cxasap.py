@@ -328,6 +328,8 @@ def yaml_extraction(heading: str) -> dict:
             yaml_dict[item] = 8
         elif item == "tolerance":
             yaml_dict[item] = 0.002
+        elif item == "transformation_matrix":
+            yaml_dict[item] = "1 0 0 0 1 0 0 0 1"
         elif item == "maximum_cycles":
             yaml_dict[item] = 20
         elif item in structure_params:
@@ -2468,6 +2470,9 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
         click.echo(
             " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
         )
+        click.echo(
+            " - transformation_matrix: if your space group is incompatable with the matrix '1 0 0 0 1 0 0 0 1' - ie you have higer symmetry to apply, enter matrix here. Otherwise, use default. You can test this by running xprep manually for your structure and seeing what the applied matrix is" 
+        )
 
         fields = yaml_extraction("pipeline-aus-synch-vt")
         yaml_creation(fields)
@@ -2498,7 +2503,7 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
             )
 
             full_vt_analysis.process(
-                "1 0 0 0 1 0 0 0 1",
+                cfg["transformation_matrix"],
                 full_vt_analysis.sys["analysis_path"],
                 "XDS_ASCII.HKL_p1",
                 full_vt_analysis.sys["space_group"],
@@ -2510,8 +2515,11 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
                 cfg["maximum_cycles"],
                 cfg["reference_plane"],
             )
+            
+            ref_cell = [full_vt_analysis.sys["ref_a"], full_vt_analysis.sys["ref_b"], full_vt_analysis.sys["ref_c"], full_vt_analysis.sys["ref_alpha"], full_vt_analysis.sys["ref_beta"], full_vt_analysis.sys["ref_gamma"], full_vt_analysis.sys["ref_volume"]]
 
             full_vt_analysis.analyse(
+                ref_cell,
                 full_vt_analysis.sys["ref_path_organised"],
                 full_vt_analysis.sys["analysis_path"],
                 full_vt_analysis.sys["current_results_path"],
