@@ -756,7 +756,7 @@ class Autoprocess_Setup:
 
                         # makes sure that the folder that everything is being moved into is not considered
 
-                        shutil.move(item, pathlib.Path(self.analysis_path) / item)
+                        shutil.copytree(item, pathlib.Path(self.analysis_path) / item)
 
             os.chdir(self.analysis_path)
 
