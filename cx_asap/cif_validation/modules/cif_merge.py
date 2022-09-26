@@ -400,7 +400,7 @@ class Cif_Merge:
                 ["platon", "-u", file_name], stdin=subprocess.PIPE, encoding="utf8"
             )
             try:
-                checkCIF.wait(30)
+                checkCIF.wait(45)
             except subprocess.TimeoutExpired:
                 checkCIF.kill()
 
