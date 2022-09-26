@@ -121,7 +121,7 @@ class Refinement_Pipeline:
             elif outcome == False and shelxl_run_flag == True:
                 failed_structures.append(self.tree.item_file)
                 for i in os.listdir(os.getcwd()):
-                    if i.endswith(".cif"):
+                    if i.endswith(".cif") and "autoprocess" not in i:
                         os.rename(i, i + "_old")
 
             self.tree.exit_directory()
