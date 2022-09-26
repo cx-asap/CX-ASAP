@@ -1086,7 +1086,7 @@ class Grapher:
 
         for index, item in enumerate(y):
 
-            if type(item) != float:
+            if type(item) != float and type(item) != int:
 
                 if len(x) != len(item):
                     logging.info(
