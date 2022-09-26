@@ -139,8 +139,10 @@ class Cif_Merge:
 
             with open(instrument_cif, "r") as f:
                 lines = f.readlines()
+                
+            os.rename(instrument_cif, "old_autoprocess.txt")
 
-            with open(instrument_cif, "w") as f:
+            with open("temp.cif", "w") as f:
                 if lines[0] != "data_autoprocess\n":
                     f.writelines("data_autoprocess\n")
                 for line in lines:
@@ -210,6 +212,12 @@ class Cif_Merge:
 
                     else:
                         f.writelines(line)
+                        
+                        
+            try:
+                os.rename("temp.cif", "autoprocess.cif")
+            except FileNotFoundError:
+                pass
 
     def merge_CIFs(self) -> None:
 
