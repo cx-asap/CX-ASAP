@@ -405,20 +405,29 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
             if item not in cfg.keys():
                 flag = False
 
-        for item in cfg:
-            if cfg[item] == 0 and item not in zero_exceptions:
-                flag = False
+        if flag == True:
+        
+            for item in cfg:
+                if cfg[item] == 0 and item not in zero_exceptions:
+                    flag = False
+                    break
 
-                if cfg[item] == False and type(cfg[item]) == bool:
-                    flag = True
+                    if cfg[item] == False and type(cfg[item]) == bool:
+                        flag = True
 
-            if item == "atoms_for_analysis":
-                for j in cfg[item]:
-                    if len(j.split(" ")) > 1:
-                        print(
-                            "Error in reading config file. Make sure your atoms_for_analysis are on separate lines in list format. The pre-set dash indicates how to type each atom on a new line"
-                        )
-                        exit()
+                if item == "atoms_for_analysis":
+                    for j in cfg[item]:
+                        try: 
+                            len(j.split(" "))
+                        except AttributeError:
+                            if j == 0:
+                                flag = False
+                        else:
+                            if len(j.split(" ")) > 1:
+                                print(
+                                "Error in reading config file. Make sure your atoms_for_analysis are on separate lines in list format. The pre-set dash indicates how to type each atom on a new line"
+                                )
+                                exit()
 
     return flag, cfg
 
