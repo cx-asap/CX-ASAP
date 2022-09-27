@@ -64,7 +64,7 @@ class AS_Brute:
         if os.path.exists("Brute_Results") == True:
             shutil.rmtree("Brute_Results")
 
-    def reduce(self, location: str) -> None:
+    def xprepreduce(self, location: str) -> None:
 
         """Will run XPREP with default settings on a series of data sets
 
@@ -150,6 +150,7 @@ class AS_Brute:
         h = "SHELXT Failed (aka Failed Brutes):"
         j = "XPREP Fail:"
         k = "XDS Fail:"
+        nl = "\n"
 
         os.chdir(location + "/" + "Brute_Results")
 
@@ -160,6 +161,7 @@ class AS_Brute:
             f.write(str(d) + "\n")
             f.write(str(e) + "\n")
             f.write(str(i) + "\n")
+            f.write("\n")
             f.write(str(g) + "\n")
 
             for item in SHELXT_Notsad:
@@ -168,24 +170,26 @@ class AS_Brute:
                 except:
                     f.write("ERROR" + "\n")
                     logging.info(__name__ + " : Folder without cxasap_a.res analysed")
-
+            f.write("\n")
             f.write(str(h) + "\n")
             for item in SHELXT_fail:
                 try:
-                    f.write(items + "\n")
+                    f.write(item + "\n")
                 except:
                     f.write("ERROR" + "\n")
                     logging.info(__name__ + " : Folder without cxasap_a.res analysed")
-
+            f.write("\n")
             f.write(str(j) + "\n")
+            
             for item in XPREP_fail:
                 try:
                     f.write(item + "\n")
                 except:
                     f.write("ERROR" + "\n")
                     logging.info(__name__ + " : Folder without cxasap.ins analysed")
-
+            f.write("\n")
             f.write(str(k) + "\n")
+            
             for item in XDS_fail:
                 try:
                     f.write(item + "\n")
@@ -198,9 +202,11 @@ class AS_Brute:
         print(a)
         print(b)
         print(c)
+        print(nl)
         print(d)
         print(e)
         print(i)
+        print(nl)
         print(g)
 
         for item in SHELXT_Notsad:
@@ -208,6 +214,7 @@ class AS_Brute:
                 print(item)
             except:
                 print("ERROR")
+        print(nl)
         print(h)
 
         if len(SHELXT_fail) != 0:

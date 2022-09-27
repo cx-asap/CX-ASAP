@@ -138,10 +138,13 @@ class XPREP:
         xprep.stdin.write("\n")
         xprep.stdin.write("Q\n")
         xprep.stdin.close()
+        
 
         # Below code for windows... when add into main release need a better solution for closing xprep
 
-        # try:
-        # xprep.wait(300)
-        # except subprocess.TimeoutExpired:
-        # xprep.terminate()
+        #try:
+            #xprep.wait(15)
+        #except subprocess.TimeoutExpired:
+            #xprep.terminate()
+            
+        print('test')

@@ -4301,7 +4301,7 @@ def pipeline_AS_Brute(dependencies, files, configure, run):
             reset_logs()
             asbrute = AS_Brute()
             asbrute.initialise(cfg["experiment_location"])
-            asbrute.reduce(cfg["experiment_location"])
+            asbrute.xprepreduce(cfg["experiment_location"])
             asbrute.solve(cfg["experiment_location"])
             asbrute.report(cfg["experiment_location"])
 
