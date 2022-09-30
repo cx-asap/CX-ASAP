@@ -387,6 +387,9 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
         "gamma_gradient",
     ]
 
+    if heading == "pipeline-AS-Brute-individual":
+        zero_exceptions.append("chemical_formula")
+    
     if os.path.exists(yaml_path) == False:
         click.echo("No configuration file, please run with --configure option\n")
     else:
@@ -4611,7 +4614,10 @@ def pipeline_AS_Brute_individual(dependencies, files, configure, run):
             reset_logs()
             brute = AS_Brute_Single()
             brute.initialise(cfg["experiment_location"])
-            brute.xprepreduce(cfg["experiment_location"], cfg["chemical_formula"])
+            if cfg["chemical_formula"] == 0:
+                brute.xprepreduce(cfg["experiment_location"])
+            else:
+                brute.xprepreduce(cfg["experiment_location"], cfg["chemical_formula"])
             brute.solve(cfg["experiment_location"])
             brute.report(cfg["experiment_location"])
             copy_logs(cfg["experiment_location"])
