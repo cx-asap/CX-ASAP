@@ -64,7 +64,7 @@ class AS_Brute:
         if os.path.exists("Brute_Results") == True:
             shutil.rmtree("Brute_Results")
 
-    def xprepreduce(self, location: str) -> None:
+    def xprepreduce(self, location: str, formula: str = "C40H30N6FeCl2O8") -> None:
 
         """Will run XPREP with default settings on a series of data sets
 
@@ -72,6 +72,7 @@ class AS_Brute:
 
         Args:
             location (str): full path to the folder containing folders of AS data
+            formula (str): chemical formula
         """
 
         xprep = XPREP_Pipeline()
@@ -180,7 +181,7 @@ class AS_Brute:
                     logging.info(__name__ + " : Folder without cxasap_a.res analysed")
             f.write("\n")
             f.write(str(j) + "\n")
-            
+
             for item in XPREP_fail:
                 try:
                     f.write(item + "\n")
@@ -189,7 +190,7 @@ class AS_Brute:
                     logging.info(__name__ + " : Folder without cxasap.ins analysed")
             f.write("\n")
             f.write(str(k) + "\n")
-            
+
             for item in XDS_fail:
                 try:
                     f.write(item + "\n")
