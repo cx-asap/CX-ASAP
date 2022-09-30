@@ -238,6 +238,7 @@ pipeline-aus-synch-vt:
   - structural_analysis_torsions
   - ADP_analysis
   - atoms_for_analysis
+  - transformation_matrix
 
 module-xds-cell-transform:
   - XDS_ASCII_File_1
@@ -334,6 +335,10 @@ pipeline-temperature-analysis:
 
 pipeline-AS-Brute:
   - experiment_location
+
+pipeline-AS-Brute-individual:
+  - experiment_location
+  - chemical_formula
 
 module-molecule-reconstruction:
   - reference_path
