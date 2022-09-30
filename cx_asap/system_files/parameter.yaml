@@ -336,6 +336,10 @@ pipeline-temperature-analysis:
 pipeline-AS-Brute:
   - experiment_location
 
+pipeline-AS-Brute-individual:
+  - experiment_location
+  - chemical_formula
+
 module-molecule-reconstruction:
   - reference_path
   - atom_list
