@@ -377,7 +377,9 @@ class Structure_Refinement:
                 if "TITL" in line:
                     for item in os.listdir():
                         if new_structure.stem + ".cif" == item:
-                            worked_flag = True
+                            file_size = os.path.getsize(item)
+                            if file_size > 0:
+                                worked_flag = True
 
             if worked_flag == False:
 
