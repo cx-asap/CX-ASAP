@@ -21,7 +21,7 @@ import logging
 
 
 class Rotation:
-    def __init__(self, test_mode:bool = False) -> None:
+    def __init__(self, test_mode: bool = False) -> None:
 
         """Initialises the class
 

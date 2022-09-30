@@ -158,7 +158,7 @@ class VT_Pipeline:
         """Compiles all of the CIFs and performs analysis on them
 
         Args:
-            ref_cell (list): reference unit cell 
+            ref_cell (list): reference unit cell
             reference (str): full path to the reference .ins/.res file
             data_location (str): full path to the folder containing folders of CIFs
             results_location (str): full path to the location of output files

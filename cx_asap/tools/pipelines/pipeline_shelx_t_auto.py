@@ -104,9 +104,14 @@ class SHELXT_Pipeline_auto:
             if self.tree.item_file != "":
                 self.shelxt.run_shelxt(item, self.tree.item_file.stem, flags)
 
-        # note this function assumes only the _a files are correct and removes the others including original
+            # note this function assumes only the _a files are correct and removes the others including original
             for j in os.listdir():
-                if j.endswith("_a.hkl") or j.endswith("_a.res") or j.endswith(".cif") or j.endswith(".cif_od"):
+                if (
+                    j.endswith("_a.hkl")
+                    or j.endswith("_a.res")
+                    or j.endswith(".cif")
+                    or j.endswith(".cif_od")
+                ):
                     pass
                 else:
                     os.remove(j)

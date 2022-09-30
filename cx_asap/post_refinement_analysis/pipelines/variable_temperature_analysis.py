@@ -139,7 +139,7 @@ class VT_Analysis_Pipeline:
         THIS FUNCTION IS SPECIFIC TO VT, SO HAS CHANGING PARAM AS "_diffrn_ambient_temperature"
 
         Args:
-            ref_cell (list): reference unit cell 
+            ref_cell (list): reference unit cell
             ref_ins (str): full path to the reference .ins
             location (str): full path to the folder containing all CIFs for analysis
             cif_parameters (list): list of cif parameters to extract
