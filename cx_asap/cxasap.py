@@ -154,6 +154,7 @@ from overall_pipelines.cxasap_pipeline import General_Pipeline
 from overall_pipelines.rigaku_synergy_vt_pipeline import Synergy_VT
 from overall_pipelines.variable_temperature_pipeline import VT_Pipeline
 from overall_pipelines.AS_brute_pipeline import AS_Brute
+from overall_pipelines.at_AS_brute_pipeline import AS_Brute_Single
 from tools.modules.platon_squeeze import Platon_Squeeze
 from tools.pipelines.platon_squeeze_pipeline import Squeeze_Pipeline
 from tools.modules.shelx_t import SHELXT
@@ -170,8 +171,7 @@ def reset_logs() -> None:
     """
 
     log_location = (
-        pathlib.Path(os.path.abspath(__file__)).parent /
-        "error_logs/error_output.txt"
+        pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
     )
 
     max_logs = 5
@@ -233,13 +233,11 @@ def copy_logs(destination: str) -> None:
 
     """
     log_location = (
-        pathlib.Path(os.path.abspath(__file__)).parent /
-        "error_logs/error_output.txt"
+        pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
     )
 
     log_location_1 = (
-        pathlib.Path(os.path.abspath(__file__)).parent /
-        "error_logs/error_output_1.txt"
+        pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output_1.txt"
     )
 
     try:
@@ -406,7 +404,7 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
                 flag = False
 
         if flag == True:
-        
+
             for item in cfg:
                 if cfg[item] == 0 and item not in zero_exceptions:
                     flag = False
@@ -417,7 +415,7 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
 
                 if item == "atoms_for_analysis":
                     for j in cfg[item]:
-                        try: 
+                        try:
                             len(j.split(" "))
                         except AttributeError:
                             if j == 0:
@@ -425,7 +423,7 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
                         else:
                             if len(j.split(" ")) > 1:
                                 print(
-                                "Error in reading config file. Make sure your atoms_for_analysis are on separate lines in list format. The pre-set dash indicates how to type each atom on a new line"
+                                    "Error in reading config file. Make sure your atoms_for_analysis are on separate lines in list format. The pre-set dash indicates how to type each atom on a new line"
                                 )
                                 exit()
 
@@ -653,16 +651,14 @@ def module_refinement(dependencies, files, configure, run):
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
-        click.echo(
-            " - maximum_cycles: enter the max number of cycles shelxl can run")
+        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
         click.echo(
             " - reference_path: enter the full path to your reference .ins or .res file"
         )
         click.echo(
             " - refinements_to_check: enter the number of refinements you want to check for convergence"
         )
-        click.echo(
-            " - structure_location: enter the full path to your new .ins file")
+        click.echo(" - structure_location: enter the full path to your new .ins file")
         click.echo(
             " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check\n"
         )
@@ -680,8 +676,7 @@ def module_refinement(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
 
@@ -769,8 +764,7 @@ def pipeline_refinement(dependencies, files, configure, run):
         click.echo(
             " - experiment_location: enter the full path to the folder containing all dataset folders"
         )
-        click.echo(
-            " - maximum_cycles: enter the max number of cycles shelxl can run")
+        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
         click.echo(
             " - reference_path: enter the full path to your reference .ins or .res file"
         )
@@ -794,8 +788,7 @@ def pipeline_refinement(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -858,8 +851,7 @@ def pipeline_vp(dependencies, files, configure, run):
         click.echo("\nYou require the below software in your path:")
         click.echo("- SHELXL")
         click.echo("- platon")
-        click.echo(
-            "- XDS (parallel version, with dectris-neggia libraries downloaded)")
+        click.echo("- XDS (parallel version, with dectris-neggia libraries downloaded)")
         click.echo("- xprep\n")
     elif files:
         click.echo("\nYou require the below files:")
@@ -893,8 +885,7 @@ def pipeline_vp(dependencies, files, configure, run):
         click.echo(
             " - atoms_for_rotation_analysis: enter the labels of the atoms for mean plane analysis"
         )
-        click.echo(
-            " - chemical_formula: enter the chemical formula of your crystal")
+        click.echo(" - chemical_formula: enter the chemical formula of your crystal")
         click.echo(
             " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
         )
@@ -918,8 +909,7 @@ def pipeline_vp(dependencies, files, configure, run):
         click.echo(
             " - max_crystal_dimension: enter the largest dimension of your crystal (in mm)"
         )
-        click.echo(
-            " - maximum_cycles: enter the max number of cycles shelxl can run")
+        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
         click.echo(
             " - maximum_processors: enter the maximum number of processors you want XDS to use"
         )
@@ -989,8 +979,7 @@ def pipeline_vp(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -1151,8 +1140,7 @@ def pipeline_general(dependencies, files, configure, run):
         click.echo(
             " - experiment_location: enter the full path to the folder containing your data sets"
         )
-        click.echo(
-            " - maximum_cycles: enter the max number of cycles shelxl can run")
+        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
         click.echo(
             " - reference_cif_location: enter the full path to your reference .cif file"
         )
@@ -1191,8 +1179,7 @@ def pipeline_general(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -1332,8 +1319,7 @@ def pipeline_general_extra(dependencies, files, configure, run):
         click.echo(
             " - experiment_location: enter the full path to the folder containing your data sets"
         )
-        click.echo(
-            " - maximum_cycles: enter the max number of cycles shelxl can run")
+        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
         click.echo(
             " - reference_location: enter the full path to your reference .ins/.res file"
         )
@@ -1358,8 +1344,7 @@ def pipeline_general_extra(dependencies, files, configure, run):
         click.echo(
             " - varying_parameter_values: enter the values of your varying parameter as a list with errors. Ie if you did a VT experiment at 100(2)K and 200(2)K, enter 100(2) and 200(2) in the provided list\n"
         )
-        click.echo(
-            "IMPORTANT NOTE: there are also a series of cif parameters listed")
+        click.echo("IMPORTANT NOTE: there are also a series of cif parameters listed")
         click.echo("To minimise checkCIF alerts, fill these in")
         click.echo(
             "You can remove or add cif parameters as long as correct CIF syntax is used!\n"
@@ -1378,8 +1363,7 @@ def pipeline_general_extra(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -1569,8 +1553,7 @@ def module_intensity_compare(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -1670,8 +1653,7 @@ def pipeline_intensity_compare(dependencies, files, configure, run):
         click.echo(" - b_axis: enter the b-axis of the unit cell")
         click.echo(" - beta: enter the beta angle of the unit cell")
         click.echo(" - c_axis: enter the c-axis of the unit cell")
-        click.echo(
-            " - data_location: enter the full path to your folder of hkl files")
+        click.echo(" - data_location: enter the full path to your folder of hkl files")
 
         click.echo(" - gamma: enter the gamma angle of the unit cell")
 
@@ -1753,8 +1735,7 @@ def pipeline_intensity_compare(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -1875,15 +1856,13 @@ def module_cif_merge(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
             merge = Cif_Merge()
             merge.import_CIFs(
-                pathlib.Path(cfg["instrument_cif"]
-                             ), pathlib.Path(cfg["new_cif"])
+                pathlib.Path(cfg["instrument_cif"]), pathlib.Path(cfg["new_cif"])
             )
             merge.merge_CIFs()
             merge.write_out(
@@ -1940,8 +1919,7 @@ def module_instrument_cif_generation(dependencies, files, configure, run):
 
     """
     if dependencies:
-        click.echo(
-            "\nYou do not require any additional software for this module.")
+        click.echo("\nYou do not require any additional software for this module.")
     elif files:
         click.echo("\nYou require the below files:")
         click.echo(" - fully completed CIF file")
@@ -1967,8 +1945,7 @@ def module_instrument_cif_generation(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -2049,8 +2026,7 @@ def pipeline_cif_combine(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -2132,11 +2108,9 @@ def pipeline_cif(dependencies, files, configure, run):
             " - instrument_file: if your instrument CIFs have identical names and endings, enter it here. If not, enter False"
         )
         click.echo(" - max_crystal_dimension: largest dimension of your crystal")
-        click.echo(
-            " - middle_crystal_dimension: middle dimension of your crystal")
+        click.echo(" - middle_crystal_dimension: middle dimension of your crystal")
         click.echo(" - min_crystal_dimension: smallest dimension of your crystal")
-        click.echo(
-            " - structure_solution: list the structure solution software used")
+        click.echo(" - structure_solution: list the structure solution software used")
 
         click.echo(
             "\nNote that one of instrument_ending and instrument_file must be false. If neither apply to your dataset, then you cannot use this pipeline"
@@ -2155,8 +2129,7 @@ def pipeline_cif(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -2256,8 +2229,7 @@ def pipeline_rigaku_vt(dependencies, files, configure, run):
         click.echo(
             " - atoms_for_analysis: enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs"
         )
-        click.echo(
-            " - chemical_formula: enter the chemical formula of your crystal")
+        click.echo(" - chemical_formula: enter the chemical formula of your crystal")
         click.echo(
             " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
         )
@@ -2266,8 +2238,7 @@ def pipeline_rigaku_vt(dependencies, files, configure, run):
         click.echo(
             " - experiment_location: enter the full path to the folder containing your VT data set"
         )
-        click.echo(
-            " - maximum_cycles: enter the max number of cycles shelxl can run")
+        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
         click.echo(
             " - max_crystal_dimension: enter the largest dimension of your crystal (in mm)"
         )
@@ -2309,8 +2280,7 @@ def pipeline_rigaku_vt(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -2432,8 +2402,7 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
         click.echo(
             " - atoms_for_rotation_analysis: enter the labels of the atoms for mean plane analysis"
         )
-        click.echo(
-            " - chemical_formula: enter the chemical formula of your crystal")
+        click.echo(" - chemical_formula: enter the chemical formula of your crystal")
         click.echo(
             " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
         )
@@ -2448,8 +2417,7 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
         click.echo(
             " - max_crystal_dimension: enter the largest dimension of your crystal (in mm)"
         )
-        click.echo(
-            " - maximum_cycles: enter the max number of cycles shelxl can run")
+        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
         click.echo(
             " - middle_crystal_dimension: enter the middle diimension of your crystal (in mm)"
         )
@@ -2480,7 +2448,7 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
             " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
         )
         click.echo(
-            " - transformation_matrix: if your space group is incompatable with the matrix '1 0 0 0 1 0 0 0 1' - ie you have higer symmetry to apply, enter matrix here. Otherwise, use default. You can test this by running xprep manually for your structure and seeing what the applied matrix is" 
+            " - transformation_matrix: if your space group is incompatable with the matrix '1 0 0 0 1 0 0 0 1' - ie you have higer symmetry to apply, enter matrix here. Otherwise, use default. You can test this by running xprep manually for your structure and seeing what the applied matrix is"
         )
 
         fields = yaml_extraction("pipeline-aus-synch-vt")
@@ -2496,8 +2464,7 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -2524,8 +2491,16 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
                 cfg["maximum_cycles"],
                 cfg["reference_plane"],
             )
-            
-            ref_cell = [full_vt_analysis.sys["ref_a"], full_vt_analysis.sys["ref_b"], full_vt_analysis.sys["ref_c"], full_vt_analysis.sys["ref_alpha"], full_vt_analysis.sys["ref_beta"], full_vt_analysis.sys["ref_gamma"], full_vt_analysis.sys["ref_volume"]]
+
+            ref_cell = [
+                full_vt_analysis.sys["ref_a"],
+                full_vt_analysis.sys["ref_b"],
+                full_vt_analysis.sys["ref_c"],
+                full_vt_analysis.sys["ref_alpha"],
+                full_vt_analysis.sys["ref_beta"],
+                full_vt_analysis.sys["ref_gamma"],
+                full_vt_analysis.sys["ref_volume"],
+            ]
 
             full_vt_analysis.analyse(
                 ref_cell,
@@ -2622,8 +2597,7 @@ def module_xds_cell_transformation(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -2721,8 +2695,7 @@ def module_xds_reprocess(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -2794,8 +2767,7 @@ def module_xprep(dependencies, files, configure, run):
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
-        click.echo(
-            " - chemical formula: enter the chemical formula of your crystal")
+        click.echo(" - chemical formula: enter the chemical formula of your crystal")
         click.echo(
             " - experiment_location: enter the full path to the folder containing your XDS_ASCII file"
         )
@@ -2818,8 +2790,7 @@ def module_xprep(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -2916,8 +2887,7 @@ def pipeline_xds_reprocess(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -2982,8 +2952,7 @@ def pipeline_xprep(dependencies, files, configure, run):
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
-        click.echo(
-            " - chemical formula: enter the chemical formula of your crystal")
+        click.echo(" - chemical formula: enter the chemical formula of your crystal")
         click.echo(
             " - experiment_location: enter the full path to the folder containing all dataset folders"
         )
@@ -3007,8 +2976,7 @@ def pipeline_xprep(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -3101,17 +3069,14 @@ def module_cell_analysis(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
             analysis = Cell_Deformation()
-            analysis.import_data(cfg["csv_location"],
-                                 cfg["reference_unit_cell"])
+            analysis.import_data(cfg["csv_location"], cfg["reference_unit_cell"])
             analysis.calculate_deformations()
-            analysis.graphical_analysis(
-                cfg["x_axis_header"], cfg["x_axis_header"])
+            analysis.graphical_analysis(cfg["x_axis_header"], cfg["x_axis_header"])
 
             # This is defined outside of the class, because when doing multiple analysis for a series of mapping experiments, the dictionary will be different, however, as this is a standalone module and not a pipeline for multiple structures, it is defined here
 
@@ -3230,8 +3195,7 @@ def module_cif_read(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -3325,8 +3289,7 @@ def module_rotation_planes(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -3433,8 +3396,7 @@ def module_structural_analysis(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -3525,8 +3487,7 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -3613,8 +3574,7 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
         click.echo(
             " - experiment_location: enter the full path to the folder which contains your .cif files"
         )
-        click.echo(
-            " - reference_unit_cell: enter the path to a reference .ins file")
+        click.echo(" - reference_unit_cell: enter the path to a reference .ins file")
         click.echo(
             " - structural_analysis_bonds: enter 'true' if you want to extract bond information, otherwise enter 'false'"
         )
@@ -3641,8 +3601,7 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -3788,8 +3747,7 @@ def pipeline_position_analysis(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -3916,8 +3874,7 @@ def pipeline_temperature_analysis(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -3998,8 +3955,7 @@ def module_platon_squeeze(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -4105,8 +4061,7 @@ def pipeline_platon_squeeze(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -4199,8 +4154,7 @@ def module_adp_analysis(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -4277,7 +4231,7 @@ def pipeline_AS_Brute(dependencies, files, configure, run):
     if dependencies:
         click.echo("\nYou require the below software in your path:")
         click.echo("- XPREP")
-        click.echo("SHELXT")
+        click.echo("- SHELXT")
     elif files:
         click.echo("\nYou require the below files:")
         click.echo(" - a folder containing your autoprocessed data ")
@@ -4303,8 +4257,7 @@ def pipeline_AS_Brute(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -4401,8 +4354,7 @@ def module_molecule_reconstruction(dependencies, files, configure, run):
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
         click.echo(" - a_gradient: enter the rate of change of the a-axis")
-        click.echo(
-            " - alpha_gradient: enter the rate of change of the alpha angle")
+        click.echo(" - alpha_gradient: enter the rate of change of the alpha angle")
         click.echo(" - atom_list: enter each atom as a list on a new line")
         click.echo(" - b_gradient: enter the rate of change of the b-axis")
         click.echo(" - beta_gradient: enter the rate of change of the beta angle")
@@ -4410,8 +4362,7 @@ def module_molecule_reconstruction(dependencies, files, configure, run):
             " - bond_list: enter each bond in the molecule as a list on a new line. Example syntax: Cu1-O1"
         )
         click.echo(" - c_gradient: enter the rate of change of the c-axis")
-        click.echo(
-            " - gamma_gradient: enter the rate of change of the gamma angle")
+        click.echo(" - gamma_gradient: enter the rate of change of the gamma angle")
         click.echo(
             " - max_position: enter the maximum position (this value is in the same units as x for your gradient"
         )
@@ -4421,8 +4372,7 @@ def module_molecule_reconstruction(dependencies, files, configure, run):
         click.echo(
             " - position_step_size: enter the step size between positions for your theoretical structures"
         )
-        click.echo(
-            " - reference_path: enter the path to your reference .res file")
+        click.echo(" - reference_path: enter the path to your reference .res file")
         click.echo(
             " - starting_atom: enter the atom that the reconstruction should start from"
         )
@@ -4443,8 +4393,7 @@ def module_molecule_reconstruction(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -4478,6 +4427,7 @@ def module_molecule_reconstruction(dependencies, files, configure, run):
 
     else:
         click.echo("Please select an option. To view options, add --help")
+
 
 ### ------ Pipeline SHELXT AUTO ---- ###
 
@@ -4518,9 +4468,7 @@ def module_molecule_reconstruction(dependencies, files, configure, run):
 """
 
 
-@click.command(
-    "pipeline-shelxt-auto", short_help="Run shelxt over multiple structures"
-)
+@click.command("pipeline-shelxt-auto", short_help="Run shelxt over multiple structures")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
 @click.option("--configure", is_flag=True, help="generate your conf.yaml file")
@@ -4539,7 +4487,6 @@ def pipeline_shelxt_auto(dependencies, files, configure, run):
     you use pipeline-refinement, followed by this shelxt pipeline,
 
     then finally pipeline-general on the new shelxt folder.
-
     """
     if dependencies:
         click.echo("\nYou require the below software in your path:")
@@ -4573,8 +4520,7 @@ def pipeline_shelxt_auto(dependencies, files, configure, run):
             click.echo(
                 "If you last ran a different code, make sure you reconfigure for the new script!"
             )
-            click.echo(
-                "Re-run configuration for description of each parameter\n")
+            click.echo("Re-run configuration for description of each parameter\n")
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
@@ -4582,6 +4528,92 @@ def pipeline_shelxt_auto(dependencies, files, configure, run):
             shelxt.new_shelxt_directory(cfg["experiment_location"])
             shelxt.multi_shelxt(shelxt.new_location)
 
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+###Pipeline SPECIAL FOR STEPH (AS Brute)###
+
+# """This pipeline is an individual version of the AS-Brute pipeline
+#
+#    It is designed to function alongside their autoprocessing pipeline
+#
+#    Probably no use for users at home
+#
+#    Will run xprep, and shelxt on a single dataset and then compile the results
+#
+#    Args:
+#        The user will enter one of the four arguments as a flag
+#
+#        This will set that parameter as 'TRUE', while the others are 'FALSE'
+#
+#        This will define the value in the 'if/elif' statements
+#
+#        dependencies (bool): will check for dependencies
+#        files (bool): will show the user what files are required
+#        configure (bool): will set up the yaml for the user to fill out
+#        run (bool): will execute the chosen module/pipeline
+#    """
+
+
+@click.command("pipeline-AS-Brute-individual", short_help="for AS use only")
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_AS_Brute_individual(dependencies, files, configure, run):
+    """FOR AUSTRALIAN SYNCHROTRON USE ONLY
+
+    This pipeline is an individual version of AS-Brute
+
+    It is designed to be integrated into the AS autoprocessing pipeline
+
+    Does not have much applicability to a single user as it only does xprep and shelxt
+
+    on a single dataset.
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- XPREP")
+        click.echo("- SHELXT")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a dataset folder from the Australian Synchrotron")
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(" - chemical_formula: enter the chemical formula of your crystal")
+        click.echo(
+            " - experiment_location: enter the full path to your folder containing all dataset folders"
+        )
+
+        fields = yaml_extraction("pipeline-AS-Brute-individual")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+        check, cfg = configuration_check("pipeline-AS-Brute-individual")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            brute = AS_Brute_Single()
+            brute.initialise(cfg["experiment_location"])
+            brute.xprepreduce(cfg["experiment_location"], cfg["chemical_formula"])
+            brute.solve(cfg["experiment_location"])
+            brute.report(cfg["experiment_location"])
             copy_logs(cfg["experiment_location"])
 
         output_message()
@@ -4661,7 +4693,6 @@ else:
     cli.add_command(pipeline_variable_analysis)
     cli.add_command(module_adp_analysis)
 
-
     ### Modules for dev branch ###
 
     cli.add_command(pipeline_vp)
@@ -4681,6 +4712,7 @@ else:
     cli.add_command(pipeline_shelxt_auto)
     cli.add_command(module_platon_squeeze)
     cli.add_command(pipeline_platon_squeeze)
+    cli.add_command(pipeline_AS_Brute_individual)
 
 
 def run() -> None:
@@ -4703,8 +4735,7 @@ def run() -> None:
     # Set up global logs
 
     log_location = (
-        pathlib.Path(os.path.abspath(__file__)).parent /
-        "error_logs/error_output.txt"
+        pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
     )
 
     logging.basicConfig(filename=log_location, level=logging.INFO)
