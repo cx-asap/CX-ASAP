@@ -19,6 +19,7 @@ import os
 import logging
 import pathlib
 import shutil
+import time
 
 # ----------Class Definition----------#
 
@@ -71,6 +72,10 @@ class SHELXT_Pipeline:
         # Browses through the directories and runs shelxt in each
         self.tree = Directory_Browse(location, self.test_mode)
         self.shelxt = SHELXT()
+
+        # This is because the first few datasets weren't running through shelxt - xprep was still open or something
+        time.sleep(15)
+
         for item in self.tree.directories:
             self.tree.enter_directory(item, ".ins", ignore_check=True)
             if self.tree.item_file != "":

@@ -82,7 +82,6 @@ class Rotation_Pipeline:
         full_data = pd.read_csv("rotation_angles.csv")
         x = full_data["Structure"]
         angle = full_data["Rotation Angle"]
-
         graph = Grapher()
         graph.single_scatter_graph(
             x,

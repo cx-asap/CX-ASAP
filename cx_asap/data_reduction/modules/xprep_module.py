@@ -91,6 +91,7 @@ class XPREP:
         xprep.stdin.write("\n")
         xprep.stdin.write("Q\n")
         xprep.stdin.close()
+        xprep.wait(20)
 
         # Below code for windows... when add into main release need a better solution for closing xprep
 
@@ -99,7 +100,7 @@ class XPREP:
         # except subprocess.TimeoutExpired:
         # xprep.terminate()
 
-    def asdefaults(self, location: str) -> None:
+    def asdefaults(self, location: str, formula: str = "C40H30N6FeCl2O8") -> None:
 
         """This function runs xprep for a single aussynchrotron
 
@@ -107,6 +108,7 @@ class XPREP:
 
         Args:
             location (str): full path to the folder of the file to be run
+            formula (str): chemical formula
         """
         os.chdir(location)
         xprep = subprocess.Popen(["xprep"], stdin=subprocess.PIPE, encoding="utf8")
@@ -127,7 +129,7 @@ class XPREP:
         xprep.stdin.write("\n")
         xprep.stdin.write("\n")
         xprep.stdin.write("\n")
-        xprep.stdin.write("C40H30N6FeCl2O8\n")
+        xprep.stdin.write(formula + "\n")
         xprep.stdin.write("\n")
         xprep.stdin.write("\n")
         xprep.stdin.write("cxasap\n")
@@ -138,10 +140,11 @@ class XPREP:
         xprep.stdin.write("\n")
         xprep.stdin.write("Q\n")
         xprep.stdin.close()
+        xprep.wait(20)
 
         # Below code for windows... when add into main release need a better solution for closing xprep
 
-        # try:
-        # xprep.wait(300)
-        # except subprocess.TimeoutExpired:
-        # xprep.terminate()
+        ###try:
+        ###xprep.wait(15)
+        ###except subprocess.TimeoutExpired:
+        ###xprep.terminate()

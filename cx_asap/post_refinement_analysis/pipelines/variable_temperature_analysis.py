@@ -115,7 +115,8 @@ class VT_Analysis_Pipeline:
 
     def analyse_data(
         self,
-        ref_cell: str,
+        ref_cell: list,
+        ref_ins: str,
         location: str,
         cif_parameters: list,
         atoms_for_analysis: list,
@@ -138,7 +139,8 @@ class VT_Analysis_Pipeline:
         THIS FUNCTION IS SPECIFIC TO VT, SO HAS CHANGING PARAM AS "_diffrn_ambient_temperature"
 
         Args:
-            ref_cell (str): full path to reference .ins file
+            ref_cell (list): reference unit cell
+            ref_ins (str): full path to the reference .ins
             location (str): full path to the folder containing all CIFs for analysis
             cif_parameters (list): list of cif parameters to extract
             atoms_for_analysis (list): list of important atoms to separate
@@ -174,7 +176,7 @@ class VT_Analysis_Pipeline:
         )
 
         cell = Cell_Deformation()
-        cell.import_data("CIF_Parameters.csv", ref_cell)
+        cell.import_data("CIF_Parameters.csv", ref_ins)
         cell.calculate_deformations()
         cell.quality_analysis(
             "_diffrn_ambient_temperature",

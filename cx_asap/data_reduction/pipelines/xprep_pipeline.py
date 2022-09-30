@@ -88,7 +88,9 @@ class XPREP_Pipeline:
             self.tree.check_file_contents()
             self.tree.exit_directory()
 
-    def multiple_asdefaults(self, location: str) -> None:
+    def multiple_asdefaults(
+        self, location: str, formula: str = "C40H30N6FeCl2O8"
+    ) -> None:
 
         """This function runs brute xprep for a range of structures
 
@@ -107,6 +109,6 @@ class XPREP_Pipeline:
         for index, item in enumerate(self.tree.directories):
             self.tree.enter_directory(item, ".HKL_p1", ignore_check=True)
             if self.tree.item_file != "":
-                self.xprep.asdefaults(item)
+                self.xprep.asdefaults(item, formula)
             # Sets the item_file to the new ins file to make sure that xprep has worked
             self.tree.exit_directory()
