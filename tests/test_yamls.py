@@ -239,6 +239,7 @@ class testGenerate(unittest.TestCase):
                 "structural_analysis_torsions",
                 "ADP_analysis",
                 "atoms_for_analysis",
+                "transformation_matrix",
             ],
             "module-xds-cell-transform": ["XDS_ASCII_File_1", "XDS_ASCII_File_2"],
             "module-xds-reprocess": [
@@ -322,6 +323,7 @@ class testGenerate(unittest.TestCase):
                 "reference_unit_cell",
             ],
             "pipeline-AS-Brute": ["experiment_location"],
+            "pipeline-AS-Brute-individual": ["experiment_location", "chemical_formula"],
             "module-molecule-reconstruction": [
                 "reference_path",
                 "atom_list",
@@ -566,6 +568,7 @@ class testGenerate(unittest.TestCase):
                 "structural_analysis_torsions",
                 "ADP_analysis",
                 "atoms_for_analysis",
+                "transformation_matrix",
             ],
             ["XDS_ASCII_File_1", "XDS_ASCII_File_2"],
             ["xds_template_name", "XDS_INP_path", "experiment_location"],
@@ -636,6 +639,7 @@ class testGenerate(unittest.TestCase):
                 "reference_unit_cell",
             ],
             ["experiment_location"],
+            ["experiment_location", "chemical_formula"],
             [
                 "reference_path",
                 "atom_list",
