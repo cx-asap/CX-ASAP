@@ -323,6 +323,7 @@ class testGenerate(unittest.TestCase):
                 "reference_unit_cell",
             ],
             "pipeline-AS-Brute": ["experiment_location"],
+            "pipeline-AS-Brute-individual": ["experiment_location", "chemical_formula"],
             "module-molecule-reconstruction": [
                 "reference_path",
                 "atom_list",
@@ -638,6 +639,7 @@ class testGenerate(unittest.TestCase):
                 "reference_unit_cell",
             ],
             ["experiment_location"],
+            ["experiment_location", "chemical_formula"],
             [
                 "reference_path",
                 "atom_list",
