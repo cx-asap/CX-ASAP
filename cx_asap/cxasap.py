@@ -376,8 +376,8 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
     """
     yaml_dict = yaml_extraction(heading)
 
-    yaml_path = pathlib.Path(os.path.abspath(__file__)).parent / "conf.yaml"
-
+    #yaml_path = pathlib.Path(os.path.abspath(__file__)).parent / "conf.yaml"
+    yaml_path =  pathlib.Path(os.path.join(os.getcwd(),"conf.yaml"))
     zero_exceptions = [
         "a_gradient",
         "alpha_gradient",
