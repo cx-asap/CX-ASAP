@@ -63,7 +63,7 @@ class AS_Brute_Single:
         if os.path.exists("Brute_Results") == False:
             os.mkdir("Brute_Results")
 
-    def xprepreduce(self, location: str, formula: str = "C40H30N6FeCl2O8") -> None:
+    def xprepreduce(self, location: str, file_name: str, formula: str = "C40H30N6FeCl2O8") -> None:
 
         """Will run XPREP with default settings on a series of data sets
 
@@ -71,13 +71,17 @@ class AS_Brute_Single:
 
         Args:
             location (str): full path to the AS dataset for automatic xprepping
+            file_name (str): name for xprep output
             formula (str): chemical formula
         """
 
         xprep = XPREP()
-        xprep.asdefaults(location, formula)
+        if 'sadabs' in file_name:
+            xprep.asdefaults_sadabs(location, formula, file_name)
+        else:
+            xprep.asdefaults(location, formula, file_name)
 
-    def solve(self, location: str) -> None:
+    def solve(self, location: str, file_name: str) -> None:
 
         """Will run SHELXT with default settings on a series of data sets
 
@@ -85,27 +89,37 @@ class AS_Brute_Single:
 
         Args:
             location (str): full path to the CX-ASAP_Brute folder containing xprepped data
+            file_name (str): file name for shelxt
         """
 
         shelxt = SHELXT()
-        shelxt.run_shelxt(location, "cxasap")
-
-        os.chdir(location)
+        shelxt.run_shelxt(location, file_name)
+            
+    def move_files(self, parent_location: str, file_location: str, file_prefix: str) -> None:
+        
+        """Will move files into the main results folder
+        
+        Args:
+            parent_location (str): full path to the raw dataset folder
+            file_location (str): full path to the files analysed (ie might be 
+                                in a sub folder post-sadabs
+            file_prefix (str): name of files for copying into results folder
+        """
+        os.chdir(parent_location)
         if os.path.exists("CX-ASAP_Brute") == False:
             os.mkdir("CX-ASAP_Brute")
-
-        # Edit this for all shelxt files once get it actually running....
-
-        files_to_copy = ["cxasap.hkl", "cxasap.ins", "cxasap.lxt", "cxasap.pcf", "cxasap_a.hkl", "cxasap_a.res"]
+        
+        os.chdir(file_location)
+        
+        files_to_copy = [file_prefix + ".hkl", file_prefix + ".ins", file_prefix + ".lxt", file_prefix + ".pcf", file_prefix + "_a.hkl", file_prefix + "_a.res"]
 
         for item in files_to_copy:
-
             try:
-                shutil.move(item, "CX-ASAP_Brute/" + item)
+                shutil.move(item, parent_location + "/CX-ASAP_Brute/" + item)
             except FileNotFoundError:
                 pass
 
-    def report(self, location: str) -> None:
+    def report(self, location: str, suffix: str) -> None:
 
         """Checks if XDS/XPREP/SHELXT has worked for each data set analysed
 
@@ -113,6 +127,7 @@ class AS_Brute_Single:
 
         Args:
             location (str): full path to the folder containing folders of AS data
+            suffix (str): additional information to categorise results (ie to distinguish sadabs) 
         """
         
         XDS_fail = False
@@ -168,16 +183,16 @@ class AS_Brute_Single:
                 
         if SHELXT_Notsad == True: 
             with open ("Successful_Brutes.txt", "a") as f:
-                f.write(pathlib.Path(location).name + nl)
+                f.write(pathlib.Path(location).name + "_" + suffix + nl)
                 
         if SHELXT_fail == True and XDS_fail == False and XPREP_fail == False:
             with open ("Failed_Brutes.txt", "a") as f:
-                f.write(pathlib.Path(location).name + "(SHELXT)" + nl)
+                f.write(pathlib.Path(location).name + "_" + suffix + "(SHELXT)" + nl)
                 
         if XPREP_fail == True and XDS_fail == False:
             with open ("Failed_Brutes.txt", "a") as f:
-                f.write(pathlib.Path(location).name + "(XPREP)" + nl)
+                f.write(pathlib.Path(location).name + "_" + suffix + "(XPREP)" + nl)
                 
         if XDS_fail == True:
             with open ("Failed_Brutes.txt", "a") as f:
-                f.write(pathlib.Path(location).name + "(XDS)" + nl)
+                f.write(pathlib.Path(location).name + "_" + suffix  + "(XDS)" + nl)

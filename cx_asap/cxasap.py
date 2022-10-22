@@ -4613,13 +4613,28 @@ def pipeline_AS_Brute_individual(dependencies, files, configure, run):
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
             brute = AS_Brute_Single()
+            
+            sadabs_folders = ['/sadabs_m', '/sadabs_s', '/sadabs_w']
+            
             brute.initialise(cfg["experiment_location"])
             if cfg["chemical_formula"] == 0:
-                brute.xprepreduce(cfg["experiment_location"])
+                brute.xprepreduce(cfg["experiment_location"], "cxasap")
             else:
-                brute.xprepreduce(cfg["experiment_location"], cfg["chemical_formula"])
-            brute.solve(cfg["experiment_location"])
-            brute.report(cfg["experiment_location"])
+                brute.xprepreduce(cfg["experiment_location"], "cxasap", cfg["chemical_formula"])
+            brute.solve(cfg["experiment_location"], "cxasap")
+            brute.move_files(cfg["experiment_location"], cfg["experiment_location"], "cxasap")
+            brute.report(cfg["experiment_location"], "")
+            
+            for item in sadabs_folders:
+                if cfg["chemical_formula"] == 0:
+                    brute.xprepreduce(cfg["experiment_location"] + item, "cxasap_" + item.strip('/'))
+                else:
+                    brute.xprepreduce(cfg["experiment_location"] + item, "cxasap_" + item.strip('/'), cfg["chemical_formula"])
+                brute.solve(cfg["experiment_location"] + item, "cxasap_" + item.strip('/'))
+                brute.move_files(cfg["experiment_location"], cfg["experiment_location"] + item, "cxasap_" + item.strip('/'))
+                brute.report(cfg["experiment_location"], item.strip('/'))
+                
+            
             copy_logs(cfg["experiment_location"])
 
         output_message()
