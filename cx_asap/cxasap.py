@@ -166,12 +166,13 @@ def reset_logs() -> None:
     log_location = (
         pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
     )
+    #log_location = (pathlib.Path(os.path.join(os.getcwd() / "error_logs/error_output.txt"))
 
     max_logs = 5
     number_list = []
 
     original_path = os.getcwd()
-    os.chdir(log_location.parent)
+    #os.chdir(log_location.parent)
     for item in os.listdir():
         if "error_output" in item:
             temp = item.split("_")
@@ -486,6 +487,7 @@ def errors() -> None:
     """Outputs the error logs to the terminal
     Otherwise the user will need to find the .txt file in the documentation folder
     """
+
     error_path = (
         pathlib.Path(os.path.abspath(__file__)).parent
         / "error_logs"
@@ -4104,8 +4106,7 @@ def pipeline_AS_Brute_individual(dependencies, files, configure, run):
             reset_logs()
             brute = AS_Brute_Single()
             sadabs_folders = ['/sadabs_m', '/sadabs_s', '/sadabs_w']
-            print(cfg["experiment_location"])
-            print(os.getcwd())
+            
             brute.initialise(cfg["experiment_location"])
             if cfg["chemical_formula"] == 0:
                 brute.xprepreduce(cfg["experiment_location"], "cxasap")
