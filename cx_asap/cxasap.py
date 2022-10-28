@@ -111,6 +111,7 @@ import logging
 import platform
 import time
 import shutil
+import datetime
 from typing import Union, Tuple
 
 from system_files.utils import Generate, File_Sorter
@@ -497,10 +498,11 @@ def errors() -> None:
 
     #error_path = (pathlib.Path(os.path.join(os.getcwd()), "error_output.txt"))
     error_path = (pathlib.Path(os.path.join(os.getcwd()), "error_logs"/"error_output.txt"))
-    print(f"error_path = {error_path}")
+    print(datetime.datetime.now().strftime("%c"))
     if os.path.exists(error_path):
         with open(error_path, "rt") as f:
             for line in f:
+                datetime.datetime.now().strftime("%c")
                 click.echo(line)
 
 
@@ -4250,6 +4252,7 @@ def run() -> None:
     log_location = (pathlib.Path(os.path.join(os.getcwd()), "error_logs/error_output.txt"))
 
     logging.basicConfig(filename=log_location, level=logging.INFO)
-    logging.info("CX-ASAP Started")
+    timestamp = datetime.datetime.now().strftime("%c")
+    logging.info(f"{timestamp} CX-ASAP Started")
 
     cli()
