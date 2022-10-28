@@ -166,7 +166,6 @@ def reset_logs() -> None:
     #log_location = (
         #pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
     #)
-
     log_location = (pathlib.Path(os.path.join(os.getcwd()), "error_logs/error_output.txt"))
 
     max_logs = 5
@@ -219,13 +218,14 @@ def copy_logs(destination: str) -> None:
     Args:
         destination (string): path to the log destination
     """
-    log_location = (
-        pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
-    )
-
-    log_location_1 = (
-        pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output_1.txt"
-    )
+    log_location = (pathlib.Path(os.path.join(os.getcwd()), "error_logs/error_output.txt"))
+    #log_location = (
+        #pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
+    #)
+    log_location_1 = (pathlib.Path(os.path.join(os.getcwd()), "error_logs/error_output_1.txt"))
+    #location_1 = (
+        #pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output_1.txt"
+    #)
 
     try:
         shutil.copy(log_location, destination)
@@ -497,7 +497,7 @@ def errors() -> None:
 
     #error_path = (pathlib.Path(os.path.join(os.getcwd()), "error_output.txt"))
     error_path = (pathlib.Path(os.path.join(os.getcwd()), "error_logs"/"error_output.txt"))
-
+    print(f"error_path = {error_path}")
     if os.path.exists(error_path):
         with open(error_path, "rt") as f:
             for line in f:
@@ -4130,7 +4130,7 @@ def pipeline_AS_Brute_individual(dependencies, files, configure, run):
                 brute.report(cfg["experiment_location"], item.strip('/'))
                 
             
-            #copy_logs(cfg["experiment_location"])
+            copy_logs(cfg["experiment_location"])
 
         output_message()
 
