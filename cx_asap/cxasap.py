@@ -172,7 +172,7 @@ def reset_logs() -> None:
     number_list = []
 
     original_path = os.getcwd()
-    #os.chdir(log_location.parent)
+    os.chdir(log_location.parent)
     for item in os.listdir():
         if "error_output" in item:
             temp = item.split("_")
@@ -4130,7 +4130,7 @@ def pipeline_AS_Brute_individual(dependencies, files, configure, run):
                 brute.report(cfg["experiment_location"], item.strip('/'))
                 
             
-            copy_logs(cfg["experiment_location"])
+            #copy_logs(cfg["experiment_location"])
 
         output_message()
 
@@ -4243,9 +4243,11 @@ def run() -> None:
     os_test()
     # Set up global logs
 
-    log_location = (
-        pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
-    )
+    #log_location = (
+        #pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
+    #)
+
+    log_location = (pathlib.Path(os.path.join(os.getcwd()), "error_logs/error_output.txt"))
 
     logging.basicConfig(filename=log_location, level=logging.INFO)
     logging.info("CX-ASAP Started")
