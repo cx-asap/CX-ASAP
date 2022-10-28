@@ -17,6 +17,7 @@ import os
 import pathlib
 import shutil
 import logging
+import datetime
 
 # ----------Class Definition----------#
 
@@ -136,7 +137,7 @@ class AS_Brute_Single:
         XDS_Notsad = False
         XPREP_Notsad = False
         SHELXT_Notsad = False
-        
+        timestamp = datetime.datetime.now().strftime("%c")
         os.chdir(pathlib.Path(location))
         
         if "XDS_ASCII.HKL_p1" in os.listdir():
@@ -183,16 +184,16 @@ class AS_Brute_Single:
                 
         if SHELXT_Notsad == True: 
             with open ("Successful_Brutes.txt", "a") as f:
-                f.write(pathlib.Path(location).name + "_" + suffix + nl)
+                f.write(timestamp + "_" + pathlib.Path(location).name + "_" + suffix + nl)
                 
         if SHELXT_fail == True and XDS_fail == False and XPREP_fail == False:
             with open ("Failed_Brutes.txt", "a") as f:
-                f.write(pathlib.Path(location).name + "_" + suffix + "(SHELXT)" + nl)
+                f.write(timestamp +  "_" + pathlib.Path(location).name + "_" + suffix + "(SHELXT)" + nl)
                 
         if XPREP_fail == True and XDS_fail == False:
             with open ("Failed_Brutes.txt", "a") as f:
-                f.write(pathlib.Path(location).name + "_" + suffix + "(XPREP)" + nl)
+                f.write(timestamp +  "_" + pathlib.Path(location).name + "_" + suffix + "(XPREP)" + nl)
                 
         if XDS_fail == True:
             with open ("Failed_Brutes.txt", "a") as f:
-                f.write(pathlib.Path(location).name + "_" + suffix  + "(XDS)" + nl)
+                f.write(timestamp + "_" + pathlib.Path(location).name + "_" + suffix  + "(XDS)" + nl)
