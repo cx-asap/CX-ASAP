@@ -163,10 +163,11 @@ def reset_logs() -> None:
         None
     """
 
-    log_location = (
-        pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
-    )
-    #log_location = (pathlib.Path(os.path.join(os.getcwd() / "error_logs/error_output.txt"))
+    #log_location = (
+        #pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
+    #)
+
+    log_location = (pathlib.Path(os.path.join(os.getcwd()), "error_logs/error_output.txt"))
 
     max_logs = 5
     number_list = []
@@ -488,11 +489,14 @@ def errors() -> None:
     Otherwise the user will need to find the .txt file in the documentation folder
     """
 
-    error_path = (
-        pathlib.Path(os.path.abspath(__file__)).parent
-        / "error_logs"
-        / "error_output.txt"
-    )
+    #error_path = (
+    #    pathlib.Path(os.path.abspath(__file__)).parent
+    #    / "error_logs"
+    #    / "error_output.txt"
+    #)
+
+    #error_path = (pathlib.Path(os.path.join(os.getcwd()), "error_output.txt"))
+    error_path = (pathlib.Path(os.path.join(os.getcwd()), "error_logs"/"error_output.txt"))
 
     if os.path.exists(error_path):
         with open(error_path, "rt") as f:
@@ -4126,7 +4130,7 @@ def pipeline_AS_Brute_individual(dependencies, files, configure, run):
                 brute.report(cfg["experiment_location"], item.strip('/'))
                 
             
-            copy_logs(cfg["experiment_location"])
+            #copy_logs(cfg["experiment_location"])
 
         output_message()
 
