@@ -4250,6 +4250,11 @@ def run() -> None:
     #)
 
     log_location = (pathlib.Path(os.path.join(os.getcwd()), "error_logs/error_output.txt"))
+    
+    #current_directory = os.getcwd()
+    log_directory = os.path.join(os.getcwd(), r"error_logs")
+    if not os.path.exists(log_directory):
+        os.makedirs(log_directory)
 
     logging.basicConfig(filename=log_location, level=logging.INFO)
     timestamp = datetime.datetime.now().strftime("%c")
