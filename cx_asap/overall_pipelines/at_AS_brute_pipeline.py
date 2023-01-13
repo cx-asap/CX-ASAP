@@ -62,7 +62,6 @@ class AS_Brute_Single:
         path = pathlib.Path(experiment_location)
         #os.chdir(path.parent)
         XDS_success = str(os.path.isfile("XDS_ASCII.HKL_p1"))
-        print(os.getcwd())
         if XDS_success == 'False':
             print("XDS processing failed. Aborting")
             XDS_fail = True
@@ -85,16 +84,6 @@ class AS_Brute_Single:
             file_name (str): name for xprep output
             formula (str): chemical formula
         """
-
-        
-        #XDS_success = str(os.path.isfile("XDS_ASCII.HKL_p1"))
-        #print(os.getcwd())
-        #if XDS_success == 'False':
-            #print("XDS processing failed. Aborting")
-            #XDS_fail = True
-            #os.abort()
-        #elif XDS_success == 'True':
-            #pass
 
         xprep = XPREP()
         if 'sadabs' in file_name:
