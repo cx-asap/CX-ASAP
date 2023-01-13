@@ -87,7 +87,7 @@ class Rotation_Pipeline:
             x,
             angle,
             "Structure Number",
-            "Angle($^\circ$C)",
+            "Angle($^\circ$)",
             "Rotation Angles",
             "rotation_angles.png",
         )

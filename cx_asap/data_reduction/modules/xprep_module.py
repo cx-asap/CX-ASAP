@@ -100,7 +100,7 @@ class XPREP:
         # except subprocess.TimeoutExpired:
         # xprep.terminate()
 
-    def asdefaults(self, location: str, formula: str = "C40H30N6FeCl2O8") -> None:
+    def asdefaults(self, location: str, formula: str = "C40H30N6FeCl2O8", file_name: str = "cxasap") -> None:
 
         """This function runs xprep for a single aussynchrotron
 
@@ -132,7 +132,48 @@ class XPREP:
         xprep.stdin.write(formula + "\n")
         xprep.stdin.write("\n")
         xprep.stdin.write("\n")
-        xprep.stdin.write("cxasap\n")
+        xprep.stdin.write(file_name + "\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("Q\n")
+        xprep.stdin.close()
+        xprep.wait(20)
+        
+    def asdefaults_sadabs(self, location: str, formula: str = "C40H30N6FeCl2O8", file_name: str = "cxasap") -> None:
+
+        """This function runs xprep for a single aussynchrotron
+
+        structure accepting all defaults (AS has default name XDS_ASCII.HKL_p1)
+
+        Args:
+            location (str): full path to the folder of the file to be run
+            formula (str): chemical formula
+        """
+        os.chdir(location)
+        xprep = subprocess.Popen(["xprep"], stdin=subprocess.PIPE, encoding="utf8")
+        xprep.stdin.write("sad.hkl\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write(formula + "\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write(file_name + "\n")
         xprep.stdin.write("\n")
         xprep.stdin.write("\n")
         xprep.stdin.write("\n")
