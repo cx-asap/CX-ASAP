@@ -411,10 +411,11 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
             for item in cfg:
                 if cfg[item] == 0 and item not in zero_exceptions:
                     flag = False
-                    break
 
                     if cfg[item] == False and type(cfg[item]) == bool:
                         flag = True
+                    else:
+                        break
 
                 if item == "atoms_for_analysis":
                     for j in cfg[item]:
@@ -3498,8 +3499,7 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
             multi_rotation.analysis(
                 cfg["experiment_location"],
                 cfg["reference_plane"],
-                cfg["experiment_location"],
-                "rotation_angles.png",
+                cfg["experiment_location"]
             )
 
             copy_logs(cfg["experiment_location"])
