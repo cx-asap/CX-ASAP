@@ -322,8 +322,8 @@ def yaml_creation(yaml_dict: dict) -> None:
     Args:
         yaml_dict (dict): Dictionary of yaml parameters specific to the chosen module/pipeline
     """
-    #yaml_path = pathlib.Path(os.path.abspath(__file__)).parent / "conf.yaml"
-    yaml_path = pathlib.Path(os.path.join(os.getcwd()), "conf.yaml")
+    yaml_path = pathlib.Path(os.path.abspath(__file__)).parent / "conf.yaml"
+    #yaml_path = pathlib.Path(os.path.join(os.getcwd()), "conf.yaml")
 
     with open(yaml_path, "w") as f:
         new_yaml = yaml.dump(yaml_dict, f)
@@ -346,8 +346,8 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
     """
     yaml_dict = yaml_extraction(heading)
 
-    #yaml_path = pathlib.Path(os.path.abspath(__file__)).parent / "conf.yaml"
-    yaml_path =  pathlib.Path(os.path.join(os.getcwd(),"conf.yaml"))
+    yaml_path = pathlib.Path(os.path.abspath(__file__)).parent / "conf.yaml"
+    #yaml_path =  pathlib.Path(os.path.join(os.getcwd(),"conf.yaml"))
 
     zero_exceptions = [
         "a_gradient",
