@@ -93,7 +93,7 @@
 ###click.echo('READY TO RUN SCRIPT!\n')
 # reset_logs()
 # CREATE CLASS OBJECT AND RUN FUNCTIONS HERE
-# copy_logs(OUTPUT_PATH_HERE)
+# (OUTPUT_PATH_HERE)
 # output_message()
 
 # else:
@@ -4250,11 +4250,13 @@ def run() -> None:
     #)
 
     log_location = (pathlib.Path(os.path.join(os.getcwd()), "error_logs/error_output.txt"))
+    print(f"log_location = {log_location}")
     
     #current_directory = os.getcwd()
     log_directory = os.path.join(os.getcwd(), r"error_logs")
     if not os.path.exists(log_directory):
         os.makedirs(log_directory)
+    print(f"log_directory = {log_directory}")
 
     logging.basicConfig(filename=log_location, level=logging.INFO)
     timestamp = datetime.datetime.now().strftime("%c")
