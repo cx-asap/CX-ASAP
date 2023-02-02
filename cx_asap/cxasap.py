@@ -2315,7 +2315,9 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
                 "autoprocess.cif",
             )
 
-            copy_logs(full_vt_analysis.sys["current_results_path"])
+            #copy_logs(full_vt_analysis.sys["current_results_path"])
+            #copy_logs(full_vt_analysis.setup["location_of_autoprocess_folders"])
+            
 
         output_message()
 
