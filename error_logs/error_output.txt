@@ -1,0 +1,13 @@
+INFO:root:Mon Feb  6 16:59:59 2023 CX-ASAP Started
+INFO:root:Tue Feb  7 09:03:19 2023 CX-ASAP Started
+INFO:root:Tue Feb  7 09:03:42 2023 CX-ASAP Started
+INFO:root:Tue Feb  7 09:04:34 2023 CX-ASAP Started
+INFO:root:Tue Feb  7 09:05:29 2023 CX-ASAP Started
+INFO:root:Tue Feb  7 09:05:50 2023 CX-ASAP Started
+INFO:root:Tue Feb  7 09:06:01 2023 CX-ASAP Started
+INFO:root:Tue Feb  7 09:06:30 2023 CX-ASAP Started
+INFO:root:Tue Feb  7 09:09:32 2023 CX-ASAP Started
+INFO:root:Tue Feb  7 09:12:00 2023 CX-ASAP Started
+INFO:root:Tue Feb  7 09:12:55 2023 CX-ASAP Started
+INFO:root:Tue Feb  7 09:13:13 2023 CX-ASAP Started
+INFO:root:Tue Feb  7 09:13:49 2023 CX-ASAP Started

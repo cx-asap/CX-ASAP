@@ -2316,7 +2316,7 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
             )
 
             #copy_logs(full_vt_analysis.sys["current_results_path"])
-            #copy_logs(full_vt_analysis.setup["location_of_autoprocess_folders"])
+
             
 
         output_message()
@@ -2558,7 +2558,7 @@ def module_xprep(dependencies, files, configure, run):
                 "shelxl",
             )
 
-            copy_logs(cfg["experiment_location"])
+            #copy_logs(cfg["experiment_location"])
 
         output_message()
 
@@ -4252,13 +4252,13 @@ def run() -> None:
     #)
 
     log_location = (pathlib.Path(os.path.join(os.getcwd()), "error_logs/error_output.txt"))
-    print(f"log_location = {log_location}")
+    #print(f"log_location = {log_location}")
     
     #current_directory = os.getcwd()
     log_directory = os.path.join(os.getcwd(), r"error_logs")
     if not os.path.exists(log_directory):
         os.makedirs(log_directory)
-    print(f"log_directory = {log_directory}")
+    #print(f"log_directory = {log_directory}")
 
     logging.basicConfig(filename=log_location, level=logging.INFO)
     timestamp = datetime.datetime.now().strftime("%c")
