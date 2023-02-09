@@ -1132,7 +1132,7 @@ def pipeline_general(dependencies, files, configure, run):
                 cfg["ADP_analysis"],
             )
 
-            copy_logs(full.results_location)
+            #copy_logs(full.results_location)
 
         output_message()
 
