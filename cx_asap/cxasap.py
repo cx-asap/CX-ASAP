@@ -602,7 +602,7 @@ def module_refinement(dependencies, files, configure, run):
         click.echo(
             " - refinements_to_check: enter the number of refinements you want to check for convergence"
         )
-        click.echo(" - structure_location: enter the full path to your new .ins file")
+        click.echo(" - structure_location: enter the full path to your .ins file to refine")
         click.echo(
             " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check\n"
         )
@@ -634,7 +634,7 @@ def module_refinement(dependencies, files, configure, run):
                 cfg["maximum_cycles"],
             )
 
-            copy_logs(pathlib.Path(cfg["structure_location"]).parent)
+            #copy_logs(pathlib.Path(cfg["structure_location"]).parent)
 
         output_message()
 
@@ -1970,7 +1970,7 @@ def pipeline_cif(dependencies, files, configure, run):
             )
             cifs.compile_cifs(cfg["experiment_location"])
 
-            copy_logs(cfg["experiment_location"])
+            #copy_logs(cfg["experiment_location"])
 
         output_message()
 
@@ -3219,7 +3219,7 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
             " - ADP_analysis: enter 'true' if you want to extract ADP information, otherwise enter 'false'"
         )
         click.echo(
-            " - atoms_for_analysis: enter the label of the atoms you are most interested in"
+            " - atoms_for_analysis: enter the label of the atoms you are most interested in. Each atoms should be on a new line with a dash before it."
         )
         click.echo(
             " - cif_parameters: these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format"
