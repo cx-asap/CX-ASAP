@@ -207,6 +207,7 @@ class General_Pipeline:
 
                 cif = ReadCif(instrument_path.name)
                 data_block = cif.first_block()
+                print(data_block)
                 data_block[varying_param] = varying_data[index]
 
                 with open("instrument.cif", "w") as f:

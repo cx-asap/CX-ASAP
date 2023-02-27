@@ -3577,7 +3577,7 @@ def module_platon_squeeze(dependencies, files, configure, run):
             squeeze = Platon_Squeeze()
             squeeze.run_squeeze(cfg["file_name"])
 
-            copy_logs(pathlib.Path(cfg["file_name"]).parent)
+            #copy_logs(pathlib.Path(cfg["file_name"]).parent)
 
         output_message()
 
