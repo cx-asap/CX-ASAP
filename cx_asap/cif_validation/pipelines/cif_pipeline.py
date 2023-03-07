@@ -118,6 +118,9 @@ class CIF_Compile_Pipeline:
         # Compiles the cif based on the directory browse for a set of data
 
         for item in self.tree.directories:
+        
+            print(self.tree.directories)
+            print(ignored_folders)
 
             if item not in ignored_folders:
 

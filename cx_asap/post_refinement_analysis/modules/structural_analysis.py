@@ -229,6 +229,7 @@ class Structural_Analysis:
             for item in atoms_for_analysis:
                 temp_df = df[df.eq(item).any(1)]
                 important_df = pd.concat([important_df, temp_df], axis=0)
+            
 
             # Need to make a new column of the indices - the above code will give you double ups if both atoms in a bond are "important"
 
@@ -271,14 +272,18 @@ class Structural_Analysis:
                 )
             else:
                 logging.info("Something went weird.")
+                
 
-            dup = important_df.duplicated(["Joined", varying_parameter], keep=False)
+            #dup = important_df.duplicated(["Joined", varying_parameter], keep=False)
+            dup = important_df.duplicated(["Joined", varying_parameter], keep=True)
+            print(dup)
 
             # The below function counts the number of each group of duplicates
 
             list_dup = important_df.pivot_table(
                 columns=["Joined", varying_parameter], aggfunc="size"
             ).to_dict()
+            print(list_dup)
 
             counter = 0
 

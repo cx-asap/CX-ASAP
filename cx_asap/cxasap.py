@@ -1968,7 +1968,11 @@ def pipeline_cif(dependencies, files, configure, run):
                 cfg["instrument_ending"],
                 cfg["instrument_file"],
             )
-            cifs.compile_cifs(cfg["experiment_location"])
+            ignored_folders = [pathlib.Path(cfg["experiment_location"])/"error_logs"]
+            #ignored_folders = ["error_logs"]
+            #print(cfg["experiment_location"])
+            print(ignored_folders)
+            cifs.compile_cifs(cfg["experiment_location"], ignored_folders)
 
             #copy_logs(cfg["experiment_location"])
 
@@ -3828,7 +3832,7 @@ def pipeline_AS_Brute(dependencies, files, configure, run):
             asbrute.solve(cfg["experiment_location"])
             asbrute.report(cfg["experiment_location"])
 
-            copy_logs(cfg["experiment_location"])
+            #copy_logs(cfg["experiment_location"])
 
         output_message()
 
