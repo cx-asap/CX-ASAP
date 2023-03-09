@@ -197,6 +197,7 @@ class General_Pipeline:
                 item != pathlib.Path(self.stats_location.parent).stem
                 and item != pathlib.Path(self.results_location.parent).stem
                 and os.path.isdir(item) == True
+                and item != 'error_logs'
             ):
 
                 print(item)

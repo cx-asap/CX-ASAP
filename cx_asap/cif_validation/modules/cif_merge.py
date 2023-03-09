@@ -264,7 +264,7 @@ class Cif_Merge:
                 "_diffrn_ambient_temperature"
             ]
 
-            self.data_block2["_refine_special_details"] = "CX-ASAP (Thompson, 2021)"
+            self.data_block2["_refine_special_details"] = "CX-ASAP (Thompson, 2023)"
 
     def user_edits(
         self,
