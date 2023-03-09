@@ -391,6 +391,10 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
                             "Error in reading config file. Make sure your atoms_for_analysis are on separate lines in list format. The pre-set dash indicates how to type each atom on a new line"
                         )
                         exit()
+                        
+        for item in cfg:
+            if 'cif_parameters' == item and 'varying_cif_parameter' in cfg.keys():
+                cfg['cif_parameters'].append(cfg['varying_cif_parameter'])
 
     return flag, cfg
 
@@ -466,7 +470,7 @@ def cli():
 
     #####################################################################\n
 
-    You are currently running version 1.0.1
+    You are currently running version 1.0.2
 
     #####################################################################\n
 
@@ -521,8 +525,8 @@ def output_message() -> None:
     CX-ASAP completed!\n
     Please review all statistics and examine output files prior to publication.\n
     If you found this software useful, please consider citing it in your publication.\n
-    Thompson, A. J., Smith, K. M. L., Clegg, J. K., Price, J. R. (2022),\n 
-    ChemRxiv. Preprint. https://doi.org/10.26434/chemrxiv-2022-7c0cl\n
+    Thompson, A. J., Smith, K. M. L., Clegg, J. K., Price, J. R. (2023),\n 
+    J. Appl. Cryst, 56 https://doi.org/10.1107/S1600576723000298\n
     Thank you for using this software, and may the Fourier Transforms be with you. \n
     #################################################################################
     """

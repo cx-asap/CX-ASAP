@@ -140,7 +140,9 @@ class Cif_Merge:
             with open(instrument_cif, "r") as f:
                 lines = f.readlines()
 
-            with open(instrument_cif, "w") as f:
+            os.rename(instrument_cif, "old_autoprocess.txt")
+
+            with open("temp.cif", "w") as f:
                 if lines[0] != "data_autoprocess\n":
                     f.writelines("data_autoprocess\n")
                 for line in lines:
@@ -211,6 +213,11 @@ class Cif_Merge:
                     else:
                         f.writelines(line)
 
+            try:
+                os.rename("temp.cif", "autoprocess.cif")
+            except FileNotFoundError:
+                pass
+
     def merge_CIFs(self) -> None:
 
         """This function merges the instrument cif and the
@@ -257,7 +264,7 @@ class Cif_Merge:
                 "_diffrn_ambient_temperature"
             ]
 
-            self.data_block2["_refine_special_details"] = "CX-ASAP (Thompson, 2021)"
+            self.data_block2["_refine_special_details"] = "CX-ASAP (Thompson, 2023)"
 
     def user_edits(
         self,
@@ -392,7 +399,7 @@ class Cif_Merge:
                 ["platon", "-u", file_name], stdin=subprocess.PIPE, encoding="utf8"
             )
             try:
-                checkCIF.wait(15)
+                checkCIF.wait(45)
             except subprocess.TimeoutExpired:
                 checkCIF.kill()
 
