@@ -274,8 +274,8 @@ class Structural_Analysis:
                 logging.info("Something went weird.")
                 
 
-            #dup = important_df.duplicated(["Joined", varying_parameter], keep=False)
-            dup = important_df.duplicated(["Joined", varying_parameter], keep=True)
+            dup = important_df.duplicated(["Joined", varying_parameter], keep=False)
+            #dup = important_df.duplicated(["Joined", varying_parameter], keep=True)
             print(dup)
 
             # The below function counts the number of each group of duplicates

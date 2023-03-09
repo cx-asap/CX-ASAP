@@ -166,6 +166,7 @@ class CIF_Read:
         angles: bool = False,
         torsions: bool = False,
         adp: bool = False,
+        varying_parameter:str = '_diffrn_ambient_temperature'
     ) -> None:
 
         """Searches through all folders in current working directory for CIFs
@@ -198,9 +199,9 @@ class CIF_Read:
                 temp_data,
                 structures_in_cif_tmp,
                 successful_positions_tmp,
-            ) = self.data_harvest(cif_file, self.search_items)
+            ) = self.data_harvest(cif_file, self.search_items, varying_parameter)
 
-            self.structural_analysis(cif_file, bonds, angles, torsions)
+            self.structural_analysis(cif_file, bonds, angles, torsions, varying_parameter)
             self.adp_analysis(cif_file, adp)
 
             self.data = self.data.append(temp_data)
@@ -226,6 +227,7 @@ class CIF_Read:
         bonds: bool = False,
         angles: bool = False,
         torsions: bool = False,
+        varying_parameter:str = '_diffrn_ambient_temperature'
     ) -> None:
 
         """Extracts structural information from CIF
@@ -243,14 +245,14 @@ class CIF_Read:
             "_geom_bond_atom_site_label_1",
             "_geom_bond_atom_site_label_2",
             "_geom_bond_distance",
-            "_diffrn_ambient_temperature",
+            varying_parameter,
         ]
         angle_paras = [
             "_geom_angle_atom_site_label_1",
             "_geom_angle_atom_site_label_2",
             "_geom_angle_atom_site_label_3",
             "_geom_angle",
-            "_diffrn_ambient_temperature",
+            varying_parameter,
         ]
         torsion_paras = [
             "_geom_torsion_atom_site_label_1",
@@ -258,7 +260,7 @@ class CIF_Read:
             "_geom_torsion_atom_site_label_3",
             "_geom_torsion_atom_site_label_4",
             "_geom_torsion",
-            "_diffrn_ambient_temperature",
+            varying_parameter,
         ]
 
         # harvests data for structural information
@@ -268,21 +270,21 @@ class CIF_Read:
                 temp_data_bonds,
                 structures_in_cif_tmp_bonds,
                 successful_positions_tmp_bonds,
-            ) = self.data_harvest(cif_file, bond_paras)
+            ) = self.data_harvest(cif_file, bond_paras, varying_parameter)
             self.bond_data = self.bond_data.append(temp_data_bonds)
         if angles == True:
             (
                 temp_data_angles,
                 structures_in_cif_tmp_angles,
                 successful_positions_tmp_angles,
-            ) = self.data_harvest(cif_file, angle_paras)
+            ) = self.data_harvest(cif_file, angle_paras, varying_parameter)
             self.angle_data = self.angle_data.append(temp_data_angles)
         if torsions == True:
             (
                 temp_data_torsions,
                 structures_in_cif_tmp_torsions,
                 successful_positions_tmp_torsions,
-            ) = self.data_harvest(cif_file, torsion_paras)
+            ) = self.data_harvest(cif_file, torsion_paras, varying_parameter)
             self.torsion_data = self.torsion_data.append(temp_data_torsions)
 
     def adp_analysis(self, cif_file: str, adp: bool = False) -> None:
@@ -309,11 +311,11 @@ class CIF_Read:
                 temp_data_adps,
                 structures_in_cif_tmp_adps,
                 successful_positions_tmp_adps,
-            ) = self.data_harvest(cif_file, adps)
+            ) = self.data_harvest(cif_file, adps, varying_parameter)
             self.adp_data = self.adp_data.append(temp_data_adps)
 
     def data_harvest(
-        self, cif_file: str, search_items: list
+        self, cif_file: str, search_items: list, varying_parameter: str = 'diffrn_ambient_temperature'
     ) -> Tuple["pd.DataFrame", int, list]:
 
         """Extracts all other desired parameters from CIF
@@ -402,7 +404,7 @@ class CIF_Read:
                 equivalent = False
 
         for item in search_items:
-            if item == "_diffrn_ambient_temperature" and equivalent == False:
+            if item == varying_parameter and equivalent == False:
                 numbers_to_multiply = self.results[item]
                 errors_to_multiply = self.errors[item]
                 self.results[item] = []

@@ -160,7 +160,7 @@ class Variable_Analysis_Pipeline:
 
         CIF_Data = CIF_Read(self.test_mode)
         CIF_Data.configure(cif_parameters)
-        CIF_Data.get_data(location, bonds, angles, torsions, adps)
+        CIF_Data.get_data(location, bonds, angles, torsions, adps, param)
         CIF_Data.data_output()
 
         geometry = Structural_Analysis(self.test_mode)

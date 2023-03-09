@@ -404,7 +404,11 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
                                     "Error in reading config file. Make sure your atoms_for_analysis are on separate lines in list format. The pre-set dash indicates how to type each atom on a new line"
                                 )
                                 exit()
-
+        for item in cfg:
+            if 'cif_parameters' == item and 'varying_cif_parameter' in cfg.keys():
+                cfg['cif_parameters'].append(cfg['varying_cif_parameter'])
+                
+        #print(cfg['cif_parameters'])
     return flag, cfg
 
 
@@ -1969,9 +1973,7 @@ def pipeline_cif(dependencies, files, configure, run):
                 cfg["instrument_file"],
             )
             ignored_folders = [pathlib.Path(cfg["experiment_location"])/"error_logs"]
-            #ignored_folders = ["error_logs"]
-            #print(cfg["experiment_location"])
-            print(ignored_folders)
+            #print(ignored_folders)
             cifs.compile_cifs(cfg["experiment_location"], ignored_folders)
 
             #copy_logs(cfg["experiment_location"])

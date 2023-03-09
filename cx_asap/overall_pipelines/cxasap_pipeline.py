@@ -189,14 +189,15 @@ class General_Pipeline:
         os.chdir(working_directory)
 
         # DON'T use enumerate here, because stats_location and results_location would also contribute to numbers
-
+ 
         index = 0
-
+        
         for item in self.sorter.sorted_properly(os.listdir()):
             if (
                 item != pathlib.Path(self.stats_location.parent).stem
                 and item != pathlib.Path(self.results_location.parent).stem
                 and os.path.isdir(item) == True
+                and item!= 'error_logs'
             ):
 
                 print(item)
@@ -207,7 +208,7 @@ class General_Pipeline:
 
                 cif = ReadCif(instrument_path.name)
                 data_block = cif.first_block()
-                print(data_block)
+                #print(data_block)
                 data_block[varying_param] = varying_data[index]
 
                 with open("instrument.cif", "w") as f:
