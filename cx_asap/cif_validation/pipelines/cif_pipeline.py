@@ -119,8 +119,8 @@ class CIF_Compile_Pipeline:
 
         for item in self.tree.directories:
         
-            print(self.tree.directories)
-            print(ignored_folders)
+            #print(self.tree.directories)
+            #print(ignored_folders)
 
             if item not in ignored_folders:
 

@@ -275,15 +275,14 @@ class Structural_Analysis:
                 
 
             dup = important_df.duplicated(["Joined", varying_parameter], keep=False)
-            #dup = important_df.duplicated(["Joined", varying_parameter], keep=True)
-            print(dup)
+            
 
             # The below function counts the number of each group of duplicates
 
             list_dup = important_df.pivot_table(
                 columns=["Joined", varying_parameter], aggfunc="size"
             ).to_dict()
-            print(list_dup)
+            #print(list_dup)
 
             counter = 0
 

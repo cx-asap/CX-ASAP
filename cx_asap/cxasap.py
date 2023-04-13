@@ -1973,7 +1973,7 @@ def pipeline_cif(dependencies, files, configure, run):
                 cfg["instrument_file"],
             )
             ignored_folders = [pathlib.Path(cfg["experiment_location"])/"error_logs"]
-            #print(ignored_folders)
+            
             cifs.compile_cifs(cfg["experiment_location"], ignored_folders)
 
             #copy_logs(cfg["experiment_location"])
