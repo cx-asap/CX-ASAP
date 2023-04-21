@@ -202,7 +202,7 @@ class CIF_Read:
             ) = self.data_harvest(cif_file, self.search_items, varying_parameter)
 
             self.structural_analysis(cif_file, bonds, angles, torsions, varying_parameter)
-            self.adp_analysis(cif_file, adp)
+            self.adp_analysis(cif_file, adp, varying_parameter)
 
             self.data = self.data.append(temp_data)
             self.structures_in_cif.append(structures_in_cif_tmp)
@@ -287,7 +287,12 @@ class CIF_Read:
             ) = self.data_harvest(cif_file, torsion_paras, varying_parameter)
             self.torsion_data = self.torsion_data.append(temp_data_torsions)
 
-    def adp_analysis(self, cif_file: str, adp: bool = False) -> None:
+    def adp_analysis(
+        self, 
+        cif_file: str, 
+        adp: bool = False, 
+        varying_parameter:str = '_diffrn_ambient_temperature'
+    ) -> None:
 
         """Extracts ADP information from CIF
 
@@ -313,6 +318,7 @@ class CIF_Read:
                 successful_positions_tmp_adps,
             ) = self.data_harvest(cif_file, adps, varying_parameter)
             self.adp_data = self.adp_data.append(temp_data_adps)
+            #print(self.adp_data)
 
     def data_harvest(
         self, cif_file: str, search_items: list, varying_parameter: str = 'diffrn_ambient_temperature'

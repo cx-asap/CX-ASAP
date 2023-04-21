@@ -98,6 +98,7 @@ class ADP_analysis:
 
         dot_product = np.matmul(vector, np.matmul(G, cell_axis))
         div = dot_product / cell_length
+        print(div)
         angle = math.acos(div) * (180 / math.pi)
 
         angle = round(angle, 1)
