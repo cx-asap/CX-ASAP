@@ -23,7 +23,6 @@ import logging
 
 class VT_Analysis_Pipeline:
     def __init__(self) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -45,7 +44,6 @@ class VT_Analysis_Pipeline:
         self.sys_path = config.sys_path
 
     def determine_temp_behaviour(self, df: "pd.DataFrame") -> list:
-
         """Searches through the data and classifies everything as a
 
         minima, maxima, increasing or decreasing
@@ -115,7 +113,6 @@ class VT_Analysis_Pipeline:
 
     def analyse_data(
         self,
-        ref_cell: list,
         ref_ins: str,
         location: str,
         cif_parameters: list,
@@ -125,7 +122,6 @@ class VT_Analysis_Pipeline:
         torsions: bool = False,
         adps: bool = False,
     ) -> None:
-
         """Performs much analysis on CIF files
 
         Reads them and extracts the desired parameters
@@ -139,7 +135,6 @@ class VT_Analysis_Pipeline:
         THIS FUNCTION IS SPECIFIC TO VT, SO HAS CHANGING PARAM AS "_diffrn_ambient_temperature"
 
         Args:
-            ref_cell (list): reference unit cell
             ref_ins (str): full path to the reference .ins
             location (str): full path to the folder containing all CIFs for analysis
             cif_parameters (list): list of cif parameters to extract
@@ -187,14 +182,16 @@ class VT_Analysis_Pipeline:
             },
             "Temperature (K)",
         )
-        cell.graphical_analysis("_diffrn_ambient_temperature", "Temperature (K)")
+        cell.graphical_analysis(
+            "_diffrn_ambient_temperature", "Temperature (K)")
 
         if adps != False:
             adp_object = ADP_analysis()
             adp_object.analyse_data(adps, "CIF_Parameters.csv")
 
         graph = Grapher()
-        discrete_behaviour = list(dict.fromkeys(self.determine_temp_behaviour(cell.df)))
+        discrete_behaviour = list(dict.fromkeys(
+            self.determine_temp_behaviour(cell.df)))
         separated_by_behaviour_dfs = []
         for item in discrete_behaviour:
             condition = cell.df["behaviour"] == item

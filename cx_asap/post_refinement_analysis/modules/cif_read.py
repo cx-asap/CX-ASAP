@@ -23,7 +23,6 @@ from typing import Tuple
 
 class CIF_Read:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -71,7 +70,6 @@ class CIF_Read:
             )
 
     def configure(self, search_items: list) -> None:
-
         """Sets up dictionaries and data frames to put data into
 
         Headers in dictionaries are desired parameters from conf.yaml
@@ -95,7 +93,6 @@ class CIF_Read:
         self.adp_data = pd.DataFrame()
 
     def parameter_tidy(self, raw: str, item: str) -> None:
-
         """This tidies the output from the CIF and separates
 
         the errors and the values and places them in separate dictionaires
@@ -111,7 +108,8 @@ class CIF_Read:
             self.results[item].append(float(temp[0]))
             if "." in raw:
                 temp3 = temp[0].split(".")
-                self.errors[item].append(int(temp2) * 10 ** -(int(len(temp3[1]))))
+                self.errors[item].append(
+                    int(temp2) * 10 ** -(int(len(temp3[1]))))
             else:
                 self.errors[item].append(int(temp2))
         else:
@@ -122,7 +120,6 @@ class CIF_Read:
             self.errors[item].append(0)
 
     def generate_cif_list(self, df: "pd.Dataframe", counter: list) -> Tuple[list, list]:
-
         """This will generate a list of cifs that matches the length of
 
         data extracted from each CIF
@@ -168,7 +165,6 @@ class CIF_Read:
         adp: bool = False,
         varying_parameter: str = '_diffrn_ambient_temperature'
     ) -> None:
-
         """Searches through all folders in current working directory for CIFs
 
         For each CIF identified, extracts desired parameters
@@ -183,9 +179,11 @@ class CIF_Read:
 
         # This function searches through all of the folders in the current working directory for a cif file
 
-        self.tree_browse = Directory_Browse(pathlib.Path(location), self.test_mode)
+        self.tree_browse = Directory_Browse(
+            pathlib.Path(location), self.test_mode)
 
-        self.tree_browse.enter_directory_multiple(pathlib.Path(location), ".cif")
+        self.tree_browse.enter_directory_multiple(
+            pathlib.Path(location), ".cif")
 
         # For all found cif_files:
 
@@ -201,7 +199,8 @@ class CIF_Read:
                 successful_positions_tmp,
             ) = self.data_harvest(cif_file, self.search_items, varying_parameter)
 
-            self.structural_analysis(cif_file, bonds, angles, torsions, varying_parameter)
+            self.structural_analysis(
+                cif_file, bonds, angles, torsions, varying_parameter)
             self.adp_analysis(cif_file, adp)
 
             self.data = self.data.append(temp_data)
@@ -229,7 +228,6 @@ class CIF_Read:
         torsions: bool = False,
         varying_parameter: str = '_diffrn_ambient_temperature'
     ) -> None:
-
         """Extracts structural information from CIF
 
         Args:
@@ -288,7 +286,6 @@ class CIF_Read:
             self.torsion_data = self.torsion_data.append(temp_data_torsions)
 
     def adp_analysis(self, cif_file: str, adp: bool = False, varying_parameter: str = '_diffrn_ambient_temperature') -> None:
-
         """Extracts ADP information from CIF
 
         Args:
@@ -317,7 +314,6 @@ class CIF_Read:
     def data_harvest(
         self, cif_file: str, search_items: list, varying_parameter: str = '_diffrn_ambient_temperature'
     ) -> Tuple["pd.DataFrame", int, list]:
-
         """Extracts all other desired parameters from CIF
 
         Ie cell information and quality statistics
@@ -371,7 +367,8 @@ class CIF_Read:
                 try:
                     raw = cif[experiment][item]
                 except:
-                    logging.critical("Failed to find " + item + " in " + cif_file.stem)
+                    logging.critical("Failed to find " +
+                                     item + " in " + cif_file.stem)
                     print("Critical Failure - see error log for details")
                     exit()
 
@@ -432,7 +429,6 @@ class CIF_Read:
         return self.temp_df, number_of_structures, self.data_blocks
 
     def data_output(self) -> None:
-
         """Outputs all data to .csv files"""
 
         self.data.to_csv("CIF_Parameters.csv", index=None)
