@@ -200,6 +200,7 @@ class Variable_Analysis_Pipeline:
         if adps != False:
             adp_object = ADP_analysis(self.test_mode)
             adp_object.analyse_data(adps, "CIF_Parameters.csv")
+            
 
         graph = Grapher(self.test_mode)
         discrete_behaviour = list(

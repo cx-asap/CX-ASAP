@@ -98,9 +98,7 @@ class ADP_analysis:
 
         dot_product = np.matmul(vector, np.matmul(G, cell_axis))
         div = dot_product / cell_length
-        #print(div)
         angle = math.acos(div) * (180 / math.pi)
-
         angle = round(angle, 1)
 
         supplementary_angle = 180 - angle
@@ -134,6 +132,9 @@ class ADP_analysis:
         new_adp_df["Atom"] = adp_df["_atom_site_aniso_label"]
 
         cell_df = pd.read_csv(cell_data)
+        #print(cell_data)
+        #print("cell_df")
+        #print(cell_df) 
 
         adp_by_cell = adp_df.groupby("Data_Block")
 
@@ -335,7 +336,6 @@ class ADP_analysis:
                 v3_c, v3_c_sup = self.calculate_angle(
                     scaled_vector_C, c, math.sqrt(G[2][2]), G
                 )
-                print(v1_a)
 
                 vector_A_angle_a.append(v1_a)
                 vector_A_angle_b.append(v1_b)
