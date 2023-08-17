@@ -31,7 +31,6 @@ import logging
 
 class General_Pipeline:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -62,7 +61,6 @@ class General_Pipeline:
         self.sorter = File_Sorter()
 
     def make_dirs(self, experiment_location: str) -> None:
-
         """Makes two directories:
 
         A directory for refinement graphs and result report
@@ -140,7 +138,6 @@ class General_Pipeline:
         varying_data: list,
         varying_param: str,
     ):
-
         """Runs shredCIF on a reference .cif
 
         Extracts the .ins/.res file to use as a reference structure
@@ -197,9 +194,8 @@ class General_Pipeline:
                 item != pathlib.Path(self.stats_location.parent).stem
                 and item != pathlib.Path(self.results_location.parent).stem
                 and os.path.isdir(item) == True
-                and item != 'error_logs'
+                and item != "error_logs"
             ):
-
                 print(item)
 
                 shutil.copy(instrument_path, item)
@@ -230,7 +226,6 @@ class General_Pipeline:
         varying_data: list,
         varying_param: str,
     ) -> None:
-
         """Similar to 'reference_extract', but assuming no reference .cif is available
 
         Instead, starts with a reference .ins/.res
@@ -295,7 +290,6 @@ class General_Pipeline:
                 and item != self.results_location.name
                 and os.path.isdir(item) == True
             ):
-
                 try:
                     shutil.copy(instrument_path, item)
                 except shutil.SameFileError:
@@ -332,7 +326,6 @@ class General_Pipeline:
         tolerance: float,
         max_cycles: int,
     ) -> None:
-
         """Runs SHELXL on a series of structures based on one reference
 
         Args:
@@ -369,6 +362,7 @@ class General_Pipeline:
         bonds: bool,
         angles: bool,
         torsions: bool,
+        hbonds: bool,
         cif_parameters: list,
         atoms_for_analysis: list,
         varying_param: str,
@@ -377,7 +371,6 @@ class General_Pipeline:
         additional_params: list,
         adps: bool,
     ) -> None:
-
         """Compiles all of the output CIFs and runs an analysis pipeline on these files
 
         Args:
@@ -394,6 +387,7 @@ class General_Pipeline:
             bonds (bool): whether or not bond analysis should be run
             angles (bool): whether or not angle analysis should be run
             torsions (bool): whether or not torsion analysis should be run
+            hbonds (bool): whether or not hbond analysis should be run
             cif_parameters (list): list of parameters in the CIF for tabulation
             atoms_for_analysis (list): list of atoms for geometrical analysis
             varying_param (str): which parameter in the CIF is varying over the experiments
@@ -431,5 +425,6 @@ class General_Pipeline:
             bonds,
             angles,
             torsions,
+            hbonds,
             adps,
         )
