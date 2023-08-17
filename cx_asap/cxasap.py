@@ -1068,6 +1068,9 @@ def pipeline_general(dependencies, files, configure, run):
             " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
         )
         click.echo(
+            " - structural_analysis_hbonds: enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
+        )
+        click.echo(
             " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
         )
         click.echo(
@@ -1128,6 +1131,7 @@ def pipeline_general(dependencies, files, configure, run):
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["cif_parameters"],
                 cfg["atoms_for_analysis"],
                 cfg["varying_cif_parameter"],
@@ -1228,6 +1232,9 @@ def pipeline_general_extra(dependencies, files, configure, run):
             " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
         )
         click.echo(
+            " - structural_analysis_hbonds: enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
+        )
+        click.echo(
             " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
         )
         click.echo(
@@ -1293,6 +1300,7 @@ def pipeline_general_extra(dependencies, files, configure, run):
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["cif_parameters"],
                 cfg["atoms_for_analysis"],
                 cfg["varying_cif_parameter"],
@@ -2249,6 +2257,9 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
             " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
         )
         click.echo(
+            " - structural_analysis_hbonds: enter True for torsion analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
+        )
+        click.echo(
             " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
         )
         click.echo(
@@ -2320,6 +2331,7 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
                 cfg["min_crystal_dimension"],
                 True,
                 True,
+                False,
                 False,
                 cfg["cif_parameters"],
                 cfg["atoms_for_analysis"],

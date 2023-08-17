@@ -49,6 +49,7 @@ pipeline-variable-position:
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
+  - structural_analysis_hbonds
   - ADP_analysis
   - atoms_for_analysis
   - wedge_angles
@@ -69,6 +70,7 @@ pipeline-general:
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
+  - structural_analysis_hbonds
   - ADP_analysis
   - atoms_for_analysis
   - varying_cif_parameter
@@ -113,6 +115,7 @@ pipeline-general-extra:
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
+  - structural_analysis_hbonds
   - ADP_analysis
   - atoms_for_analysis
   - varying_cif_parameter
@@ -237,6 +240,7 @@ pipeline-aus-synch-vt:
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
+  - structural_analysis_hbonds
   - ADP_analysis
   - atoms_for_analysis
   - transformation_matrix
