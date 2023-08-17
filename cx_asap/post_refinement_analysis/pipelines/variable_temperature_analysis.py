@@ -149,7 +149,7 @@ class VT_Analysis_Pipeline:
 
         CIF_Data = CIF_Read()
         CIF_Data.configure(cif_parameters)
-        CIF_Data.get_data(location, bonds, angles, torsions, adps)
+        CIF_Data.get_data(location, bonds, angles, torsions, hbonds, adps)
         CIF_Data.data_output()
 
         geometry = Structural_Analysis()
@@ -160,8 +160,8 @@ class VT_Analysis_Pipeline:
             angles = "Bond_Angles.csv"
         if torsions != False:
             torsions = "Bond_Torsions.csv"
-        if torsions != False:
-            torsions = "Hbond_details.csv"
+        if hbonds != False:
+            hbonds = "Hbond_details.csv"
         if adps != False:
             adps = "ADPs.csv"
 
