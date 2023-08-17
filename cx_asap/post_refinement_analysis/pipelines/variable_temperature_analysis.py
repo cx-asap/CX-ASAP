@@ -120,6 +120,7 @@ class VT_Analysis_Pipeline:
         bonds: bool = False,
         angles: bool = False,
         torsions: bool = False,
+        hbonds: bool = False,
         adps: bool = False,
     ) -> None:
         """Performs much analysis on CIF files
@@ -142,6 +143,7 @@ class VT_Analysis_Pipeline:
             bonds (bool): whether or not bond analysis should be run
             angles (bool): whether or not angle analysis should be run
             torsions (bool): whether or not torsion analysis should be run
+            hbonds (bool): whether or not torsion analysis should be run
             adps (bool): whether or not ADP analysis should be run
         """
 
@@ -158,6 +160,8 @@ class VT_Analysis_Pipeline:
             angles = "Bond_Angles.csv"
         if torsions != False:
             torsions = "Bond_Torsions.csv"
+        if torsions != False:
+            torsions = "Hbond_details.csv"
         if adps != False:
             adps = "ADPs.csv"
 
@@ -165,6 +169,7 @@ class VT_Analysis_Pipeline:
             bonds,
             angles,
             torsions,
+            hbonds,
             atoms_for_analysis,
             location,
             varying_parameter="_diffrn_ambient_temperature",
@@ -182,16 +187,14 @@ class VT_Analysis_Pipeline:
             },
             "Temperature (K)",
         )
-        cell.graphical_analysis(
-            "_diffrn_ambient_temperature", "Temperature (K)")
+        cell.graphical_analysis("_diffrn_ambient_temperature", "Temperature (K)")
 
         if adps != False:
             adp_object = ADP_analysis()
             adp_object.analyse_data(adps, "CIF_Parameters.csv")
 
         graph = Grapher()
-        discrete_behaviour = list(dict.fromkeys(
-            self.determine_temp_behaviour(cell.df)))
+        discrete_behaviour = list(dict.fromkeys(self.determine_temp_behaviour(cell.df)))
         separated_by_behaviour_dfs = []
         for item in discrete_behaviour:
             condition = cell.df["behaviour"] == item

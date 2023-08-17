@@ -24,7 +24,6 @@ import logging
 
 class VP_Analysis_Pipeline:
     def __init__(self) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -69,9 +68,9 @@ class VP_Analysis_Pipeline:
         bonds: bool = False,
         angles: bool = False,
         torsions: bool = False,
+        hbonds: bool = False,
         adps: bool = False,
     ) -> None:
-
         """Performs much analysis on CIF files
 
         Reads them and extracts the desired parameters
@@ -107,12 +106,13 @@ class VP_Analysis_Pipeline:
             bonds (bool): whether or not bond analysis should be run
             angles (bool): whether or not angle analysis should be run
             torsions (bool): whether or not torsion analysis should be run
+            hbonds (bool): whether or not hbond analysis should be run
             adps (bool): whether or not ADP analysis should be run
         """
 
         CIF_Data = CIF_Read()
         CIF_Data.configure(cif_parameters)
-        CIF_Data.get_data(location, bonds, angles, torsions, adps)
+        CIF_Data.get_data(location, bonds, angles, torsions, hbonds, adps)
         CIF_Data.data_output()
 
         cell = Cell_Deformation()
@@ -225,7 +225,7 @@ class VP_Analysis_Pipeline:
                     discrete_cif_names[index] + "_parameters.csv",
                 )
 
-        # Bonds/Angles/Torsions
+        # Bonds/Angles/Torsions/Hbonds
 
         geometry = Structural_Analysis()
 
@@ -245,6 +245,7 @@ class VP_Analysis_Pipeline:
                     "Bond_Lengths_" + discrete_cif_names_bond[index] + ".csv",
                     False,
                     False,
+                    False,
                     atoms_for_analysis,
                     location,
                     str(index + 1),
@@ -261,11 +262,12 @@ class VP_Analysis_Pipeline:
                 separated_by_cif_angle.append(angle_df[condition])
 
             for index, item in enumerate(separated_by_cif_angle):
-                item.to_csv("Bond_Angles_" + discrete_cif_names_bond[index] + ".csv")
+                item.to_csv("Bond_Angles_" + discrete_cif_names_angle[index] + ".csv")
 
                 geometry.import_and_analyse(
                     False,
-                    "Bond_Angles_" + discrete_cif_names_bond[index] + ".csv",
+                    "Bond_Angles_" + discrete_cif_names_angle[index] + ".csv",
+                    False,
                     False,
                     atoms_for_analysis,
                     location,
@@ -283,12 +285,37 @@ class VP_Analysis_Pipeline:
                 separated_by_cif_torsion.append(torsion_df[condition])
 
             for index, item in enumerate(separated_by_cif_torsion):
-                item.to_csv("Bond_Torsions_" + discrete_cif_names_bond[index] + ".csv")
+                item.to_csv(
+                    "Bond_Torsions_" + discrete_cif_names_torsion[index] + ".csv"
+                )
 
                 geometry.import_and_analyse(
                     False,
                     False,
-                    "Bond_Torsions_" + discrete_cif_names_bond[index] + ".csv",
+                    "Bond_Torsions_" + discrete_cif_names_torsion[index] + ".csv",
+                    False,
+                    atoms_for_analysis,
+                    location,
+                    str(index + 1),
+                    True,
+                )
+            if hbonds != False:
+                hbond_df = pd.read_csv("HBond_details.csv")
+                discrete_cif_names_hbond = list(dict.fromkeys(hbond_df["CIF_File"]))
+                separated_by_cif_hbond = []
+
+            for item in discrete_cif_names_hbond:
+                condition = hbond_df["CIF_File"] == item
+                separated_by_cif_hbond.append(hbond_df[condition])
+
+            for index, item in enumerate(separated_by_cif_hbond):
+                item.to_csv("HBond_details_" + discrete_cif_names_hbond[index] + ".csv")
+
+                geometry.import_and_analyse(
+                    False,
+                    False,
+                    False,
+                    "HBond_details_" + discrete_cif_names_hbond[index] + ".csv",
                     atoms_for_analysis,
                     location,
                     str(index + 1),

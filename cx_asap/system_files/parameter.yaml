@@ -214,6 +214,7 @@ pipeline-rigaku-vt:
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
+  - structural_analysis_hbonds
   - ADP_analysis
   - atoms_for_analysis
 
@@ -277,6 +278,7 @@ module-cif-read:
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
+  - structural_analysis_hbonds
   - ADP_analysis
   - folder_containing_cifs
 
@@ -289,6 +291,7 @@ module-structural-analysis:
   - bond_data
   - angle_data
   - torsion_data
+  - hbond_data
 
 pipeline-rotation-planes:
   - reference_plane
@@ -300,6 +303,7 @@ pipeline-variable-analysis:
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
+  - structural_analysis_hbonds
   - ADP_analysis
   - varying_cif_parameter
   - experiment_location
@@ -312,6 +316,7 @@ pipeline-position-analysis:
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
+  - structural_analysis_hbonds
   - ADP_analysis
   - experiment_location
   - reference_unit_cell
@@ -329,6 +334,7 @@ pipeline-temperature-analysis:
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
+  - structural_analysis_hbonds
   - ADP_analysis
   - experiment_location
   - reference_unit_cell

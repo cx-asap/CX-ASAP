@@ -89,6 +89,7 @@ class CIF_Read:
         self.bond_data = pd.DataFrame()
         self.angle_data = pd.DataFrame()
         self.torsion_data = pd.DataFrame()
+        self.hbond_data = pd.DataFrame()
         self.temp_df = pd.DataFrame()
         self.adp_data = pd.DataFrame()
 
@@ -108,8 +109,7 @@ class CIF_Read:
             self.results[item].append(float(temp[0]))
             if "." in raw:
                 temp3 = temp[0].split(".")
-                self.errors[item].append(
-                    int(temp2) * 10 ** -(int(len(temp3[1]))))
+                self.errors[item].append(int(temp2) * 10 ** -(int(len(temp3[1]))))
             else:
                 self.errors[item].append(int(temp2))
         else:
@@ -146,7 +146,6 @@ class CIF_Read:
         longer_cif_list = []
         longer_data_blocks = []
         if len(df) != 0:
-
             for index, item in enumerate(counter):
                 i = 0
                 while i < item:
@@ -162,8 +161,9 @@ class CIF_Read:
         bonds: bool = False,
         angles: bool = False,
         torsions: bool = False,
+        hbonds: bool = False,
         adp: bool = False,
-        varying_parameter: str = '_diffrn_ambient_temperature'
+        varying_parameter: str = "_diffrn_ambient_temperature",
     ) -> None:
         """Searches through all folders in current working directory for CIFs
 
@@ -174,21 +174,20 @@ class CIF_Read:
             bonds (bool): whether or not bond analysis should be run
             angles (bool): whether or not angle analysis should be run
             torsions (bool): whether or not torsion analysis should be run
+            hbonds (bool): whether or not Hbond analysis should be run
             adps (bool): whether or not ADP analysis should be run
+
         """
 
         # This function searches through all of the folders in the current working directory for a cif file
 
-        self.tree_browse = Directory_Browse(
-            pathlib.Path(location), self.test_mode)
+        self.tree_browse = Directory_Browse(pathlib.Path(location), self.test_mode)
 
-        self.tree_browse.enter_directory_multiple(
-            pathlib.Path(location), ".cif")
+        self.tree_browse.enter_directory_multiple(pathlib.Path(location), ".cif")
 
         # For all found cif_files:
 
         for index, item in enumerate(self.tree_browse.item_files):
-
             cif_file = self.tree_browse.item_files[index].absolute()
 
             # extracts the desired cif parameters, as well as how many structures per cif and which positions were successful
@@ -200,7 +199,8 @@ class CIF_Read:
             ) = self.data_harvest(cif_file, self.search_items, varying_parameter)
 
             self.structural_analysis(
-                cif_file, bonds, angles, torsions, varying_parameter)
+                cif_file, bonds, angles, torsions, hbonds, varying_parameter
+            )
             self.adp_analysis(cif_file, adp)
 
             self.data = self.data.append(temp_data)
@@ -226,7 +226,8 @@ class CIF_Read:
         bonds: bool = False,
         angles: bool = False,
         torsions: bool = False,
-        varying_parameter: str = '_diffrn_ambient_temperature'
+        hbonds: bool = False,
+        varying_parameter: str = "_diffrn_ambient_temperature",
     ) -> None:
         """Extracts structural information from CIF
 
@@ -235,6 +236,7 @@ class CIF_Read:
             bonds (bool): whether or not bond analysis should be run
             angles (bool): whether or not angle analysis should be run
             torsions (bool): whether or not torsion analysis should be run
+            hbonds (bool): whether or not Hbond analysis should be run
         """
 
         # separate function for structural analysis as it is not always required
@@ -258,6 +260,16 @@ class CIF_Read:
             "_geom_torsion_atom_site_label_3",
             "_geom_torsion_atom_site_label_4",
             "_geom_torsion",
+            varying_parameter,
+        ]
+        hbond_paras = [
+            "_geom_hbond_atom_site_label_D",
+            "_geom_hbond_atom_site_label_H",
+            "_geom_hbond_atom_site_label_A",
+            "_geom_hbond_distance_DH",
+            "_geom_hbond_distance_HA",
+            "_geom_hbond_distance_DA",
+            "_geom_hbond_angle_DHA",
             varying_parameter,
         ]
 
@@ -284,8 +296,20 @@ class CIF_Read:
                 successful_positions_tmp_torsions,
             ) = self.data_harvest(cif_file, torsion_paras, varying_parameter)
             self.torsion_data = self.torsion_data.append(temp_data_torsions)
+        if hbonds == True:
+            (
+                temp_data_hbonds,
+                structures_in_cif_tmp_hbonds,
+                successful_positions_tmp_hbonds,
+            ) = self.data_harvest(cif_file, hbond_paras, varying_parameter)
+            self.hbond_data = self.hbond_data.append(temp_data_hbonds)
 
-    def adp_analysis(self, cif_file: str, adp: bool = False, varying_parameter: str = '_diffrn_ambient_temperature') -> None:
+    def adp_analysis(
+        self,
+        cif_file: str,
+        adp: bool = False,
+        varying_parameter: str = "_diffrn_ambient_temperature",
+    ) -> None:
         """Extracts ADP information from CIF
 
         Args:
@@ -312,7 +336,10 @@ class CIF_Read:
             self.adp_data = self.adp_data.append(temp_data_adps)
 
     def data_harvest(
-        self, cif_file: str, search_items: list, varying_parameter: str = '_diffrn_ambient_temperature'
+        self,
+        cif_file: str,
+        search_items: list,
+        varying_parameter: str = "_diffrn_ambient_temperature",
     ) -> Tuple["pd.DataFrame", int, list]:
         """Extracts all other desired parameters from CIF
 
@@ -367,8 +394,7 @@ class CIF_Read:
                 try:
                     raw = cif[experiment][item]
                 except:
-                    logging.critical("Failed to find " +
-                                     item + " in " + cif_file.stem)
+                    logging.critical("Failed to find " + item + " in " + cif_file.stem)
                     print("Critical Failure - see error log for details")
                     exit()
 
@@ -438,5 +464,7 @@ class CIF_Read:
             self.angle_data.to_csv("Bond_Angles.csv", index=None)
         if len(self.torsion_data) != 0:
             self.torsion_data.to_csv("Bond_Torsions.csv", index=None)
+        if len(self.hbond_data) != 0:
+            self.hbond_data.to_csv("HBond_details.csv", index=None)
         if len(self.adp_data) != 0:
             self.adp_data.to_csv("ADPs.csv", index=None)
