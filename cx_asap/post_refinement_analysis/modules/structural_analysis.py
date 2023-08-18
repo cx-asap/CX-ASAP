@@ -193,6 +193,7 @@ class Structural_Analysis:
                 )
             else:
                 os.chdir(pathlib.Path(hbond_csv).parent)
+
                 self.structural_analysis(
                     hbond_df,
                     self.hbond_paras,

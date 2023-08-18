@@ -169,7 +169,7 @@ class Variable_Analysis_Pipeline:
             angles = "Bond_Angles.csv"
         if torsions != False:
             torsions = "Bond_Torsions.csv"
-        if hbondss != False:
+        if hbonds != False:
             hbonds = "HBond_details.csv"
         if adps != False:
             adps = "ADPs.csv"
