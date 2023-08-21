@@ -145,9 +145,9 @@ class Rotation:
 
             # Calculates the difference in angle between atom plane and reference plane
 
-            x = data[0] / ref_values[0]
-            y = data[1] / ref_values[1]
-            z = data[2] / ref_values[2]
+            x = data[0] 
+            y = data[1] 
+            z = data[2]
 
             molecule_plane = [x, y, z]
 
