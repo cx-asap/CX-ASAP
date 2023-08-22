@@ -198,7 +198,7 @@ class Structural_Analysis:
                     hbond_df,
                     self.hbond_paras,
                     "Hbonds",
-                    "Hbond_detials.csv",
+                    "Hbond_details.csv",
                     "Individual_Hbond_Data",
                     "Length (Angstroms)",
                     atoms_for_analysis,
