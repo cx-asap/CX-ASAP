@@ -16,13 +16,13 @@ import os
 import math
 import pandas as pd
 import logging
+import numpy as np
 
 # ----------Class Definition----------#
 
 
 class Rotation:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -51,7 +51,6 @@ class Rotation:
         self.sys_path = config.sys_path
 
     def configure(self, ref_plane: list) -> None:
-
         """Checks that the user has input a valid reference plane
 
         Args:
@@ -73,7 +72,6 @@ class Rotation:
             exit()
 
     def grab_cell(self, file_name: str) -> None:
-
         """Collects the unit cell for later calculations
 
         Args:
@@ -89,10 +87,16 @@ class Rotation:
                     split_line = line.split()
 
         if len(split_line) != 0:
+            ref_parameters = [
+                "ref_INS_a",
+                "ref_INS_b",
+                "ref_INS_c",
+                "ref_INS_alpha",
+                "ref_INS_beta",
+                "ref_INS_gamma",
+            ]
 
-            ref_parameters = ["ref_INS_a", "ref_INS_b", "ref_INS_c"]
-
-            self.ref_values = [0, 0, 0]
+            self.ref_values = [0, 0, 0, 0, 0, 0]
 
             for index, item in enumerate(ref_parameters):
                 self.ref_values[index] = float(split_line[index + 2])
@@ -100,7 +104,6 @@ class Rotation:
             self.bad_flag = True
 
     def calculate_planes(self, data: str, ref_plane: list, ref_values: list) -> float:
-
         """Finds the results from the MPLA command in the .lst file
 
         Converts into fractional coordinates using the unit cell from the
@@ -108,6 +111,10 @@ class Rotation:
         above function
 
         Calculates the angle between it and the reference plane
+
+        Note that the requires a number of calculations to be peformed on the unit cell. Some of these are planned to be moved to the unit cell class in the future.
+
+        The unit cell class may then also be moved to the system_files folder.
 
         Args:
             data (str): .lst file with MPLA info as a string
@@ -134,7 +141,6 @@ class Rotation:
         index = 0
 
         if flag == 1:
-
             for item in plane.split():
                 try:
                     float(item)
@@ -143,41 +149,91 @@ class Rotation:
                 else:
                     data.append(float(item))
 
-            # Calculates the difference in angle between atom plane and reference plane
-
-            x = data[0] 
-            y = data[1] 
-            z = data[2]
-
-            molecule_plane = [x, y, z]
-
-            dot_product = (
-                molecule_plane[0] * ref_plane[0]
-                + molecule_plane[1] * ref_plane[1]
-                + molecule_plane[2] * ref_plane[2]
+            # calculate G the metric matrix
+            alpha = np.radians(self.ref_values[3])
+            beta = np.radians(self.ref_values[4])
+            gamma = np.radians(self.ref_values[5])
+            a = self.ref_values[0]
+            b = self.ref_values[1]
+            c = self.ref_values[2]
+            G = np.zeros((3, 3))
+            G[0, 0] = a**2
+            G[0, 1] = a * b * np.cos(gamma)
+            G[0, 2] = a * c * np.cos(beta)
+            G[1, 0] = a * b * np.cos(gamma)
+            G[1, 1] = b**2
+            G[1, 2] = b * c * np.cos(alpha)
+            G[2, 0] = a * c * np.cos(beta)
+            G[2, 1] = b * c * np.cos(alpha)
+            G[2, 2] = c**2
+            detG = np.linalg.det(G)
+            V = np.sqrt(detG)
+            V_star = 1 / V
+            a_star = b * c * np.sin(alpha) * V_star
+            b_star = a * c * np.sin(beta) * V_star
+            c_star = a * b * np.sin(gamma) * V_star
+            alpha_star = np.arccos(
+                (np.cos(beta) * np.cos(gamma) - np.cos(alpha))
+                / (np.sin(beta) * np.sin(gamma))
             )
-
-            normal_molecule = math.sqrt(
-                (molecule_plane[0] ** 2)
-                + (molecule_plane[1] ** 2)
-                + (molecule_plane[2] ** 2)
+            beta_star = np.arccos(
+                (np.cos(alpha) * np.cos(gamma) - np.cos(beta))
+                / (np.sin(alpha) * np.sin(gamma))
             )
-
-            normal_reference = math.sqrt(
-                (ref_plane[0] ** 2) + (ref_plane[1] ** 2) + (ref_plane[2] ** 2)
+            gamma_star = np.arccos(
+                (np.cos(alpha) * np.cos(beta) - np.cos(gamma))
+                / (np.sin(alpha) * np.sin(beta))
             )
+            # cacluates the orthonormalisation matrix M
+            M = np.zeros((3, 3))
+            M[0, 0] = a
+            M[0, 1] = b * np.cos(gamma)
+            M[0, 2] = c * np.cos(beta)
+            M[1, 0] = 0
+            M[1, 1] = b * np.sin(gamma)
+            M[1, 2] = -c * np.sin(beta) * np.cos(alpha_star)
+            M[2, 0] = 0
+            M[2, 1] = 0
+            M[2, 2] = c * np.sin(beta) * np.sin(alpha_star)
+            M_star = np.linalg.inv(M)
 
-            angle = math.acos(dot_product / (normal_molecule * normal_reference)) * (
-                180 / math.pi
+            ## converst the molecule plane into fractional coordinates
+            cart_coords = np.zeros((1, 3))
+            cart_coords[0, 0] = data[0]
+            cart_coords[0, 1] = data[1]
+            cart_coords[0, 2] = data[2]
+            frac_coords = np.dot(cart_coords, M_star)
+            molecule_plane = frac_coords
+
+            # convert the reference plane into fractional coordinates
+
+            ref_plane = np.zeros((1, 3))
+            ref_plane[0, 0] = self.ref_plane[0]
+            ref_plane[0, 1] = self.ref_plane[1]
+            ref_plane[0, 2] = self.ref_plane[2]
+            ref_frac_coords = np.dot(ref_plane, M_star)
+
+            ## Calculates the difference in angle between atom plane and reference plane
+
+            angle = np.degrees(
+                np.arccos(
+                    np.dot(molecule_plane, ref_frac_coords.T)
+                    / (
+                        np.dot(
+                            (np.linalg.norm(molecule_plane)),
+                            (np.linalg.norm(ref_frac_coords)),
+                        )
+                    )
+                )
             )
-
+            # there is probably a better way to do this it seems to be required for the plotting function in pipeline to get a single value without double square brackets around it!
+            angle = angle[0]
+            angle = angle[0]
             if 180 - angle < 90:
                 angle = 180 - angle
-
         return angle
 
     def find_planes(self, file_name: str) -> float:
-
         """Imports .lst file and then runs the function to calculate the rotation angle
 
         Args:
@@ -197,7 +253,6 @@ class Rotation:
         return angle
 
     def analysis(self, lst_name: str, structure_number: int, results_path: str) -> None:
-
         """Runs the previous functions and also outputs the results to a .csv file
         Args:
             lst_name (str): full path to the .lst file for analysis
@@ -210,11 +265,9 @@ class Rotation:
         if lst_name == "":
             logging.info(__name__ + " : Refinement failed, no mean plane to analyse")
         else:
-
             self.grab_cell(pathlib.Path(lst_name))
 
             if self.bad_flag == False:
-
                 rot_angle = self.find_planes(pathlib.Path(lst_name))
                 self.df = pd.DataFrame(
                     {"Structure": [structure_number], "Rotation Angle": [rot_angle]}
