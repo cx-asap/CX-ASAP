@@ -4186,26 +4186,29 @@ def pipeline_AS_Brute_individual(dependencies, files, configure, run):
                 cfg["experiment_location"], cfg["experiment_location"], "cxasap"
             )
             brute.report(cfg["experiment_location"], "")
-
-            for item in sadabs_folders:
-                if cfg["chemical_formula"] == 0:
-                    brute.xprepreduce(
+            try:
+                for item in sadabs_folders:
+                    if cfg["chemical_formula"] == 0:
+                        brute.xprepreduce(
+                            cfg["experiment_location"] + item,
+                            "cxasap_" + item.strip("/"),
+                        )
+                    else:
+                        brute.xprepreduce(
+                            cfg["experiment_location"] + item,
+                            "cxasap_" + item.strip("/"),
+                            cfg["chemical_formula"],
+                        )
+                    brute.solve(
                         cfg["experiment_location"] + item, "cxasap_" + item.strip("/")
                     )
-                else:
-                    brute.xprepreduce(
+                    brute.move_files(
+                        cfg["experiment_location"],
                         cfg["experiment_location"] + item,
                         "cxasap_" + item.strip("/"),
-                        cfg["chemical_formula"],
                     )
-                brute.solve(
-                    cfg["experiment_location"] + item, "cxasap_" + item.strip("/")
-                )
-                brute.move_files(
-                    cfg["experiment_location"],
-                    cfg["experiment_location"] + item,
-                    "cxasap_" + item.strip("/"),
-                )
+            except FileNotFoundError:
+                pass
                 brute.report(cfg["experiment_location"], item.strip("/"))
 
             copy_logs(cfg["experiment_location"])
