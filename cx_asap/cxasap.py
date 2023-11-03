@@ -44,18 +44,12 @@
 # """DESCRIBE MODULE/PIPELINE HERE
 #
 #    Most of these click functions are specifying text output to commandline
-#
 #    The main coding functions are checking the input of the yaml file
-#
 #    and setting up the corresponding class and calling its functions
-#
 #    Args:
 #        The user will enter one of the four arguments as a flag
-#
 #        This will set that parameter as 'TRUE', while the others are 'FALSE'
-#
 #        This will define the value in the 'if/elif' statements
-#
 #        dependencies (bool): will check for dependencies
 #        files (bool): will show the user what files are required
 #        configure (bool): will set up the yaml for the user to fill out
@@ -139,9 +133,9 @@ from post_refinement_analysis.pipelines.variable_cif_parameter import (
 from overall_pipelines.cxasap_pipeline import General_Pipeline
 
 
+
 def reset_logs() -> None:
     """Resets logs at the start of each run, keeps up to the 5 most previous logs - change quickly by editing the variable below max_logs
-
     Returns:
         None
     """
@@ -151,7 +145,6 @@ def reset_logs() -> None:
     )
 
     max_logs = 5
-
     number_list = []
 
     original_path = os.getcwd()
@@ -172,9 +165,7 @@ def reset_logs() -> None:
             number_list.remove(item)
 
     sorter = File_Sorter()
-
     files = sorter.sorted_properly(os.listdir())
-
     files.reverse()
 
     for item in files:
@@ -199,14 +190,10 @@ def reset_logs() -> None:
 
 def copy_logs(destination: str) -> None:
     """Copies logs to the output folder defined.
-
     If the module / pipeline outputs results, it goes to the results folder
-
     Otherwise, it goes to the experiment location folder
-
     Args:
         destination (string): path to the log destination
-
     """
     log_location = (
         pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output.txt"
@@ -224,18 +211,12 @@ def copy_logs(destination: str) -> None:
 
 def yaml_extraction(heading: str) -> dict:
     """Extracts the required yaml parameters for the chosen code.
-
     Not all yaml parameters are required for every module/pipeline
-
     The required parameters for each module/pipeline are separated by heading
-
     This function makes a conf.yaml with only the parameters under this input heading
-
     This function also serves to set default parameters where possible
-
     Args:
         heading (str): Corresponds to the module or pipeline name that is being configured
-
     Returns:
         yaml_dict (dict): A dictionary of the yaml paramters for chosen module/pipeline
     """
@@ -245,7 +226,6 @@ def yaml_extraction(heading: str) -> dict:
 
     for item in configure.param:
         if item == heading:
-
             # if type(configure.param[item]) == dict:
             # for item2 in configure.param[item]:
             # if type(configure.param[item][item2]) == dict:
@@ -253,7 +233,6 @@ def yaml_extraction(heading: str) -> dict:
             # list_of_params = (
             # list_of_params + configure.param[item][item2][item3]
             # )
-
             # else:
             # list_of_params = list_of_params + configure.param[item][item2]
 
@@ -276,7 +255,12 @@ def yaml_extraction(heading: str) -> dict:
         "structural_analysis_angles",
         "structural_analysis_bonds",
         "structural_analysis_torsions",
+        "structural_analysis_hbonds",
         "ADP_analysis",
+        "angle_data",
+        "bond_data",
+        "hbond_data",
+        "torsion_data",
     ]
 
     for item in list_of_params:
@@ -302,6 +286,8 @@ def yaml_extraction(heading: str) -> dict:
             yaml_dict[item] = 8
         elif item == "tolerance":
             yaml_dict[item] = 0.002
+        elif item == "transformation_matrix":
+            yaml_dict[item] = "1 0 0 0 1 0 0 0 1"
         elif item == "maximum_cycles":
             yaml_dict[item] = 20
         elif item in structure_params:
@@ -314,13 +300,12 @@ def yaml_extraction(heading: str) -> dict:
 
 def yaml_creation(yaml_dict: dict) -> None:
     """Converts the yaml_dict made from the yaml_extraction function into a yaml file
-
     This is the conf.yaml that the user will edit to configure the code
-
     Args:
         yaml_dict (dict): Dictionary of yaml parameters specific to the chosen module/pipeline
     """
     yaml_path = pathlib.Path(os.path.abspath(__file__)).parent / "conf.yaml"
+    # yaml_path = pathlib.Path(os.path.join(os.getcwd()), "conf.yaml")
 
     with open(yaml_path, "w") as f:
         new_yaml = yaml.dump(yaml_dict, f)
@@ -328,19 +313,12 @@ def yaml_creation(yaml_dict: dict) -> None:
 
 def configuration_check(heading: str) -> Tuple[bool, dict]:
     """Checks that there are no code-breaking syntax errors in the conf.yaml
-
     This is run after the user has entered their parameters
-
     and also before the requested module/pipeline is called
-
     This is also used as a check to make sure the user has generated the yaml file
-
     and also that the yaml file matches the headings required for the chosen module/pipeline
-
     For example, if the user has changed modules but hasn't reconfigured the yaml
-
     then this check will throw an error.
-
     Args:
         heading (str): Corresponds to the module or pipeline name that is being configured
 
@@ -351,6 +329,7 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
     yaml_dict = yaml_extraction(heading)
 
     yaml_path = pathlib.Path(os.path.abspath(__file__)).parent / "conf.yaml"
+    # yaml_path =  pathlib.Path(os.path.join(os.getcwd(),"conf.yaml"))
 
     zero_exceptions = [
         "a_gradient",
@@ -360,6 +339,9 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
         "c_gradient",
         "gamma_gradient",
     ]
+
+    if heading == "pipeline-AS-Brute-individual":
+        zero_exceptions.append("chemical_formula")
 
     if os.path.exists(yaml_path) == False:
         click.echo("No configuration file, please run with --configure option\n")
@@ -377,24 +359,33 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
             if item not in cfg.keys():
                 flag = False
 
-        for item in cfg:
-            if cfg[item] == 0 and item not in zero_exceptions:
-                flag = False
+        if flag == True:
+            for item in cfg:
+                if cfg[item] == 0 and item not in zero_exceptions:
+                    flag = False
 
-                if cfg[item] == False and type(cfg[item]) == bool:
-                    flag = True
+                    if cfg[item] == False and type(cfg[item]) == bool:
+                        flag = True
+                    else:
+                        break
 
-            if item == "atoms_for_analysis":
-                for j in cfg[item]:
-                    if len(j.split(" ")) > 1:
-                        print(
-                            "Error in reading config file. Make sure your atoms_for_analysis are on separate lines in list format. The pre-set dash indicates how to type each atom on a new line"
-                        )
-                        exit()
-                        
+                if item == "atoms_for_analysis":
+                    for j in cfg[item]:
+                        try:
+                            len(j.split(" "))
+                        except AttributeError:
+                            if j == 0:
+                                flag = False
+                        else:
+                            if len(j.split(" ")) > 1:
+                                print(
+                                    "Error in reading config file. Make sure your atoms_for_analysis are on separate lines in list format. The pre-set dash indicates how to type each atom on a new line"
+                                )
+                                exit()
+
         for item in cfg:
-            if 'cif_parameters' == item and 'varying_cif_parameter' in cfg.keys():
-                cfg['cif_parameters'].append(cfg['varying_cif_parameter'])
+            if "cif_parameters" == item and "varying_cif_parameter" in cfg.keys():
+                cfg["cif_parameters"].append(cfg["varying_cif_parameter"])
 
     return flag, cfg
 
@@ -417,51 +408,34 @@ def cli():
     #####################################################################\n
 
     Executing commands:\n
-
     Practical Usage - 'cxasap COMMAND [ARGS]'\n
-
     Full Usage - 'cxasap [OPTIONS] COMMAND [ARGS]'\n
-
     Note that the only option is '--help' and will display this home message\n
-
     You will mostly be using the 'Practical Usage' of CX-ASAP\n
-
     The commands are the different modules/pipelines available.\n
-
     For example, to configure the refinement pipeline, you would type:\n
-
     'cxasap pipeline-refinement --configure'
 
     #####################################################################\n
 
     Choosing a module/pipeline:
-
     For more information on each available module/pipeline, run the below command:\n
-
     'cxasap module/pipeline --help' - where module/pipeline is in the below list of commands.\n
 
     #####################################################################\n
 
     To access error logs, run the 'errors' command (ie 'cxasap errors')\n
-
     This will print the log files into the terminal.\n
-
     Otherwise, they can be found in one of two places:\n
-
     They will be output with your data processing\n
-
     And the most recent 5 logs will be found in cx_asap/error_logs
 
     #####################################################################\n
 
     Disclaimer:
-
     What you put in is what you get out!
-
     If your reference files are incomplete - your output files will be incomplete.
-
     If your reference structure does not model disorder, none of your output files will model disorder.
-
     Consider your reference files carefully!!!
 
     #####################################################################\n
@@ -470,7 +444,7 @@ def cli():
 
     #####################################################################\n
 
-    You are currently running version 1.0.2
+    You are currently running version 2.0.0
 
     #####################################################################\n
 
@@ -483,11 +457,8 @@ def cli():
 @click.command("test", short_help="Test installation of cxasap")
 def test() -> None:
     """Executes the test script
-
     The test script is found in the system files folder
-
     It is recommended to users that this is run upon installation
-
     """
     tester = Test()
     tester.test_available_code()
@@ -499,9 +470,7 @@ def test() -> None:
 @click.command("errors", short_help="Display current error log")
 def errors() -> None:
     """Outputs the error logs to the terminal
-
     Otherwise the user will need to find the .txt file in the documentation folder
-
     """
     error_path = (
         pathlib.Path(os.path.abspath(__file__)).parent
@@ -526,7 +495,7 @@ def output_message() -> None:
     Please review all statistics and examine output files prior to publication.\n
     If you found this software useful, please consider citing it in your publication.\n
     Thompson, A. J., Smith, K. M. L., Clegg, J. K., Price, J. R. (2023),\n 
-    J. Appl. Cryst, 56 https://doi.org/10.1107/S1600576723000298\n
+    J. Appl. Cryst, 56. https://doi.org/10.1107/S1600576723000298\n
     Thank you for using this software, and may the Fourier Transforms be with you. \n
     #################################################################################
     """
@@ -539,15 +508,10 @@ def output_message() -> None:
 
 def os_test() -> None:
     """This function has not been fully developed
-
     Aimed to change what functions were available depending on what operating system
-
     Also a template because xprep functions may be different for Unix vs Windows
-
     But! The below code had problems with the rest of the click interface
-
     So this has been left for future testing and development
-
     """
     os_name = platform.system()
     BadOS = False
@@ -569,22 +533,14 @@ def os_test() -> None:
 ##########-Module Refinement-##########
 
 """This module will refine a single structure to convergence using a 
-    
-    single reference file.
-    
+    single reference file.   
     Most of these click functions are specifying text output to commandline 
-    
     The main coding functions are checking the input of the yaml file
-    
     and setting up the corresponding class and calling its functions 
-
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag       
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
         This will define the value in the 'if/elif' statements
-        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -599,9 +555,7 @@ def os_test() -> None:
 @click.option("--run", is_flag=True, help="run the code!")
 def module_refinement(dependencies, files, configure, run):
     """This module will refine a single structure to convergence using a
-
     single reference file.
-
     """
     if dependencies:
         click.echo("\nYou require the below software in your path:")
@@ -616,7 +570,6 @@ def module_refinement(dependencies, files, configure, run):
         click.echo("Your reference .ins/.res file can be located anywhere\n")
 
     elif configure:
-
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
@@ -670,26 +623,16 @@ def module_refinement(dependencies, files, configure, run):
 ##########-Pipeline Refinement-##########
 
 """This module will refine a series of structures to convergence 
-    
-    based on a single reference file. Such a dataset might have come from a 
-    
+    based on a single reference file. Such a dataset might have come from a    
     dynamic experiment, such as variable-temperature, variable-pressure, 
-    
     variable-position, etc
-    
     Most of these click functions are specifying text output to commandline 
-    
     The main coding functions are checking the input of the yaml file
-    
     and setting up the corresponding class and calling its functions 
-
     Args:
         The user will enter one of the four arguments as a flag 
-        
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
         This will define the value in the 'if/elif' statements
-        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -704,13 +647,9 @@ def module_refinement(dependencies, files, configure, run):
 @click.option("--run", is_flag=True, help="run the code!")
 def pipeline_refinement(dependencies, files, configure, run):
     """This module will refine a series of structures to convergence
-
     based on a single reference file. Such a dataset might have come from a
-
     dynamic experiment, such as variable-temperature, variable-pressure,
-
     variable-position, etc
-
     """
     if dependencies:
         click.echo("\nYou require the below software in your path:")
@@ -780,29 +719,18 @@ def pipeline_refinement(dependencies, files, configure, run):
 
 ##########-Pipeline General-##########
 
-"""This pipeline will refine a series of .hkl/.ins files based on a common 
-    
+"""This pipeline will refine a series of .hkl/.ins files based on a common  
     reference and provide finalised .cif files, checkCIF reports and structural 
-    
     analysis. Use this only if your files are already in the correct directory 
-    
     structure (check by adding --files to command). Otherwise, consider 
-    
     'pipeline-general-extra'
-    
     Most of these click functions are specifying text output to commandline 
-    
     The main coding functions are checking the input of the yaml file
-    
     and setting up the corresponding class and calling its functions 
-
     Args:
         The user will enter one of the four arguments as a flag 
-        
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
         This will define the value in the 'if/elif' statements
-        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -819,13 +747,9 @@ def pipeline_refinement(dependencies, files, configure, run):
 @click.option("--run", is_flag=True, help="run the code!")
 def pipeline_general(dependencies, files, configure, run):
     """This pipeline will refine a series of .hkl/.ins files based on a common
-
     reference and provide finalised .cif files, checkCIF reports and structural
-
     analysis. Use this only if your files are already in the correct directory
-
     structure (check by adding --files to command). Otherwise, consider
-
     'pipeline-general-extra'
     """
     if dependencies:
@@ -878,6 +802,9 @@ def pipeline_general(dependencies, files, configure, run):
         )
         click.echo(
             " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
+        )
+        click.echo(
+            " - structural_analysis_hbonds: enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
         )
         click.echo(
             " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
@@ -940,6 +867,7 @@ def pipeline_general(dependencies, files, configure, run):
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["cif_parameters"],
                 cfg["atoms_for_analysis"],
                 cfg["varying_cif_parameter"],
@@ -959,33 +887,20 @@ def pipeline_general(dependencies, files, configure, run):
 
 ##########-Pipeline General with Extra Setup-##########
 
-"""This pipeline will refine a series of .hkl/.ins files based on a common 
-    
+"""This pipeline will refine a series of .hkl/.ins files based on a common   
     reference and provide finalised .cif files, checkCIF reports and structural analysis.
-
     This version of the script will set up folders for you based on your configuration file.
-
     You will be prompted to place your structure files in the folders created by the code.
-
     This version of the script also runs off the assumption you do not have a completed 
-    
-    reference cif with all instrument parameters. Instead, you will be able to enter 
-    
+    reference cif with all instrument parameters. Instead, you will be able to enter   
     them into the configuration file.
-    
     Most of these click functions are specifying text output to commandline 
-    
     The main coding functions are checking the input of the yaml file
-    
     and setting up the corresponding class and calling its functions 
-
     Args:
-        The user will enter one of the four arguments as a flag 
-        
+        The user will enter one of the four arguments as a flag         
         This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
         This will define the value in the 'if/elif' statements
-        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -1000,17 +915,11 @@ def pipeline_general(dependencies, files, configure, run):
 @click.option("--run", is_flag=True, help="run the code!")
 def pipeline_general_extra(dependencies, files, configure, run):
     """This pipeline will refine a series of .hkl/.ins files based on a common
-
     reference and provide finalised .cif files, checkCIF reports and structural analysis.
-
     This version of the script will set up folders for you based on your configuration file.
-
     You will be prompted to place your structure files in the folders created by the code.
-
     This version of the script also runs off the assumption you do not have a completed
-
     reference cif with all instrument parameters. Instead, you will be able to enter
-
     them into the configuration file.
     """
     if dependencies:
@@ -1057,6 +966,9 @@ def pipeline_general_extra(dependencies, files, configure, run):
         )
         click.echo(
             " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
+        )
+        click.echo(
+            " - structural_analysis_hbonds: enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
         )
         click.echo(
             " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
@@ -1124,6 +1036,7 @@ def pipeline_general_extra(dependencies, files, configure, run):
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["cif_parameters"],
                 cfg["atoms_for_analysis"],
                 cfg["varying_cif_parameter"],
@@ -1143,26 +1056,17 @@ def pipeline_general_extra(dependencies, files, configure, run):
 ###------Cif Merge Module-------###
 
 """This module will merge one instrument CIF with one structure cif.
-
-    This is useful if it was not done automatically through your structure 
-    
+    This is useful if it was not done automatically through your structure    
     solution/refinement software.
-
     CheckCIF will also be run to quickly validate the output.
-    
     Most of these click functions are specifying text output to commandline 
-    
     The main coding functions are checking the input of the yaml file
-    
     and setting up the corresponding class and calling its functions 
 
     Args:
-        The user will enter one of the four arguments as a flag 
-        
-        This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
-        This will define the value in the 'if/elif' statements
-        
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -1177,13 +1081,9 @@ def pipeline_general_extra(dependencies, files, configure, run):
 @click.option("--run", is_flag=True, help="run the code!")
 def module_cif_merge(dependencies, files, configure, run):
     """This module will merge one instrument CIF with one structure cif.
-
     This is useful if it was not done automatically through your structure
-
     solution/refinement software.
-
     CheckCIF will also be run to quickly validate the output.
-
     """
     if dependencies:
         click.echo("\nYou require the below software in your path:")
@@ -1245,22 +1145,14 @@ def module_cif_merge(dependencies, files, configure, run):
 #####------Make Cif Module----######
 
 """This module will create an instrument CIF from a fully completed structural CIF file.
-
-    It might be useful. It might not be. The option is there for you to use.
-    
-    Most of these click functions are specifying text output to commandline 
-    
-    The main coding functions are checking the input of the yaml file
-    
+    It might be useful. It might not be. The option is there for you to use.   
+    Most of these click functions are specifying text output to commandline     
+    The main coding functions are checking the input of the yaml file    
     and setting up the corresponding class and calling its functions 
-
     Args:
-        The user will enter one of the four arguments as a flag 
-        
-        This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
-        This will define the value in the 'if/elif' statements
-        
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'       
+        This will define the value in the 'if/elif' statements        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -1275,9 +1167,7 @@ def module_cif_merge(dependencies, files, configure, run):
 @click.option("--run", is_flag=True, help="run the code!")
 def module_instrument_cif_generation(dependencies, files, configure, run):
     """This module will create an instrument CIF from a fully completed structural CIF file.
-
     It might be useful. It might not be. The option is there for you to use.
-
     """
     if dependencies:
         click.echo("\nYou do not require any additional software for this module.")
@@ -1325,22 +1215,14 @@ def module_instrument_cif_generation(dependencies, files, configure, run):
 #####------Cif Combine Pipeline------#####
 
 """This pipeline will combine a series of CIFs into one file.
-
-    No edits will be made, but a checkCIF report will be given.
-    
-    Most of these click functions are specifying text output to commandline 
-    
-    The main coding functions are checking the input of the yaml file
-    
+    No edits will be made, but a checkCIF report will be given.   
+    Most of these click functions are specifying text output to commandline    
+    The main coding functions are checking the input of the yaml file    
     and setting up the corresponding class and calling its functions 
-
     Args:
-        The user will enter one of the four arguments as a flag 
-        
-        This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
-        This will define the value in the 'if/elif' statements
-        
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -1355,9 +1237,7 @@ def module_instrument_cif_generation(dependencies, files, configure, run):
 @click.option("--run", is_flag=True, help="run the code!")
 def pipeline_cif_combine(dependencies, files, configure, run):
     """This pipeline will combine a series of CIFs into one file.
-
     No edits will be made, but a checkCIF report will be given.
-
     """
     if dependencies:
         click.echo("\nYou require the below software in your path:")
@@ -1405,22 +1285,14 @@ def pipeline_cif_combine(dependencies, files, configure, run):
 ####------Full CIF Pipeline------#####
 
 """This pipeline will merge a series of CIF files with instrument CIFs.
-
-    All CIFs will then be combined and run through checkCIF.
-    
+    All CIFs will then be combined and run through checkCIF.   
     Most of these click functions are specifying text output to commandline 
-    
     The main coding functions are checking the input of the yaml file
-    
     and setting up the corresponding class and calling its functions 
-
     Args:
-        The user will enter one of the four arguments as a flag 
-        
-        This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
-        This will define the value in the 'if/elif' statements
-        
+        The user will enter one of the four arguments as a flag       
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -1435,9 +1307,7 @@ def pipeline_cif_combine(dependencies, files, configure, run):
 @click.option("--run", is_flag=True, help="run the code!")
 def pipeline_cif(dependencies, files, configure, run):
     """This pipeline will merge a series of CIF files with instrument CIFs.
-
     All CIFs will then be combined and run through checkCIF.
-
     """
     if dependencies:
         click.echo("\nYou require the below software in your path:")
@@ -1507,6 +1377,7 @@ def pipeline_cif(dependencies, files, configure, run):
                 cfg["instrument_ending"],
                 cfg["instrument_file"],
             )
+
             cifs.compile_cifs(cfg["experiment_location"])
 
             copy_logs(cfg["experiment_location"])
@@ -1516,26 +1387,17 @@ def pipeline_cif(dependencies, files, configure, run):
     else:
         click.echo("Please select an option. To view options, add --help")
 
-
 #####----- Module Cell Analysis------#####
 
 """This module will analyse changes in the unit cell from a .csv file.
-
-    If you have already run the cif reading module, then the file should be in the correct format.
-    
-    Most of these click functions are specifying text output to commandline 
-    
-    The main coding functions are checking the input of the yaml file
-    
+    If you have already run the cif reading module, then the file should be in the correct format.  
+    Most of these click functions are specifying text output to commandline     
+    The main coding functions are checking the input of the yaml file    
     and setting up the corresponding class and calling its functions 
-
     Args:
-        The user will enter one of the four arguments as a flag 
-        
-        This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
-        This will define the value in the 'if/elif' statements
-        
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -1550,9 +1412,7 @@ def pipeline_cif(dependencies, files, configure, run):
 @click.option("--run", is_flag=True, help="run the code!")
 def module_cell_analysis(dependencies, files, configure, run):
     """This module will analyse changes in the unit cell from a .csv file.
-
     If you have already run the cif reading module, then the file should be in the correct format.
-
     """
     if dependencies:
         click.echo("\nYou do not require any additional software in your path!\n")
@@ -1633,27 +1493,17 @@ def module_cell_analysis(dependencies, files, configure, run):
 
 ######-------Module Cif Read--------######
 
-"""This module will extract data from a series of CIF files and 
-    
+"""This module will extract data from a series of CIF files and    
     output them into a .csv file.
-
     Examples of parameters for output include (but are not limited to) 
-    
-    unit cell parameters and quality statistics.
-    
+    unit cell parameters and quality statistics.    
     Most of these click functions are specifying text output to commandline 
-    
-    The main coding functions are checking the input of the yaml file
-    
+    The main coding functions are checking the input of the yaml file    
     and setting up the corresponding class and calling its functions 
-
     Args:
-        The user will enter one of the four arguments as a flag 
-        
-        This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
-        This will define the value in the 'if/elif' statements
-        
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -1668,13 +1518,9 @@ def module_cell_analysis(dependencies, files, configure, run):
 @click.option("--run", is_flag=True, help="run the code!")
 def module_cif_read(dependencies, files, configure, run):
     """This module will extract data from a series of CIF files and
-
     output them into a .csv file.
-
     Examples of parameters for output include (but are not limited to)
-
     unit cell parameters and quality statistics.
-
     """
     if dependencies:
         click.echo("\nYou do not require any additional software in your path!\n")
@@ -1701,7 +1547,9 @@ def module_cif_read(dependencies, files, configure, run):
         click.echo(
             " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
         )
-
+        click.echo(
+            " - structural_analysis_hbonds: enter 'true' if you want to extract Hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command"
+        )
         fields = yaml_extraction("module-cif-read")
         yaml_creation(fields)
 
@@ -1726,6 +1574,7 @@ def module_cif_read(dependencies, files, configure, run):
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["ADP_analysis"],
             )
             analysis.data_output()
@@ -1741,22 +1590,14 @@ def module_cif_read(dependencies, files, configure, run):
 ######----- Module Rotation Planes ------#####
 
 """For a single dataset refined with the MPLA command, the angle to a reference plane can be calculated.
-
-    To automatically analyse a series of files, use the rotation pipeline.
-    
+    To automatically analyse a series of files, use the rotation pipeline.  
     Most of these click functions are specifying text output to commandline 
-    
-    The main coding functions are checking the input of the yaml file
-    
+    The main coding functions are checking the input of the yaml file    
     and setting up the corresponding class and calling its functions 
-
     Args:
-        The user will enter one of the four arguments as a flag 
-        
-        This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
-        This will define the value in the 'if/elif' statements
-        
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -1773,9 +1614,7 @@ def module_cif_read(dependencies, files, configure, run):
 @click.option("--run", is_flag=True, help="run the code!")
 def module_rotation_planes(dependencies, files, configure, run):
     """For a single dataset refined with the MPLA command, the angle to a reference plane can be calculated.
-
     To automatically analyse a series of files, use the rotation pipeline.
-
     """
     if dependencies:
         click.echo("\nYou do not require any additional software in your path!\n")
@@ -1832,26 +1671,16 @@ def module_rotation_planes(dependencies, files, configure, run):
 #######------- Module Structure -------#######
 
 """This module will examine structural data in .csv files and separate/graph the important parts of interest.
-
     For example, if you are investigating the spin-crossover properties of a metal complex, you might be most interested in the M-L bond lengths.
-
     By specifying the metal atom, you graphs will be provided and a separated spreadsheet of those bonds will be provided.
-
-    This module currently requires the use of the 'cif_read' module prior.
-    
+    This module currently requires the use of the 'cif_read' module prior.   
     Most of these click functions are specifying text output to commandline 
-    
-    The main coding functions are checking the input of the yaml file
-    
+    The main coding functions are checking the input of the yaml file    
     and setting up the corresponding class and calling its functions 
-
     Args:
-        The user will enter one of the four arguments as a flag 
-        
-        This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
-        This will define the value in the 'if/elif' statements
-        
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -1868,13 +1697,9 @@ def module_rotation_planes(dependencies, files, configure, run):
 @click.option("--run", is_flag=True, help="run the code!")
 def module_structural_analysis(dependencies, files, configure, run):
     """This module will examine structural data in .csv files and separate/graph the important parts of interest.
-
     For example, if you are investigating the spin-crossover properties of a metal complex, you might be most interested in the M-L bond lengths.
-
     By specifying the metal atom, you graphs will be provided and a separated spreadsheet of those bonds will be provided.
-
     This module currently requires the use of the 'cif_read' module prior.
-
     """
     if dependencies:
         click.echo("\nYou do not require any additional software in your path!\n")
@@ -1883,6 +1708,7 @@ def module_structural_analysis(dependencies, files, configure, run):
         click.echo(" - a .csv file of your bond data")
         click.echo(" - a .csv file of your angle data")
         click.echo(" - a .csv file of your torsion data")
+        click.echo(" - a .csv file of your Hbond data")
         click.echo(" Note that do you not need all of these files present")
         click.echo("\nThese files can be located anywhere ")
     elif configure:
@@ -1901,6 +1727,10 @@ def module_structural_analysis(dependencies, files, configure, run):
 
         click.echo(
             " - torsion_data: enter the full path to your torsion .csv file (or false if you do not have one)"
+        )
+
+        click.echo(
+            " - hbond_data: enter the full path to your hbond .csv file (or false if you do not have one)"
         )
 
         fields = yaml_extraction("module-structural-analysis")
@@ -1925,10 +1755,11 @@ def module_structural_analysis(dependencies, files, configure, run):
                 cfg["bond_data"],
                 cfg["angle_data"],
                 cfg["torsion_data"],
+                cfg["hbond_data"],
                 cfg["atoms_for_analysis"],
             )
 
-            copy_logs(pathlib.Path(cfg["bond_data"]).parent)
+            copy_logs(pathlib.Path.cwd())
 
         output_message()
 
@@ -1938,23 +1769,15 @@ def module_structural_analysis(dependencies, files, configure, run):
 
 #####------ Pipeline Rotation Planes-----#######
 
-"""For a series of datasets refined with the MPLA command, the angle 
-    
-    to a reference plane can be calculated and compared.
-    
+"""For a series of datasets refined with the MPLA command, the angle    
+    to a reference plane can be calculated and compared.    
     Most of these click functions are specifying text output to commandline 
-    
-    The main coding functions are checking the input of the yaml file
-    
+    The main coding functions are checking the input of the yaml file    
     and setting up the corresponding class and calling its functions 
-
     Args:
-        The user will enter one of the four arguments as a flag 
-        
-        This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
-        This will define the value in the 'if/elif' statements
-        
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -1971,9 +1794,7 @@ def module_structural_analysis(dependencies, files, configure, run):
 @click.option("--run", is_flag=True, help="run the code!")
 def pipeline_rotation_planes(dependencies, files, configure, run):
     """For a series of datasets refined with the MPLA command, the angle
-
     to a reference plane can be calculated and compared.
-
     """
     if dependencies:
         click.echo("\nYou do not require any additional software in your path!\n")
@@ -2016,7 +1837,6 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
                 cfg["experiment_location"],
                 cfg["reference_plane"],
                 cfg["experiment_location"],
-                "rotation_angles.png",
             )
 
             copy_logs(cfg["experiment_location"])
@@ -2029,27 +1849,17 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
 
 #######------Pipeline varying parameter ---------######
 
-"""This pipeline will analyse .cif files for a dynamic experiment where one 
-    
-    parameter in the cif files is changing. For example, this might be a 
-    
+"""This pipeline will analyse .cif files for a dynamic experiment where one    
+    parameter in the cif files is changing. For example, this might be a     
     change in temperature, pressure, etc.
-
     It will output graphs displaying changes in unit cell parameters and defined structural changes.
-    
     Most of these click functions are specifying text output to commandline 
-    
-    The main coding functions are checking the input of the yaml file
-    
+    The main coding functions are checking the input of the yaml file    
     and setting up the corresponding class and calling its functions 
-
     Args:
-        The user will enter one of the four arguments as a flag 
-        
-        This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
-        This will define the value in the 'if/elif' statements
-        
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -2064,13 +1874,9 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
 @click.option("--run", is_flag=True, help="run the code!")
 def pipeline_variable_analysis(dependencies, files, configure, run):
     """This pipeline will analyse .cif files for a dynamic experiment where one
-
     parameter in the cif files is changing. For example, this might be a
-
     change in temperature, pressure, etc.
-
     It will output graphs displaying changes in unit cell parameters and defined structural changes.
-
     """
     if dependencies:
         click.echo("\nYou do not require any additional software in your path!\n")
@@ -2105,6 +1911,9 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
             " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
         )
         click.echo(
+            " - structural_analysis_hbonds: enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command"
+        )
+        click.echo(
             " - varying_cif_parameter: enter the parameter in your .cif files that is changing. Make sure you use proper .cif syntax"
         )
 
@@ -2135,6 +1944,7 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["ADP_analysis"],
             )
 
@@ -2145,28 +1955,18 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
     else:
         click.echo("Please select an option. To view options, add --help")
 
-
 ###------Module ADP Analysis-------###
 
-"""This module will analyse the ADPs that have been previously 
-    
+"""This module will analyse the ADPs that have been previously   
     extracted from CIF files. It is recommended that you run this 
-    
-    AFTER module-cif-read OR use a pipeline with this included
-    
+    AFTER module-cif-read OR use a pipeline with this included    
     Most of these click functions are specifying text output to commandline 
-    
-    The main coding functions are checking the input of the yaml file
-    
+    The main coding functions are checking the input of the yaml file    
     and setting up the corresponding class and calling its functions 
-
     Args:
-        The user will enter one of the four arguments as a flag 
-        
-        This will set that parameter as 'TRUE', while the others are 'FALSE'
-        
-        This will define the value in the 'if/elif' statements
-        
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
         dependencies (bool): will check for dependencies
         files (bool): will show the user what files are required
         configure (bool): will set up the yaml for the user to fill out
@@ -2181,11 +1981,8 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
 @click.option("--run", is_flag=True, help="run the code!")
 def module_adp_analysis(dependencies, files, configure, run):
     """This module will analyse the ADPs that have been previously
-
     extracted from CIF files. It is recommended that you run this
-
     AFTER module-cif-read OR use a pipeline with this included
-
     """
     if dependencies:
         click.echo("\nYou require the below software in your path:")
@@ -2238,6 +2035,7 @@ def module_adp_analysis(dependencies, files, configure, run):
         click.echo("Please select an option. To view options, add --help")
 
 
+
 os_name = platform.system()
 BadOS = False
 if os_name == "Windows":
@@ -2260,19 +2058,33 @@ windows_modules = [
     module_cif_read,
     module_rotation_planes,
     module_structural_analysis,
+    pipeline_temperature_analysis,
     pipeline_variable_analysis,
     module_adp_analysis,
+    module_platon_squeeze,
+    pipeline_platon_squeeze,
+]
+
+windows_modules_dev = [
+    module_intensity_compare,
+    pipeline_intensity_compare,
+    pipeline_rigaku_vt,
+    module_molecule_reconstruction,
+    pipeline_shelxt_auto,
 ]
 
 if BadOS == True:
-
     # Modules for master branch ###
 
     for item in windows_modules:
         cli.add_command(item)
 
-else:
+    # Modules for dev branch ###
 
+    for item in windows_modules_dev:
+        cli.add_command(item)
+
+else:
     ### Modules for master branch ###
 
     cli.add_command(test)
@@ -2289,27 +2101,42 @@ else:
     cli.add_command(module_cif_read)
     cli.add_command(module_rotation_planes)
     cli.add_command(module_structural_analysis)
+    cli.add_command(pipeline_temperature_analysis)
     cli.add_command(pipeline_variable_analysis)
     cli.add_command(module_adp_analysis)
+
+    ### Modules for dev branch ###
+
+    cli.add_command(pipeline_vp)
+    cli.add_command(module_intensity_compare)
+    cli.add_command(pipeline_intensity_compare)
+    cli.add_command(pipeline_rigaku_vt)
+    cli.add_command(pipeline_aus_synch_vt)
+    cli.add_command(module_xds_cell_transformation)
+    cli.add_command(module_xds_reprocess)
+    cli.add_command(module_xprep)
+    cli.add_command(pipeline_xds_reprocess)
+    cli.add_command(pipeline_xprep)
+    cli.add_command(pipeline_rotation_planes)
+    cli.add_command(pipeline_position_analysis)
+    cli.add_command(pipeline_AS_Brute)
+    cli.add_command(module_molecule_reconstruction)
+    cli.add_command(pipeline_shelxt_auto)
+    cli.add_command(module_platon_squeeze)
+    cli.add_command(pipeline_platon_squeeze)
+    cli.add_command(pipeline_AS_Brute_individual)
 
 
 def run() -> None:
     """This function sets up the logs and runs the commandline interface
-
     ALLLLLLLLLL of the above click commands are merely setting up the commandline interface
-
     It is actually executed by this function (which is called by typing 'cxasap' into the terminal
-
     Ie this is the function that the setup.py files defines as an entry point
-
     Returns:
         None
     """
-
     # Fun function but if used means that 'TAB to auto-complete' doesn't work. Can't handle the print and sleep statements
-
     os_test()
-
     # Set up global logs
 
     log_location = (

@@ -10,7 +10,7 @@ class testRotation(unittest.TestCase):
         Defines sample lst file for analysis
         """
 
-        self.test = Rotation(test_mode = True)
+        self.test = Rotation(test_mode=True)
 
         self.sample_lst_file = [
             "\n",

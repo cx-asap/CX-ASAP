@@ -7,7 +7,6 @@ import pathlib
 
 class Nice_YAML_Dumper(yaml.SafeDumper):
     def write_line_break(self, data: dict = None) -> None:
-
         """Makes the yaml have better formatting when edited
 
         Unsure of the specifics, got this code from StackOverflow
@@ -17,7 +16,6 @@ class Nice_YAML_Dumper(yaml.SafeDumper):
 
         if len(self.indents) == 1:
             super().write_line_break()
-
 
 sys_path = pathlib.Path.cwd() / "cx_asap" / "system_files" / "sys.yaml"
 
@@ -58,6 +56,7 @@ sys_params = {
         "structural_analysis_angles": True,
         "structural_analysis_bonds": True,
         "structural_analysis_torsions": True,
+        "structural_analysis_hbonds": False,
         "folder_containing_cifs": "test_data/data",
         "ADP_analysis": True,
     },
@@ -83,6 +82,7 @@ sys_params = {
         "bond_data": "test_data/data/Bond_Lengths.csv",
         "angle_data": "test_data/data/Bond_Angles.csv",
         "torsion_data": "test_data/data/Bond_Torsions.csv",
+        "hbond_data": False,
     },
     "pipeline-variable-analysis": {
         "cif_parameters": [
@@ -102,6 +102,7 @@ sys_params = {
         "structural_analysis_angles": True,
         "structural_analysis_bonds": True,
         "structural_analysis_torsions": True,
+        "structural_analysis_hbonds": False,
         "ADP_analysis": True,
         "varying_cif_parameter": "_diffrn_ambient_temperature",
         "experiment_location": "test_data/data",
@@ -129,6 +130,7 @@ sys_params = {
         "structural_analysis_bonds": True,
         "structural_analysis_angles": True,
         "structural_analysis_torsions": True,
+        "structural_analysis_hbonds": False,
         "ADP_analysis": True,
         "atoms_for_analysis": ["Cu1"],
         "varying_cif_parameter": "_diffrn_ambient_temperature",
@@ -161,7 +163,6 @@ sys_params = {
 }
 
 with open(sys_path, "w") as f:
-
     yaml.dump(
         sys_params,
         f,

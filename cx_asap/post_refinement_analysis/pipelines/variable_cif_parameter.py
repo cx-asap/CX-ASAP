@@ -23,7 +23,6 @@ import logging
 
 class Variable_Analysis_Pipeline:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -52,7 +51,6 @@ class Variable_Analysis_Pipeline:
         self.sys_path = config.sys_path
 
     def determine_behaviour(self, df: "pd.DataFrame", param: str) -> list:
-
         """Searches through the data and classifies everything as a
 
         minima, maxima, increasing or decreasing
@@ -130,9 +128,9 @@ class Variable_Analysis_Pipeline:
         bonds: bool = False,
         angles: bool = False,
         torsions: bool = False,
+        hbonds: bool = False,
         adps: bool = False,
     ) -> None:
-
         """Performs much analysis on CIF files
 
         Reads them and extracts the desired parameters
@@ -160,7 +158,7 @@ class Variable_Analysis_Pipeline:
 
         CIF_Data = CIF_Read(self.test_mode)
         CIF_Data.configure(cif_parameters)
-        CIF_Data.get_data(location, bonds, angles, torsions, adps, param)
+        CIF_Data.get_data(location, bonds, angles, torsions, hbonds, adps, param)
         CIF_Data.data_output()
 
         geometry = Structural_Analysis(self.test_mode)
@@ -171,6 +169,8 @@ class Variable_Analysis_Pipeline:
             angles = "Bond_Angles.csv"
         if torsions != False:
             torsions = "Bond_Torsions.csv"
+        if hbonds != False:
+            hbonds = "HBond_details.csv"
         if adps != False:
             adps = "ADPs.csv"
 
@@ -178,6 +178,7 @@ class Variable_Analysis_Pipeline:
             bonds,
             angles,
             torsions,
+            hbonds,
             atoms_for_analysis,
             location,
             varying_parameter=param,

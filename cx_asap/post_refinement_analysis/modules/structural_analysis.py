@@ -21,7 +21,6 @@ import logging
 
 class Structural_Analysis:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -67,19 +66,28 @@ class Structural_Analysis:
             "_geom_torsion_atom_site_label_4",
             "_geom_torsion",
         ]
+        self.hbond_paras = [
+            "_geom_hbond_atom_site_label_D",
+            "_geom_hbond_atom_site_label_H",
+            "_geom_hbond_atom_site_label_A",
+            "_geom_hbond_distance_DH",
+            "_geom_hbond_distance_HA",
+            "_geom_hbond_distance_DA",
+            "_geom_hbond_angle_DHA",
+        ]
 
     def import_and_analyse(
         self,
         bond_csv: str,
         angle_csv: str,
         torsion_csv: str,
+        hbond_csv: str,
         atoms_for_analysis: list,
         location: str = False,
         prefix: str = "",
         flexible: bool = False,
         varying_parameter: str = "Data_Block",
     ) -> None:
-
         """Imports data from .csv files for analysis
 
         Args:
@@ -89,6 +97,8 @@ class Structural_Analysis:
                             (false if analysis not wanted)
             torsion_csv (str): full path to the .csv file with torsion info
                             (false if analysis not wanted)
+            hbond_csv (str): full path to the .csv file with torsion info
+                (false if analysis not wanted)
             atoms_for_analysis (list): list of important atoms to separate
             location (str): full path to the location containing all .csv files
                             (if used by other cxasap pipeline)
@@ -99,15 +109,23 @@ class Structural_Analysis:
         # Imports data from .csv files
 
         if location == False:
-
-            self.location = pathlib.Path(bond_csv).parent
-
+            try:
+                self.location = pathlib.Path(bond_csv).parent
+            except:
+                try:
+                    self.location = pathlib.Path(angle_csv).parent
+                except:
+                    try:
+                        self.location = pathlib.Path(torsion_csv).parent
+                    except:
+                        try:
+                            self.location = pathlib.Path(hbond_csv).parent
+                        except:
+                            pass
         else:
-
             self.location = location
 
         if bond_csv != False:
-
             bond_df = pd.read_csv(pathlib.Path(bond_csv))
 
             os.chdir(pathlib.Path(bond_csv).parent)
@@ -136,14 +154,13 @@ class Structural_Analysis:
                 "Angles",
                 "Bond_Angles.csv",
                 "Individual_Angle_Data",
-                "Angle (Degrees)",
+                "Angle ($^\circ$)",
                 atoms_for_analysis,
                 prefix,
                 flexible,
                 varying_parameter,
             )
         if torsion_csv != False:
-
             try:
                 torsion_df = pd.read_csv(pathlib.Path(torsion_csv))
             except FileNotFoundError:
@@ -152,7 +169,6 @@ class Structural_Analysis:
                     + " : No Torsion data - likely because structures not refined with CONF instruction"
                 )
             else:
-
                 os.chdir(pathlib.Path(torsion_csv).parent)
 
                 self.structural_analysis(
@@ -161,7 +177,30 @@ class Structural_Analysis:
                     "Torsions",
                     "Bond_Torsions.csv",
                     "Individual_Torsion_Data",
-                    "Angle (Degrees)",
+                    "Angle ($^\circ$)",
+                    atoms_for_analysis,
+                    prefix,
+                    flexible,
+                    varying_parameter,
+                )
+        if hbond_csv != False:
+            try:
+                hbond_df = pd.read_csv(pathlib.Path(hbond_csv))
+            except FileNotFoundError:
+                logging.info(
+                    __name__
+                    + " : No Hbond data - likely because structures not refined with HTAB instruction"
+                )
+            else:
+                os.chdir(pathlib.Path(hbond_csv).parent)
+
+                self.structural_analysis(
+                    hbond_df,
+                    self.hbond_paras,
+                    "Hbonds",
+                    "Hbond_details.csv",
+                    "Individual_Hbond_Data",
+                    "Length (Angstroms)",
                     atoms_for_analysis,
                     prefix,
                     flexible,
@@ -181,8 +220,7 @@ class Structural_Analysis:
         flexible: bool = False,
         varying_parameter: str = "Data_Block",
     ) -> None:
-
-        """Performs structural analysis for bonds, angles, and torsions
+        """Performs structural analysis for bonds, angles, hbonds and torsions
 
         ONLY does the ones the user has choosen in the conf.yaml file
 
@@ -190,7 +228,7 @@ class Structural_Analysis:
 
         atoms the user wants to analyse
 
-        Also will do a folder of 'individual' .csv files, which will separate
+        Also will make a folder of 'individual' .csv files, which will separate
 
         into each bond/angle/torsion individually
 
@@ -204,7 +242,7 @@ class Structural_Analysis:
             df ("pd.DataFrame"): dataframe containing the relevant data
             components (list): different CIF parameters involved in the structure parameter
                                 see self.angle_paras for example
-            structure_type (str): "Bonds", "Angles", or "Torsions"
+            structure_type (str): "Bonds", "Angles", "Hbonds" or "Torsions"
             file_name (str): name of the .csv file with data in it
             folder_name (str): name of the folder where individual data goes
             y_unit (str): label for y-axis
@@ -223,7 +261,6 @@ class Structural_Analysis:
         important_df = pd.DataFrame()
 
         if df.empty == False:
-
             # Separates out important atoms by looking for them in any column and merging into one dataframe
 
             for item in atoms_for_analysis:
@@ -269,6 +306,12 @@ class Structural_Analysis:
                     + important_df[column_names[4]]
                     + important_df[column_names[6]]
                 )
+            elif structure_type == "Hbonds":
+                important_df["Joined"] = (
+                    important_df[column_names[0]]
+                    + important_df[column_names[2]]
+                    + important_df[column_names[4]]
+                )
             else:
                 logging.info("Something went weird.")
 
@@ -287,7 +330,6 @@ class Structural_Analysis:
             # This appends a suffix to each duplicated bond in the joined column based on how many there are
 
             for j, i in enumerate(dup):
-
                 bond = important_df["Joined"][j]
 
                 # NOTE HERE VARIABLE 'TEMPERATURE' CAN BE ANY PARAMETER BUT I DIDN'T WANT TO CHANGE WHOLE CODE
@@ -324,6 +366,10 @@ class Structural_Analysis:
                     + df[column_names[2]]
                     + df[column_names[4]]
                     + df[column_names[6]]
+                )
+            elif structure_type == "Hbonds":
+                df["Joined"] = (
+                    df[column_names[0]] + df[column_names[2]] + df[column_names[4]]
                 )
             else:
                 logging.info("Something went weird.")

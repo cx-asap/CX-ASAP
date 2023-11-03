@@ -547,7 +547,7 @@ class Structure_Refinement:
                     "Refinement Cycle",
                     "Refinement Cycle",
                 ]
-                y_title = ["Weight 1", "Weight 2", "Shift", "R1"]
+                y_title = ["Weight 1", "Weight 2", "Shift/esd", "R1"]
                 full_title = "Refinement Statistics - " + str(new_structure.name)
                 mini_titles = [
                     "Weighting Convergence - " + str(new_structure.name),
