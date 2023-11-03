@@ -26,7 +26,6 @@ import logging
 
 class VT_Pipeline:
     def __init__(self):
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -60,7 +59,6 @@ class VT_Pipeline:
         reference_location: str,
         MPLA_atoms: str,
     ) -> None:
-
         """Organises the directory tree for this experiment
 
         Saves new locations into the system yaml file
@@ -100,7 +98,6 @@ class VT_Pipeline:
         max_cycles: int,
         reference_plane: list,
     ) -> None:
-
         """This is the function that actually calls XPREP and SHELXL
 
         Args:
@@ -148,13 +145,13 @@ class VT_Pipeline:
         bonds: bool,
         angles: bool,
         torsions: bool,
+        hbonds: bool,
         cif_parameters: list,
         atoms_for_analysis: list,
         adps: bool,
         instrument_ending: str = False,
         instrument_file: str = False,
     ):
-
         """Compiles all of the CIFs and performs analysis on them
 
         Args:
@@ -172,6 +169,7 @@ class VT_Pipeline:
             bonds (bool): whether or not bond analysis should be run
             angles (bool): whether or not angle analysis should be run
             torsions (bool): whether or not torsion analysis should be run
+            hbonds (bool): whether or not torsion analysis should be run
             cif_parameters (list): list of parameters in the CIF for tabulation
             atoms_for_analysis (list): list of atoms for geometrical analysis
             adps (bool): whether or not ADP analysis should be run
@@ -204,5 +202,6 @@ class VT_Pipeline:
             bonds,
             angles,
             torsions,
+            hbonds,
             adps,
         )

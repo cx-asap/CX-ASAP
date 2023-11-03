@@ -38,7 +38,6 @@ import logging
 
 class Test:
     def __init__(self) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -64,7 +63,6 @@ class Test:
         self.messages = []
 
     def test_shelxl_module(self) -> None:
-
         """Tests if module-refinement is working
 
         Uses the included test data Sets
@@ -151,7 +149,6 @@ class Test:
         self.messages += [message]
 
     def test_shelxl_pipeline(self) -> None:
-
         """Tests if pipeline-refinement is working
 
         Uses the included test data Sets
@@ -211,7 +208,6 @@ class Test:
         self.messages += [message]
 
     def test_instrument_cif_generation_module(self) -> None:
-
         """Tests if module-make-instrument-cif is working
 
         Uses the included test data Sets
@@ -260,7 +256,6 @@ class Test:
         self.messages += [message]
 
     def test_cif_module(self) -> None:
-
         """Tests if module-cif-merge is working
 
         Uses the included test data Sets
@@ -330,7 +325,6 @@ class Test:
         self.messages += [message]
 
     def test_cif_pipeline(self) -> None:
-
         """Tests if pipeline-cif is working
 
         Uses the included test data Sets
@@ -402,7 +396,6 @@ class Test:
         self.messages += [message]
 
     def test_cif_read_module(self) -> None:
-
         """Tests if module-cif-read is working
 
         Uses the included test data Sets
@@ -433,13 +426,13 @@ class Test:
         analysis = CIF_Read(test_mode=True)
 
         try:
-
             analysis.configure(self.sys["module-cif-read"]["cif_parameters"])
             analysis.get_data(
                 self.sys["module-cif-read"]["folder_containing_cifs"],
                 self.sys["module-cif-read"]["structural_analysis_bonds"],
                 self.sys["module-cif-read"]["structural_analysis_angles"],
                 self.sys["module-cif-read"]["structural_analysis_torsions"],
+                self.sys["module-cif-read"]["structural_analysis_hbonds"],
                 self.sys["module-cif-read"]["ADP_analysis"],
             )
             analysis.data_output()
@@ -457,7 +450,6 @@ class Test:
         self.messages += [message]
 
     def test_cell_analysis_module(self) -> None:
-
         """Tests if module-cell-analysis is working
 
         Uses the included test data Sets
@@ -495,7 +487,6 @@ class Test:
         analysis = Cell_Deformation(test_mode=True)
 
         try:
-
             analysis.import_data(
                 self.sys["module-cell-analysis"]["csv_location"],
                 self.sys["module-cell-analysis"]["reference_unit_cell"],
@@ -546,7 +537,6 @@ class Test:
         self.messages += [message]
 
     def test_structural_analysis_module(self) -> None:
-
         """Tests if module-structural-analysis is working
 
         Uses the included test data Sets
@@ -595,6 +585,7 @@ class Test:
                 self.sys["module-structural-analysis"]["bond_data"],
                 self.sys["module-structural-analysis"]["angle_data"],
                 self.sys["module-structural-analysis"]["torsion_data"],
+                self.sys["module-structural-analysis"]["hbond_data"],
                 self.sys["module-structural-analysis"]["atoms_for_analysis"],
             )
         except Exception as error:
@@ -611,7 +602,6 @@ class Test:
         self.messages += [message]
 
     def test_variable_cif_parameter_pipeline(self) -> None:
-
         """Tests if pipeline-variable-analysis is working
 
         Uses the included test data Sets
@@ -658,6 +648,7 @@ class Test:
                 self.sys["pipeline-variable-analysis"]["structural_analysis_bonds"],
                 self.sys["pipeline-variable-analysis"]["structural_analysis_angles"],
                 self.sys["pipeline-variable-analysis"]["structural_analysis_torsions"],
+                self.sys["pipeline-variable-analysis"]["structural_analysis_hbonds"],
                 self.sys["pipeline-variable-analysis"]["ADP_analysis"],
             )
         except Exception as error:
@@ -674,7 +665,6 @@ class Test:
         self.messages += [message]
 
     def test_general_pipeline(self) -> None:
-
         """Tests if pipeline-general is working
 
         Uses the included test data Sets
@@ -731,7 +721,6 @@ class Test:
         full = General_Pipeline(test_mode=True)
 
         try:
-
             full.make_dirs(self.sys["pipeline-general"]["experiment_location"])
 
             full.reference_extract(
@@ -764,6 +753,7 @@ class Test:
                 self.sys["pipeline-general"]["structural_analysis_bonds"],
                 self.sys["pipeline-general"]["structural_analysis_angles"],
                 self.sys["pipeline-general"]["structural_analysis_torsions"],
+                self.sys["pipeline-general"]["structural_analysis_hbonds"],
                 self.sys["pipeline-general"]["cif_parameters"],
                 self.sys["pipeline-general"]["atoms_for_analysis"],
                 self.sys["pipeline-general"]["varying_cif_parameter"],
@@ -825,7 +815,6 @@ class Test:
         self.messages += [message]
 
     def test_available_code(self) -> None:
-
         """Runs through all the tests available
 
         To set up a test for an additional module, add it to a function above

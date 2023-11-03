@@ -204,11 +204,12 @@ def reset_logs() -> None:
         pass
 
     os.chdir(original_path)
-    
+
     try:
         os.remove(log_location)
     except:
         pass
+
 
 def copy_logs(destination: str) -> None:
     """Copies logs to the output folder defined.
@@ -248,7 +249,6 @@ def yaml_extraction(heading: str) -> dict:
 
     for item in configure.param:
         if item == heading:
-
             # if type(configure.param[item]) == dict:
             # for item2 in configure.param[item]:
             # if type(configure.param[item][item2]) == dict:
@@ -278,7 +278,12 @@ def yaml_extraction(heading: str) -> dict:
         "structural_analysis_angles",
         "structural_analysis_bonds",
         "structural_analysis_torsions",
+        "structural_analysis_hbonds",
         "ADP_analysis",
+        "angle_data",
+        "bond_data",
+        "hbond_data",
+        "torsion_data",
     ]
 
     for item in list_of_params:
@@ -323,7 +328,7 @@ def yaml_creation(yaml_dict: dict) -> None:
         yaml_dict (dict): Dictionary of yaml parameters specific to the chosen module/pipeline
     """
     yaml_path = pathlib.Path(os.path.abspath(__file__)).parent / "conf.yaml"
-    #yaml_path = pathlib.Path(os.path.join(os.getcwd()), "conf.yaml")
+    # yaml_path = pathlib.Path(os.path.join(os.getcwd()), "conf.yaml")
 
     with open(yaml_path, "w") as f:
         new_yaml = yaml.dump(yaml_dict, f)
@@ -347,7 +352,7 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
     yaml_dict = yaml_extraction(heading)
 
     yaml_path = pathlib.Path(os.path.abspath(__file__)).parent / "conf.yaml"
-    #yaml_path =  pathlib.Path(os.path.join(os.getcwd(),"conf.yaml"))
+    # yaml_path =  pathlib.Path(os.path.join(os.getcwd(),"conf.yaml"))
 
     zero_exceptions = [
         "a_gradient",
@@ -360,7 +365,7 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
 
     if heading == "pipeline-AS-Brute-individual":
         zero_exceptions.append("chemical_formula")
-    
+
     if os.path.exists(yaml_path) == False:
         click.echo("No configuration file, please run with --configure option\n")
     else:
@@ -378,7 +383,6 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
                 flag = False
 
         if flag == True:
-
             for item in cfg:
                 if cfg[item] == 0 and item not in zero_exceptions:
                     flag = False
@@ -401,10 +405,10 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
                                     "Error in reading config file. Make sure your atoms_for_analysis are on separate lines in list format. The pre-set dash indicates how to type each atom on a new line"
                                 )
                                 exit()
-                                
+
         for item in cfg:
-            if 'cif_parameters' == item and 'varying_cif_parameter' in cfg.keys():
-                cfg['cif_parameters'].append(cfg['varying_cif_parameter'])
+            if "cif_parameters" == item and "varying_cif_parameter" in cfg.keys():
+                cfg["cif_parameters"].append(cfg["varying_cif_parameter"])
 
     return flag, cfg
 
@@ -518,8 +522,9 @@ def output_message() -> None:
     Thank you for using this software, and may the Fourier Transforms be with you. \n
     #################################################################################
     """
-    
+
     print(message)
+
 
 ##########-OS Test-##########
 
@@ -877,6 +882,9 @@ def pipeline_vp(dependencies, files, configure, run):
             " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
         )
         click.echo(
+            " - structural_analysis_hbonds: enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
+        )
+        click.echo(
             " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
         )
         click.echo(
@@ -950,6 +958,7 @@ def pipeline_vp(dependencies, files, configure, run):
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["ADP_analysis"],
                 cfg["cif_parameters"],
                 cfg["atoms_for_analysis"],
@@ -1059,6 +1068,9 @@ def pipeline_general(dependencies, files, configure, run):
             " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
         )
         click.echo(
+            " - structural_analysis_hbonds: enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
+        )
+        click.echo(
             " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
         )
         click.echo(
@@ -1119,6 +1131,7 @@ def pipeline_general(dependencies, files, configure, run):
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["cif_parameters"],
                 cfg["atoms_for_analysis"],
                 cfg["varying_cif_parameter"],
@@ -1219,6 +1232,9 @@ def pipeline_general_extra(dependencies, files, configure, run):
             " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
         )
         click.echo(
+            " - structural_analysis_hbonds: enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
+        )
+        click.echo(
             " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
         )
         click.echo(
@@ -1284,6 +1300,7 @@ def pipeline_general_extra(dependencies, files, configure, run):
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["cif_parameters"],
                 cfg["atoms_for_analysis"],
                 cfg["varying_cif_parameter"],
@@ -1316,6 +1333,7 @@ def pipeline_general_extra(dependencies, files, configure, run):
         configure (bool): will set up the yaml for the user to fill out
         run (bool): will execute the chosen module/pipeline 
     """
+
 
 @click.command(
     "module-intensity-compare", short_help="Compares intensities of hkl files"
@@ -1664,6 +1682,7 @@ def pipeline_intensity_compare(dependencies, files, configure, run):
         run (bool): will execute the chosen module/pipeline 
 """
 
+
 @click.command("module-cif-merge", short_help="Merge two CIFs")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -1749,6 +1768,7 @@ def module_cif_merge(dependencies, files, configure, run):
         run (bool): will execute the chosen module/pipeline 
 """
 
+
 @click.command("module-make-instrument-cif", short_help="Generate an instrument cif")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -1818,6 +1838,7 @@ def module_instrument_cif_generation(dependencies, files, configure, run):
         run (bool): will execute the chosen module/pipeline 
 """
 
+
 @click.command("pipeline-cif-combine", short_help="Combines CIFs")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -1886,6 +1907,7 @@ def pipeline_cif_combine(dependencies, files, configure, run):
         configure (bool): will set up the yaml for the user to fill out
         run (bool): will execute the chosen module/pipeline 
 """
+
 
 @click.command("pipeline-cif", short_help="Edits and compiles CIFs")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
@@ -1964,7 +1986,7 @@ def pipeline_cif(dependencies, files, configure, run):
                 cfg["instrument_ending"],
                 cfg["instrument_file"],
             )
-            
+
             cifs.compile_cifs(cfg["experiment_location"])
 
             copy_logs(cfg["experiment_location"])
@@ -2116,6 +2138,7 @@ def pipeline_rigaku_vt(dependencies, files, configure, run):
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["cif_parameters"],
                 cfg["atoms_for_analysis"],
                 cfg["ADP_analysis"],
@@ -2150,6 +2173,7 @@ def pipeline_rigaku_vt(dependencies, files, configure, run):
         configure (bool): will set up the yaml for the user to fill out
         run (bool): will execute the chosen module/pipeline 
 """
+
 
 @click.command(
     "pipeline-aus-synch-vt", short_help="full pipeline for synchrotron vt data"
@@ -2233,6 +2257,9 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
             " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
         )
         click.echo(
+            " - structural_analysis_hbonds: enter True for torsion analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
+        )
+        click.echo(
             " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
         )
         click.echo(
@@ -2305,6 +2332,7 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
                 True,
                 True,
                 False,
+                False,
                 cfg["cif_parameters"],
                 cfg["atoms_for_analysis"],
                 cfg["ADP_analysis"],
@@ -2336,6 +2364,7 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
         configure (bool): will set up the yaml for the user to fill out
         run (bool): will execute the chosen module/pipeline 
 """
+
 
 @click.command(
     "module-xds-cell-transform", short_help="calculate the transformation matrix"
@@ -2411,6 +2440,7 @@ def module_xds_cell_transformation(dependencies, files, configure, run):
         configure (bool): will set up the yaml for the user to fill out
         run (bool): will execute the chosen module/pipeline 
 """
+
 
 @click.command(
     "module-xds-reprocess", short_help="reprocess a single dataset using XDS"
@@ -2495,6 +2525,7 @@ def module_xds_reprocess(dependencies, files, configure, run):
         run (bool): will execute the chosen module/pipeline 
 """
 
+
 @click.command("module-xprep", short_help="process a single dataset using xprep")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -2578,6 +2609,7 @@ def module_xprep(dependencies, files, configure, run):
         run (bool): will execute the chosen module/pipeline 
 """
 
+
 @click.command(
     "pipeline-xds-reprocess", short_help="reprocess multiple datasets using XDS"
 )
@@ -2656,6 +2688,7 @@ def pipeline_xds_reprocess(dependencies, files, configure, run):
         configure (bool): will set up the yaml for the user to fill out
         run (bool): will execute the chosen module/pipeline 
 """
+
 
 @click.command("pipeline-xprep", short_help="process multiple datasets using xprep")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
@@ -2741,6 +2774,7 @@ def pipeline_xprep(dependencies, files, configure, run):
         configure (bool): will set up the yaml for the user to fill out
         run (bool): will execute the chosen module/pipeline 
 """
+
 
 @click.command("module-cell-analysis", short_help="analyse changes in unit cells")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
@@ -2847,6 +2881,7 @@ def module_cell_analysis(dependencies, files, configure, run):
         run (bool): will execute the chosen module/pipeline 
 """
 
+
 @click.command("module-cif-read", short_help="extract parameters from cif files")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -2883,7 +2918,9 @@ def module_cif_read(dependencies, files, configure, run):
         click.echo(
             " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
         )
-
+        click.echo(
+            " - structural_analysis_hbonds: enter 'true' if you want to extract Hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command"
+        )
         fields = yaml_extraction("module-cif-read")
         yaml_creation(fields)
 
@@ -2908,6 +2945,7 @@ def module_cif_read(dependencies, files, configure, run):
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["ADP_analysis"],
             )
             analysis.data_output()
@@ -2936,6 +2974,7 @@ def module_cif_read(dependencies, files, configure, run):
         configure (bool): will set up the yaml for the user to fill out
         run (bool): will execute the chosen module/pipeline 
 """
+
 
 @click.command(
     "module-rotation-planes", short_help="calculate MPLA angle to reference plane"
@@ -3019,6 +3058,7 @@ def module_rotation_planes(dependencies, files, configure, run):
         run (bool): will execute the chosen module/pipeline 
 """
 
+
 @click.command(
     "module-structural-analysis", short_help="analyse bond/angle/torsion data"
 )
@@ -3039,6 +3079,7 @@ def module_structural_analysis(dependencies, files, configure, run):
         click.echo(" - a .csv file of your bond data")
         click.echo(" - a .csv file of your angle data")
         click.echo(" - a .csv file of your torsion data")
+        click.echo(" - a .csv file of your Hbond data")
         click.echo(" Note that do you not need all of these files present")
         click.echo("\nThese files can be located anywhere ")
     elif configure:
@@ -3057,6 +3098,10 @@ def module_structural_analysis(dependencies, files, configure, run):
 
         click.echo(
             " - torsion_data: enter the full path to your torsion .csv file (or false if you do not have one)"
+        )
+
+        click.echo(
+            " - hbond_data: enter the full path to your hbond .csv file (or false if you do not have one)"
         )
 
         fields = yaml_extraction("module-structural-analysis")
@@ -3081,15 +3126,17 @@ def module_structural_analysis(dependencies, files, configure, run):
                 cfg["bond_data"],
                 cfg["angle_data"],
                 cfg["torsion_data"],
+                cfg["hbond_data"],
                 cfg["atoms_for_analysis"],
             )
 
-            copy_logs(pathlib.Path(cfg["bond_data"]).parent)
+            copy_logs(pathlib.Path.cwd())
 
         output_message()
 
     else:
         click.echo("Please select an option. To view options, add --help")
+
 
 #####------ Pipeline Rotation Planes-----#######
 
@@ -3107,6 +3154,7 @@ def module_structural_analysis(dependencies, files, configure, run):
         configure (bool): will set up the yaml for the user to fill out
         run (bool): will execute the chosen module/pipeline 
 """
+
 
 @click.command(
     "pipeline-rotation-planes", short_help="calculate multiple MPLA angles to reference"
@@ -3159,7 +3207,7 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
             multi_rotation.analysis(
                 cfg["experiment_location"],
                 cfg["reference_plane"],
-                cfg["experiment_location"]
+                cfg["experiment_location"],
             )
 
             copy_logs(cfg["experiment_location"])
@@ -3188,6 +3236,7 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
         configure (bool): will set up the yaml for the user to fill out
         run (bool): will execute the chosen module/pipeline 
 """
+
 
 @click.command("pipeline-variable-analysis", short_help="general analysis of cif files")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
@@ -3233,6 +3282,9 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
             " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
         )
         click.echo(
+            " - structural_analysis_hbonds: enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command"
+        )
+        click.echo(
             " - varying_cif_parameter: enter the parameter in your .cif files that is changing. Make sure you use proper .cif syntax"
         )
 
@@ -3263,6 +3315,7 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["ADP_analysis"],
             )
 
@@ -3292,6 +3345,7 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
         configure (bool): will set up the yaml for the user to fill out
         run (bool): will execute the chosen module/pipeline 
 """
+
 
 @click.command(
     "pipeline-position-analysis", short_help="analysis of variable position cifs"
@@ -3431,6 +3485,7 @@ def pipeline_position_analysis(dependencies, files, configure, run):
         run (bool): will execute the chosen module/pipeline 
 """
 
+
 @click.command(
     "pipeline-temperature-analysis", short_help="analysis of variable temperature cifs"
 )
@@ -3478,6 +3533,9 @@ def pipeline_temperature_analysis(dependencies, files, configure, run):
         click.echo(
             " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
         )
+        click.echo(
+            " - structural_analysis_hbonds: enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined with an HTAB command"
+        )
 
         fields = yaml_extraction("pipeline-temperature-analysis")
         yaml_creation(fields)
@@ -3505,6 +3563,7 @@ def pipeline_temperature_analysis(dependencies, files, configure, run):
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["ADP_analysis"],
             )
 
@@ -3531,6 +3590,7 @@ def pipeline_temperature_analysis(dependencies, files, configure, run):
         configure (bool): will set up the yaml for the user to fill out
         run (bool): will execute the chosen module/pipeline 
 """
+
 
 @click.command("module-platon-squeeze", short_help="Run Platon Squeeze")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
@@ -3601,6 +3661,7 @@ def module_platon_squeeze(dependencies, files, configure, run):
         configure (bool): will set up the yaml for the user to fill out
         run (bool): will execute the chosen module/pipeline 
 """
+
 
 @click.command(
     "pipeline-platon-squeeze", short_help="Run squeeze over multiple structures"
@@ -3767,6 +3828,7 @@ def module_adp_analysis(dependencies, files, configure, run):
         configure (bool): will set up the yaml for the user to fill out
         run (bool): will execute the chosen module/pipeline 
 """
+
 
 @click.command(
     "pipeline-AS-Brute", short_help="Run xprep/shelxt over multiple structures"
@@ -4062,6 +4124,7 @@ def pipeline_shelxt_auto(dependencies, files, configure, run):
 #        run (bool): will execute the chosen module/pipeline
 #    """
 
+
 @click.command("pipeline-AS-Brute-individual", short_help="for AS use only")
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -4108,28 +4171,46 @@ def pipeline_AS_Brute_individual(dependencies, files, configure, run):
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
             brute = AS_Brute_Single()
-            sadabs_folders = ['/sadabs_m', '/sadabs_s', '/sadabs_w']
+            sadabs_folders = ["/sadabs_m", "/sadabs_s", "/sadabs_w"]
             print(cfg["experiment_location"])
             print(os.getcwd())
             brute.initialise(cfg["experiment_location"])
             if cfg["chemical_formula"] == 0:
                 brute.xprepreduce(cfg["experiment_location"], "cxasap")
             else:
-                brute.xprepreduce(cfg["experiment_location"], "cxasap", cfg["chemical_formula"])
+                brute.xprepreduce(
+                    cfg["experiment_location"], "cxasap", cfg["chemical_formula"]
+                )
             brute.solve(cfg["experiment_location"], "cxasap")
-            brute.move_files(cfg["experiment_location"], cfg["experiment_location"], "cxasap")
+            brute.move_files(
+                cfg["experiment_location"], cfg["experiment_location"], "cxasap"
+            )
             brute.report(cfg["experiment_location"], "")
-            
-            for item in sadabs_folders:
-                if cfg["chemical_formula"] == 0:
-                    brute.xprepreduce(cfg["experiment_location"] + item, "cxasap_" + item.strip('/'))
-                else:
-                    brute.xprepreduce(cfg["experiment_location"] + item, "cxasap_" + item.strip('/'), cfg["chemical_formula"])
-                brute.solve(cfg["experiment_location"] + item, "cxasap_" + item.strip('/'))
-                brute.move_files(cfg["experiment_location"], cfg["experiment_location"] + item, "cxasap_" + item.strip('/'))
-                brute.report(cfg["experiment_location"], item.strip('/'))
-                
-            
+            try:
+                for item in sadabs_folders:
+                    if cfg["chemical_formula"] == 0:
+                        brute.xprepreduce(
+                            cfg["experiment_location"] + item,
+                            "cxasap_" + item.strip("/"),
+                        )
+                    else:
+                        brute.xprepreduce(
+                            cfg["experiment_location"] + item,
+                            "cxasap_" + item.strip("/"),
+                            cfg["chemical_formula"],
+                        )
+                    brute.solve(
+                        cfg["experiment_location"] + item, "cxasap_" + item.strip("/")
+                    )
+                    brute.move_files(
+                        cfg["experiment_location"],
+                        cfg["experiment_location"] + item,
+                        "cxasap_" + item.strip("/"),
+                    )
+            except FileNotFoundError:
+                pass
+                brute.report(cfg["experiment_location"], item.strip("/"))
+
             copy_logs(cfg["experiment_location"])
 
         output_message()
@@ -4176,7 +4257,6 @@ windows_modules_dev = [
 ]
 
 if BadOS == True:
-
     # Modules for master branch ###
 
     for item in windows_modules:
@@ -4188,7 +4268,6 @@ if BadOS == True:
         cli.add_command(item)
 
 else:
-
     ### Modules for master branch ###
 
     cli.add_command(test)

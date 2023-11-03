@@ -15,13 +15,14 @@ import logging
 import subprocess
 import pathlib
 import os
+import signal
+import sys
 
 # ----------Class Definition----------#
 
 
 class SHELXT:
     def __init__(self) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -48,14 +49,13 @@ class SHELXT:
         self.sys_path = config.sys_path
 
     def run_shelxt(self, location: str, file_name: str, flags: bool = False) -> None:
-
         """Runs shelxt on a specific .ins file with a .hkl in the same folder
 
         Args:
             location (str): full path to the file location
             file_name (str): name of file to run through shelxt
             flags (bool): additional flags to add into shelxt
-                            NOT CURRENTLY IMPLEMENTED - FUTURE FRAMEWORK
+            NOT CURRENTLY IMPLEMENTED - FUTURE FRAMEWORK
         """
 
         os.chdir(location)
@@ -65,6 +65,38 @@ class SHELXT:
             )
             shelxt.stdin.close()
             shelxt.wait()
+        else:
+            shelxt = subprocess.Popen(
+                ["shelxt", file_name, flags], stdin=subprocess.PIPE, encoding="utf8"
+            )
+            shelxt.stdin.close()
+            shelxt.wait()
+
+    def run_shelxt_as(self, location: str, file_name: str, flags: bool = False) -> None:
+        """Runs shelxt on a specific .ins file with a .hkl in the same folder
+        this has a built in time out for Brute use at the Australian Synchrotron beamliine
+        it has a hard coded time out of two minutes, but this can be changed in the future
+        Args:
+            location (str): full path to the file location
+            file_name (str): name of file to run through shelxt
+            flags (bool): additional flags to add into shelxt
+                            NOT CURRENTLY IMPLEMENTED - FUTURE FRAMEWORK
+        """
+        os.chdir(location)
+        timeout_s = 0.5
+        if flags == False:
+            try:
+                shelxt = subprocess.Popen(
+                    ["shelxt", file_name],
+                    stdin=subprocess.PIPE,
+                    encoding="utf8",
+                    start_new_session=True,
+                )
+                shelxt.stdin.close()
+                shelxt.wait(timeout=timeout_s)
+            except subprocess.TimeoutExpired:
+                print("timeout worked :)")
+                os.killpg(os.getpgid(shelxt.pid), signal.SIGINT)
         else:
             shelxt = subprocess.Popen(
                 ["shelxt", file_name, flags], stdin=subprocess.PIPE, encoding="utf8"

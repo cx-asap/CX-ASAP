@@ -27,7 +27,6 @@ from typing import Tuple
 
 class Configure_Flexible:
     def __init__(self) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -69,7 +68,6 @@ class Configure_Flexible:
         instrument_parameters_path: str,
         instrument_cif: str,
     ) -> None:
-
         """Sets up the directory tree for a specialised flexible mapping experiment
 
         Basically its just moving around files and making things pretty
@@ -147,7 +145,6 @@ class Configure_Flexible:
         MPLA_atoms: str,
         total_angle: int,
     ) -> None:
-
         """Primarily sets up the XDS.INP file for a flexible crystal experiment
 
         Also adds in the MPLA command to the reference structure
@@ -188,7 +185,6 @@ class Configure_Flexible:
         with open(
             pathlib.Path(self.sys["ref_path"]) / "GXPARM.XDS", "rt"
         ) as instrument:
-
             # Locates the instrument parameters needed to copy into the XDS.INP File
 
             for index, line in enumerate(instrument):
@@ -343,7 +339,6 @@ class Configure_Flexible:
 
 class Directory_Browse:
     def __init__(self, location, error_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -392,7 +387,6 @@ class Directory_Browse:
         ignored_folders: list = [],
         ignore_check: bool = False,
     ) -> None:
-
         """Enter a directory and search for a specified file
 
         The idea here is that upon creating the class, it will have
@@ -435,7 +429,6 @@ class Directory_Browse:
             self.item_name = ""
 
             if ignore_check == False:
-
                 check = File_Check(self.error_mode)
 
                 file_list = check.duplicate_check(file_suffix, ignored_files)
@@ -472,7 +465,6 @@ class Directory_Browse:
     def enter_directory_multiple(
         self, folder: str, file_suffix: str, ignored_files: list = False
     ) -> None:
-
         """Similar to above function, but it is for when there are multiple
 
         of the desired files in the folder
@@ -497,13 +489,11 @@ class Directory_Browse:
                 logging.info(__name__ + " : File name for analysis: " + str(item))
 
     def exit_directory(self) -> None:
-
         """Exits back to the home directory"""
 
         os.chdir(self.home_directory)
 
     def check_file_contents(self, file_check: str = False) -> None:
-
         """Checks the contents of a specified file to see if it is empty
 
         Some crystallographic programs will write out an empty file if
@@ -550,7 +540,6 @@ class Directory_Browse:
 
 class File_Check:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -579,7 +568,6 @@ class File_Check:
         self.sys_path = config.sys_path
 
     def duplicate_check(self, file_suffix: str, ignored_files: list = False) -> list:
-
         """Checks if there are two files with the same suffix in a folder
 
         Ie two .ins files means in a folder would break the code
@@ -606,7 +594,6 @@ class File_Check:
 
 class Autoprocess_Setup:
     def __init__(self) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -628,7 +615,6 @@ class Autoprocess_Setup:
         self.sys_path = config.sys_path
 
     def config(self, location: str, experiment_name: str, experiment_type: str) -> None:
-
         """Sets up the directory tree structure and updates the paths in
 
         the sys.yaml file
@@ -669,7 +655,6 @@ class Autoprocess_Setup:
             )
 
     def File_Rename_AS(self) -> None:
-
         """This next part adds numbers so folders are correctly ordered
 
         Also allows for the fact that if the screenings auto-process
@@ -710,7 +695,6 @@ class Autoprocess_Setup:
     def Organise_Directory_Tree(
         self, reference_location: str, Synchrotron: bool = False
     ) -> None:
-
         """Organises the directory tree, moves a lot of files around, and
 
         makes sure that any that failed autoprocessing are separted from
@@ -753,7 +737,6 @@ class Autoprocess_Setup:
             for item in os.listdir():
                 if self.experiment_name in item:
                     if self.experiment_type not in item:
-
                         # makes sure that the folder that everything is being moved into is not considered
 
                         shutil.copytree(item, pathlib.Path(self.analysis_path) / item)
@@ -834,7 +817,6 @@ class Autoprocess_Setup:
 
 class Reprocess_Setup:
     def __init__(self) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -856,7 +838,6 @@ class Reprocess_Setup:
         self.sys_path = config.sys_path
 
     def config(self, location: str, experiment_name: str, experiment_type: str) -> None:
-
         """Sets up the directory tree structure and updates the paths in
 
         the sys.yaml file
@@ -899,7 +880,6 @@ class Reprocess_Setup:
     def Organise_Directory_Tree(
         self, reference_location: str, xds_inp_location: str
     ) -> None:
-
         """Moves a lot of files around and sets everything up for automatic analysis
 
         Args:
@@ -1025,7 +1005,6 @@ class Reprocess_Setup:
 
 class Grapher:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -1065,7 +1044,6 @@ class Grapher:
         linewidth: list = None,
         s: list = None,
     ) -> None:
-
         """This function is used to print out a single scatter graph
 
         Options include having multiple series on the same graph
@@ -1085,9 +1063,7 @@ class Grapher:
         """
 
         for index, item in enumerate(y):
-
             if type(item) != float and type(item) != int:
-
                 if len(x) != len(item):
                     logging.info(
                         __name__
@@ -1153,7 +1129,6 @@ class Grapher:
         y_title: str,
         figure_name: str,
     ) -> None:
-
         """This function is for doing multiple separate scatter graphs on the
 
         same figure (ie 8 different scatter graphs)
@@ -1172,7 +1147,6 @@ class Grapher:
         """
 
         for index, item in enumerate(subplots):
-
             plt.rc("font", size=25)
 
             ax = plt.subplot(rows, columns, item)
@@ -1238,7 +1212,6 @@ class Grapher:
         y_title: str,
         figure_name: str,
     ) -> None:
-
         """This function is for doing multiple separate scatter graphs,
 
         each with multiple series on them
@@ -1301,7 +1274,6 @@ class Grapher:
         full_title: str,
         mini_titles: list,
     ) -> None:
-
         """This is for doing a 2 x 2 grid of line graphs
 
         Args:
@@ -1363,7 +1335,6 @@ class Grapher:
     def graph_multi_series(
         self, separated_dfs: list, x_title: str, y_title: list, figure_name: str
     ) -> None:
-
         """Multi-series graph where y is a list of dataframes separated by a parameter
 
         Args:
@@ -1390,7 +1361,6 @@ class Grapher:
     def mini_graph(
         self, x: list, y: list, title: str, subplot: int, behaviour: str
     ) -> None:
-
         """Pretty standard graphing function with nothing special
 
         Args:
@@ -1423,7 +1393,6 @@ class Grapher:
 
 class Cell_Import:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -1452,7 +1421,6 @@ class Cell_Import:
         self.sys_path = self.config.sys_path
 
     def cell_import(self, ins: str) -> None:
-
         """Imports a unit cell from a reference .ins/.res file
 
         saves it in the sys.yaml file
@@ -1517,7 +1485,6 @@ class Cell_Import:
         self.cfg, self.sys = self.config.yaml_reload(self.test_mode)
 
     def ref_edit(self, ins: str, MPLA_atoms: str) -> None:
-
         """Edits the reference .ins/.res file to put the MPLA
 
         command in with the user defined atoms
@@ -1554,7 +1521,6 @@ class Cell_Import:
 
 class File_Sorter:
     def sorted_properly(self, data: list) -> list:
-
         """A function to sort numbers like 1 and 10 properly
 
         Args:
@@ -1575,7 +1541,6 @@ class File_Sorter:
 
 class XDS_File_Edit:
     def __init__(self) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -1598,7 +1563,6 @@ class XDS_File_Edit:
         self.sys_path = config.sys_path
 
     def change(self, file_path: str, parameter: str, new_value: str) -> None:
-
         """Changes a parameter in an XDS.INP file
 
         Args:
@@ -1637,7 +1601,6 @@ class XDS_File_Edit:
                     print(line)
 
     def get_value(self, file_path: str, parameter: str) -> str:
-
         """Gets the value of a parameter in an XDS.INP
 
         Args:
@@ -1660,7 +1623,6 @@ class XDS_File_Edit:
         return self.value
 
     def start_angle(self, file_path: str) -> float:
-
         """Gets start and total angle from XDS.INP
 
         required later during editing to 'remember' what originally was
@@ -1686,7 +1648,6 @@ class XDS_File_Edit:
         return angle
 
     def new_line_rewrite(self, file_path: str) -> None:
-
         """To make editing the file easier later,
 
         the XDS.INP file is rewritten upon initialisation
@@ -1701,7 +1662,6 @@ class XDS_File_Edit:
             lines = in_file.readlines()
         with open("temp.INP", "w") as out_file:
             for line in lines:
-
                 # Multiple '=' signs indicate more than one keyword, EXCEPT for the headers used by XDS
 
                 if line.count("=") > 1 and "!" not in line:
@@ -1709,7 +1669,6 @@ class XDS_File_Edit:
                     index_old = 0
                     new_line = ""
                     for character in line:
-
                         # Splits the line at the spaces between different keywords/parameters (elif statement to make sure the last keyword isn't deleted due to a space NOT being present at the end of the line)
 
                         if (
@@ -1737,7 +1696,6 @@ class XDS_File_Edit:
 
 class Nice_YAML_Dumper(yaml.SafeDumper):
     def write_line_break(self, data: dict = None) -> None:
-
         """Makes the yaml have better formatting when edited
 
         Unsure of the specifics, got this code from StackOverflow
@@ -1754,7 +1712,6 @@ class Nice_YAML_Dumper(yaml.SafeDumper):
 
 class Config:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the logbook and config file
@@ -1771,7 +1728,6 @@ class Config:
         self.sys_path = pathlib.Path(os.path.abspath(__file__)).parent / "sys.yaml"
 
         if test_mode == False:
-
             with open(self.conf_path, "r") as f:
                 try:
                     self.cfg = yaml.load(f, yaml.FullLoader)
@@ -1792,7 +1748,6 @@ class Config:
                 exit()
 
     def yaml_reload(self, test_mode=False) -> Tuple[dict, dict]:
-
         """Reloads the yaml files
 
         Args:
@@ -1820,7 +1775,6 @@ class Config:
 
 class Generate:
     def __init__(self) -> None:
-
         """Initialises the class
 
         Used to generate the conf.yaml specific to each module/pipeline
@@ -1895,6 +1849,7 @@ if __name__ == "__main__":
                 "structural_analysis_bonds",
                 "structural_analysis_angles",
                 "structural_analysis_torsions",
+                "structural_analysis_hbonds",
                 "ADP_analysis",
                 "atoms_for_analysis",
                 "wedge_angles",
@@ -1915,6 +1870,7 @@ if __name__ == "__main__":
                 "structural_analysis_bonds",
                 "structural_analysis_angles",
                 "structural_analysis_torsions",
+                "structural_analysis_hbonds",
                 "ADP_analysis",
                 "atoms_for_analysis",
                 "varying_cif_parameter",
@@ -1959,6 +1915,7 @@ if __name__ == "__main__":
                 "structural_analysis_bonds",
                 "structural_analysis_angles",
                 "structural_analysis_torsions",
+                "structural_analysis_hbonds",
                 "ADP_analysis",
                 "atoms_for_analysis",
                 "varying_cif_parameter",
@@ -2053,6 +2010,7 @@ if __name__ == "__main__":
                 "structural_analysis_bonds",
                 "structural_analysis_angles",
                 "structural_analysis_torsions",
+                "structural_analysis_hbonds",
                 "ADP_analysis",
                 "atoms_for_analysis",
             ],
@@ -2075,6 +2033,7 @@ if __name__ == "__main__":
                 "structural_analysis_bonds",
                 "structural_analysis_angles",
                 "structural_analysis_torsions",
+                "structural_analysis_hbonds",
                 "ADP_analysis",
                 "atoms_for_analysis",
             ],
@@ -2109,6 +2068,7 @@ if __name__ == "__main__":
                 "structural_analysis_bonds",
                 "structural_analysis_angles",
                 "structural_analysis_torsions",
+                "structural_analysis_torsions",
                 "ADP_analysis",
                 "folder_containing_cifs",
             ],
@@ -2118,6 +2078,7 @@ if __name__ == "__main__":
                 "bond_data",
                 "angle_data",
                 "torsion_data",
+                "hbond_data",
             ],
             "pipeline-rotation-planes": ["reference_plane", "experiment_location"],
             "pipeline-variable-analysis": [
@@ -2126,6 +2087,7 @@ if __name__ == "__main__":
                 "structural_analysis_bonds",
                 "structural_analysis_angles",
                 "structural_analysis_torsions",
+                "structural_analysis_hbonds",
                 "ADP_analysis",
                 "varying_cif_parameter",
                 "experiment_location",
@@ -2138,6 +2100,7 @@ if __name__ == "__main__":
                 "structural_analysis_bonds",
                 "structural_analysis_angles",
                 "structural_analysis_torsions",
+                "structural_analysis_hbonds",
                 "ADP_analysis",
                 "experiment_location",
                 "reference_unit_cell",
@@ -2155,6 +2118,7 @@ if __name__ == "__main__":
                 "structural_analysis_bonds",
                 "structural_analysis_angles",
                 "structural_analysis_torsions",
+                "structural_analysis_hbonds",
                 "ADP_analysis",
                 "experiment_location",
                 "reference_unit_cell",

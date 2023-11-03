@@ -23,7 +23,6 @@ import logging
 
 class VT_Analysis_Pipeline:
     def __init__(self) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -45,7 +44,6 @@ class VT_Analysis_Pipeline:
         self.sys_path = config.sys_path
 
     def determine_temp_behaviour(self, df: "pd.DataFrame") -> list:
-
         """Searches through the data and classifies everything as a
 
         minima, maxima, increasing or decreasing
@@ -115,7 +113,6 @@ class VT_Analysis_Pipeline:
 
     def analyse_data(
         self,
-        ref_cell: list,
         ref_ins: str,
         location: str,
         cif_parameters: list,
@@ -123,9 +120,9 @@ class VT_Analysis_Pipeline:
         bonds: bool = False,
         angles: bool = False,
         torsions: bool = False,
+        hbonds: bool = False,
         adps: bool = False,
     ) -> None:
-
         """Performs much analysis on CIF files
 
         Reads them and extracts the desired parameters
@@ -139,7 +136,6 @@ class VT_Analysis_Pipeline:
         THIS FUNCTION IS SPECIFIC TO VT, SO HAS CHANGING PARAM AS "_diffrn_ambient_temperature"
 
         Args:
-            ref_cell (list): reference unit cell
             ref_ins (str): full path to the reference .ins
             location (str): full path to the folder containing all CIFs for analysis
             cif_parameters (list): list of cif parameters to extract
@@ -147,12 +143,13 @@ class VT_Analysis_Pipeline:
             bonds (bool): whether or not bond analysis should be run
             angles (bool): whether or not angle analysis should be run
             torsions (bool): whether or not torsion analysis should be run
+            hbonds (bool): whether or not torsion analysis should be run
             adps (bool): whether or not ADP analysis should be run
         """
 
         CIF_Data = CIF_Read()
         CIF_Data.configure(cif_parameters)
-        CIF_Data.get_data(location, bonds, angles, torsions, adps)
+        CIF_Data.get_data(location, bonds, angles, torsions, hbonds, adps)
         CIF_Data.data_output()
 
         geometry = Structural_Analysis()
@@ -163,6 +160,8 @@ class VT_Analysis_Pipeline:
             angles = "Bond_Angles.csv"
         if torsions != False:
             torsions = "Bond_Torsions.csv"
+        if hbonds != False:
+            hbonds = "Hbond_details.csv"
         if adps != False:
             adps = "ADPs.csv"
 
@@ -170,6 +169,7 @@ class VT_Analysis_Pipeline:
             bonds,
             angles,
             torsions,
+            hbonds,
             atoms_for_analysis,
             location,
             varying_parameter="_diffrn_ambient_temperature",

@@ -26,7 +26,6 @@ import logging
 
 class Synergy_VT:
     def __init__(self) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -53,7 +52,6 @@ class Synergy_VT:
         self.sys_path = config.sys_path
 
     def initialise(self, experiment_location) -> None:
-
         """Makes two directories:
 
         A directory for refinement graphs and result report
@@ -133,7 +131,6 @@ class Synergy_VT:
         tolerance: float,
         max_cycles: int,
     ):
-
         """Runs SHELXL on a series of structures based on one reference
 
         Args:
@@ -170,13 +167,13 @@ class Synergy_VT:
         bonds: bool,
         angles: bool,
         torsions: bool,
+        hbonds: bool,
         cif_parameters: list,
         atoms_for_analysis: list,
         adps: bool,
         instrument_ending: str = False,
         instrument_file: str = False,
     ) -> None:
-
         """Compiles all of the output CIFs and runs an analysis pipeline on these files
 
         Args:
@@ -193,6 +190,7 @@ class Synergy_VT:
             bonds (bool): whether or not bond analysis should be run
             angles (bool): whether or not angle analysis should be run
             torsions (bool): whether or not torsion analysis should be run
+            hbonds (bool): whether or not torsion analysis should be run
             cif_parameters (list): list of parameters in the CIF for tabulation
             atoms_for_analysis (list): list of atoms for geometrical analysis
             adps (bool): whether or not ADP analysis should be run
@@ -225,5 +223,6 @@ class Synergy_VT:
             bonds,
             angles,
             torsions,
+            hbonds,
             adps,
         )
