@@ -716,6 +716,7 @@ def pipeline_refinement(dependencies, files, configure, run):
     else:
         click.echo("Please select an option. To view options, add --help")
 
+
 ##########-Pipeline General-##########
 
 """This pipeline will refine a series of .hkl/.ins files based on a common  
