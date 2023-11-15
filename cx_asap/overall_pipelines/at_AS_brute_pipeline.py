@@ -117,6 +117,16 @@ class AS_Brute_Single:
             file_prefix + ".pcf",
             file_prefix + "_a.hkl",
             file_prefix + "_a.res",
+            file_prefix + "_b.hkl",
+            file_prefix + "_b.res",
+            file_prefix + "_c.hkl",
+            file_prefix + "_c.res",
+            file_prefix + "_d.hkl",
+            file_prefix + "_d.res",
+            file_prefix + "_e.hkl",
+            file_prefix + "_e.res",
+            file_prefix + "_f.hkl",
+            file_prefix + "_f.res",
         ]
 
         for item in files_to_copy:
