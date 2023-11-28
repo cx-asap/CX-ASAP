@@ -422,12 +422,20 @@ class Structural_Analysis:
                 ):
                     x_unit = varying_parameter
 
-            graph.single_scatter_graph(
-                x_data[0],
-                y_data,
-                x_unit,
-                y_unit,
-                structure_type,
-                prefix + "_" + structure_type + ".png",
-                y_headers,
-            )
+            try:
+                graph.single_scatter_graph(
+                    x_data[0],
+                    y_data,
+                    x_unit,
+                    y_unit,
+                    structure_type,
+                    prefix + "_" + structure_type + ".png",
+                    y_headers,
+                )
+            except IndexError:
+                logging.info(
+                    "No "
+                    + structure_type
+                    + " data found for graphing, likely because structures not refined with CONF instruction or No HBonds around important atom "
+                )
+                pass
