@@ -36,7 +36,6 @@ import logging
 
 class VP_Pipeline:
     def __init__(self):
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -65,7 +64,6 @@ class VP_Pipeline:
         self.xds_edit = XDS_File_Edit()
         self.sys["process_counter"] = 0
         with open(self.sys_path, "w") as f:
-
             yaml.dump(
                 self.sys,
                 f,
@@ -92,7 +90,6 @@ class VP_Pipeline:
         instrument_cif_path: str,
         total_angle: int,
     ) -> None:
-
         """Organises the directory tree for this experiment
 
         Saves new locations into the system yaml file
@@ -134,7 +131,6 @@ class VP_Pipeline:
         self.cfg, self.sys = self.config.yaml_reload()
 
     def change_angle(self, total_angle: int, start_angle: int, angle: int) -> None:
-
         """Calculates frames per degree of data
 
         Also calculates what the middle angle is from the total angle
@@ -195,7 +191,6 @@ class VP_Pipeline:
         )
 
     def change_parameters(self, a: int, b: int, c: int, d: int, e: int) -> None:
-
         """Changes the parameters in the XDS.INP file to those
 
         chosen in the conf.YAML file by the user
@@ -249,7 +244,6 @@ class VP_Pipeline:
         instrument_ending: str,
         instrument_file: str,
     ) -> None:
-
         """Loops through a range of XDS parameters and runs a full process
 
         and refinement for each possible combination
@@ -301,7 +295,6 @@ class VP_Pipeline:
         # Checks that the user is not trying to test an angle of 0 or an angle larger than the collected data
 
         for item in angles:
-
             if item == 0:
                 logging.critical(__name__ + " : Cannot test angle of 0!")
                 print("Error! Check logs")
@@ -336,7 +329,6 @@ class VP_Pipeline:
                             self.sys["process_counter"] += 1
 
                             with open(self.sys_path, "w") as f:
-
                                 yaml.dump(
                                     self.sys,
                                     f,
@@ -425,7 +417,6 @@ class VP_Pipeline:
         instrument_ending: str,
         instrument_file: str,
     ) -> None:
-
         """This is the function that actually calls XDS, XPREP and SHELXL
 
         and also compiles the CIFS from a single set of XDS parameters
@@ -506,7 +497,6 @@ class VP_Pipeline:
         wedge_angles: list,
         reference_plane: list,
     ) -> None:
-
         """Analyses the combined CIF files of all the different XDS tests
 
         Ie, each mapping experiment will have a combined CIF of all data sets

@@ -37,8 +37,8 @@ pipeline-variable-position:
   - atoms_for_rotation_analysis
   - reference_plane
   - chemical_formula
-  - crystal_colour
   - crystal_habit
+  - crystal_colour
   - max_crystal_dimension
   - middle_crystal_dimension
   - min_crystal_dimension
@@ -205,8 +205,8 @@ pipeline-rigaku-vt:
   - experiment_location
   - reference_location
   - chemical_formula
-  - crystal_colour
   - crystal_habit
+  - crystal_colour
   - max_crystal_dimension
   - middle_crystal_dimension
   - min_crystal_dimension
@@ -228,8 +228,8 @@ pipeline-aus-synch-vt:
   - atoms_for_rotation_analysis
   - reference_plane
   - chemical_formula
-  - crystal_colour
   - crystal_habit
+  - crystal_colour
   - max_crystal_dimension
   - middle_crystal_dimension
   - min_crystal_dimension
