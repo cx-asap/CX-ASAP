@@ -484,6 +484,7 @@ class VP_Pipeline:
         bonds: bool,
         angles: bool,
         torsions: bool,
+        hbonds: bool,
         adps: bool,
         cif_parameters: list,
         atoms_for_analysis: list,
@@ -510,6 +511,7 @@ class VP_Pipeline:
             bonds (bool): whether or not bond analysis should be run
             angles (bool): whether or not angle analysis should be run
             torsions (bool): whether or not torsion analysis should be run
+            hbonds (bool): whether or not H-bond analysis should be run
             adps (bool): whether or not ADP analysis should be run
             cif_parameters (list): list of parameters in the CIF for tabulation
             atoms_for_analysis (list): list of atoms for geometrical analysis
@@ -542,5 +544,6 @@ class VP_Pipeline:
             bonds,
             angles,
             torsions,
+            hbonds,
             adps,
         )
