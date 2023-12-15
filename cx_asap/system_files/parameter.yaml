@@ -4,6 +4,12 @@ module-platon-squeeze:
 pipeline-platon-squeeze:
   - experiment_location
 
+module-platon-twinrotmat:
+  - file_name
+
+pipeline-platon-twinrotmat:
+  - experiment_location
+
 pipeline-shelxt-auto:
   - experiment_location
 
