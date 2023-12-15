@@ -24,7 +24,6 @@ from typing import Tuple
 
 class ADP_analysis:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -53,7 +52,6 @@ class ADP_analysis:
         self.sys_path = config.sys_path
 
     def scale_vector(self, vector: "np.array", G: "np.array") -> "np.array":
-
         """Calculates the scaling factor and scales a given vector
 
         based on the metrix matrix G
@@ -80,7 +78,6 @@ class ADP_analysis:
         cell_length: float,
         G: "np.array",
     ) -> Tuple[float, float]:
-
         """Calculates the angle between a vector and a cell axis
 
         Requires the metric matrix because not cartesian coordinates
@@ -98,7 +95,10 @@ class ADP_analysis:
 
         dot_product = np.matmul(vector, np.matmul(G, cell_axis))
         div = dot_product / cell_length
-        angle = math.acos(div) * (180 / math.pi)
+        try:
+            angle = math.acos(div) * (180 / math.pi)
+        except ValueError:
+            angle = 0
 
         angle = round(angle, 1)
 
@@ -107,7 +107,6 @@ class ADP_analysis:
         return angle, supplementary_angle
 
     def analyse_data(self, csv_file: str, cell_data: str) -> None:
-
         """RECOMMENDED THAT CIF_READ.PY IS RUN FIRST FOR CORRECT FORMATTING
 
         OF INPUT .CSV FILES
@@ -169,7 +168,6 @@ class ADP_analysis:
         # Loop through each CIF file
 
         for name, group in adp_by_cell:
-
             # Calculate metric matrix for the structure
 
             a = cell_df.iloc[counter]["_cell_length_a"]
@@ -212,7 +210,6 @@ class ADP_analysis:
             # Loop through each atom
 
             for idx, row in group.iterrows():
-
                 # Calculate the matricies of thermal parameters for each atom
 
                 U11 = row["_atom_site_aniso_U_11"]
@@ -397,7 +394,6 @@ class ADP_analysis:
             pass
 
         for i, j in adp_by_atom:
-
             csv_location = (
                 pathlib.Path(csv_file).parent / new_folder / (str(i) + "_ADPs.csv")
             )

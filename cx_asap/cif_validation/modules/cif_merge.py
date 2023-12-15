@@ -23,7 +23,6 @@ from system_files.utils import Nice_YAML_Dumper, Config, Directory_Browse
 
 class Cif_Merge:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -82,7 +81,6 @@ class Cif_Merge:
         self.flag2 = False
 
     def import_CIFs(self, instrument: str, new: str) -> None:
-
         """This function imports both a defined instrument cif and a structure cif
 
         It sets up the class parameters self.cif1 and self.cif2, which saves this data
@@ -120,7 +118,6 @@ class Cif_Merge:
         tree.check_file_contents(new)
 
     def synchrotron_cif_edit(self, instrument_cif: str) -> None:
-
         """This function edits the synchrotron autoprocess.cif so that it
 
         can be read in by PyCifRW
@@ -136,7 +133,6 @@ class Cif_Merge:
         try:
             test = ReadCif(instrument_cif)
         except:
-
             with open(instrument_cif, "r") as f:
                 lines = f.readlines()
 
@@ -219,7 +215,6 @@ class Cif_Merge:
                 pass
 
     def merge_CIFs(self) -> None:
-
         """This function merges the instrument cif and the
 
         refined cif using the PyCIF module.
@@ -236,11 +231,9 @@ class Cif_Merge:
             self.flag2 = True
 
         if self.flag2 == False and self.flag1 == True:
-
             self.data_block2 = self.cif2.first_block()
 
         elif self.flag2 == False and self.flag1 == False:
-
             self.data_block1 = self.cif1.first_block()
             self.data_block2 = self.cif2.first_block()
 
@@ -270,13 +263,12 @@ class Cif_Merge:
         self,
         solution: str,
         formula: str,
-        colour: str,
         habit: str,
+        colour: str,
         cryst_max: str,
         cryst_mid: str,
         cryst_min: str,
     ) -> None:
-
         """This function puts all the additional user-defined parameters in
 
         The user defines these parameters in the yaml file
@@ -285,13 +277,13 @@ class Cif_Merge:
             solution(str): the structure solution program used
             formula(str): the chemical formula
             habit(str): the crystal habit
+            colour(str): the colour of the crystal
             cryst_max(str): the largest dimension of the crystal
             cryst_mid(str): the middle dimension of the crystal
             cryst_min(str): the smallest dimension of the crystal
         """
 
         if self.flag2 == False and self.flag1 == False:
-
             self.data_block2["_computing_structure_solution"] = solution
             self.data_block2["_chemical_formula_moiety"] = formula
             self.data_block2["_exptl_crystal_colour"] = colour
@@ -301,7 +293,6 @@ class Cif_Merge:
             self.data_block2["_exptl_crystal_size_min"] = cryst_min
 
     def single_write_out(self, file_name: str) -> None:
-
         """This function will write out the edited cif stored in the class
 
         Args:
@@ -309,15 +300,12 @@ class Cif_Merge:
         """
 
         if self.flag2 == False:
-
             with open(file_name, "w") as f:
-
                 f.write(self.cif2.WriteOut())
 
     def write_out(
         self, location: str, cif_name: str, validation_name: str, single_cif_name: str
     ) -> None:
-
         """This function writes out the edited cif stored in the class
 
         It differes from the 'single_write_out' function by
@@ -344,7 +332,6 @@ class Cif_Merge:
         """
 
         if self.flag2 == False:
-
             current_folder = os.getcwd()
             os.chdir(location)
 
@@ -358,7 +345,6 @@ class Cif_Merge:
                     bad_flag = True
 
             if bad_flag == False:
-
                 logging.info(
                     __name__
                     + " : CIF being added to combined is: "
@@ -373,7 +359,6 @@ class Cif_Merge:
                 except:
                     pass
                 else:
-
                     with open(validation_name, "a") as f:
                         for line in self.validation:
                             f.write(line)
@@ -381,7 +366,6 @@ class Cif_Merge:
             os.chdir(current_folder)
 
     def validate_CIFs(self, file_name: str) -> None:
-
         """Run checkCIF on a specified file
 
         then saves the data to the class as self.validation
