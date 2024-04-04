@@ -766,6 +766,7 @@ class testConfig(unittest.TestCase):
                 "bond_data": "test_data/data/Bond_Lengths.csv",
                 "angle_data": "test_data/data/Bond_Angles.csv",
                 "torsion_data": "test_data/data/Bond_Torsions.csv",
+                "hbond_data": False,
             },
             "pipeline-variable-analysis": {
                 "cif_parameters": [
@@ -891,6 +892,7 @@ class testConfig(unittest.TestCase):
                 "bond_data": "test_data/data/Bond_Lengths.csv",
                 "angle_data": "test_data/data/Bond_Angles.csv",
                 "torsion_data": "test_data/data/Bond_Torsions.csv",
+                "hbond_data": False,
             },
             "pipeline-variable-analysis": {
                 "cif_parameters": [
@@ -1039,6 +1041,7 @@ class testConfig(unittest.TestCase):
                 "bond_data": "test_data/data/Bond_Lengths.csv",
                 "angle_data": "test_data/data/Bond_Angles.csv",
                 "torsion_data": "test_data/data/Bond_Torsions.csv",
+                "hbond_data": False,
             },
             {
                 "cif_parameters": [
@@ -1139,9 +1142,7 @@ class testConfig(unittest.TestCase):
                                 dic[key] = dic[key][original_path.start() :]
                     except TypeError:
                         pass
-
-        print(present_values)
-        print(self.correct_fields)        
+       
 
         self.assertEqual(present_values, self.correct_fields)
 
