@@ -151,6 +151,8 @@ from overall_pipelines.AS_brute_pipeline import AS_Brute
 from overall_pipelines.at_AS_brute_pipeline import AS_Brute_Single
 from tools.modules.platon_squeeze import Platon_Squeeze
 from tools.pipelines.platon_squeeze_pipeline import Squeeze_Pipeline
+from tools.modules.platon_twinrotmat import Platon_Twin
+from tools.pipelines.platon_twinrotmat_pipeline import Twin_Pipeline
 from tools.modules.shelx_t import SHELXT
 from tools.pipelines.shelx_t_pipeline import SHELXT_Pipeline
 from tools.pipelines.pipeline_shelx_t_auto import SHELXT_Pipeline_auto
@@ -3727,6 +3729,93 @@ def pipeline_platon_squeeze(dependencies, files, configure, run):
         click.echo("Please select an option. To view options, add --help")
 
 
+### ------ Pipeline Platon TwinRotMat ---- ###
+
+"""This pipeline will run TwinRotMat on a series of .cif and .fcf files via PLATON.   
+    It will do this is a separate directory to retain the original structures 
+    for comparison.
+    If you wish to use this in a larger pipeline, it is recommended 
+    you use pipeline-refinement (with LIST 4), followed by this twinrotmat pipeline,     
+    then finally pipeline-general on the new twinrotmat folder inlcuding BASF and HKLF 5.     
+    Make sure you use a twinrotmat suitable reference for the general pipeline!    
+    Most of these click functions are specifying text output to commandline
+    The main coding functions are checking the input of the yaml file    
+    and setting up the corresponding class and calling its functions 
+    Args:
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-platon-twinrotmat", short_help="Run twinrotmat over multiple structures"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_platon_twinrotmat(dependencies, files, configure, run):
+    """This pipeline will run twinrotmat on a series of .cif and .fcf files via PLATON.
+    It will do this is a separate directory to retain the original structures
+    for comparison.
+    If you wish to use this in a larger pipeline, it is recommended
+    you use pipeline-refinement (with LIST 4 and ACTA), followed by this pipeline,
+    then finally pipeline-general on the new twinrotmat folder.
+    Make sure you use a an HKLF5 reference for the general pipeline!
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- PLATON")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a series of .cif files")
+        click.echo(" - a series .fcf files corresponding to the .cif files")
+        click.echo(
+            "\nYour .cif/.fcf files should be in separate folders located in a single parent"
+        )
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - experiment_location: enter the full path to your folder containing all datasets"
+        )
+
+        fields = yaml_extraction("pipeline-platon-twinrotmat")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-platon-twinrotmat")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            twinrotmat = Twin_Pipeline()
+            twinrotmat.new_twinrotmat_directory(cfg["experiment_location"])
+            twinrotmat.multi_twinrotmat(twinrotmat.new_location)
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
 ###------Module ADP Analysis-------###
 
 """This module will analyse the ADPs that have been previously   
@@ -4307,6 +4396,7 @@ else:
     cli.add_command(pipeline_shelxt_auto)
     cli.add_command(module_platon_squeeze)
     cli.add_command(pipeline_platon_squeeze)
+    cli.add_command(pipeline_platon_twinrotmat)
     cli.add_command(pipeline_AS_Brute_individual)
 
 

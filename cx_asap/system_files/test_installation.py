@@ -438,7 +438,7 @@ class Test:
             analysis.data_output()
 
         except Exception as error:
-            self.logger.info(f"module-cif-read failed with error: {error}")
+            # self.logger.info(f"module-cif-read failed with error: {error}")
             logging.info(f"module-cif-read failed with error: {error}")
             message = "module-cif-read could not execute: open error log for details"
             self.outcome = False
