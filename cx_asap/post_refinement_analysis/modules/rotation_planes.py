@@ -103,7 +103,7 @@ class Rotation:
         else:
             self.bad_flag = True
 
-    def calculate_planes(self, data: str, ref_plane: list, ref_values: list) -> float:
+    def calculate_planes(self, data: str, ref_plane_i: list, ref_values: list) -> float:
         """Finds the results from the MPLA command in the .lst file
 
         Converts into fractional coordinates using the unit cell from the
@@ -118,7 +118,7 @@ class Rotation:
 
         Args:
             data (str): .lst file with MPLA info as a string
-            ref_plane (lst): the reference plane for comparison
+            ref_plane_i (lst): the reference plane for comparison
 
         Returns:
             angle (float): the resulting angle from the calculations
@@ -150,12 +150,12 @@ class Rotation:
                     data.append(float(item))
 
             # calculate G the metric matrix
-            alpha = np.radians(self.ref_values[3])
-            beta = np.radians(self.ref_values[4])
-            gamma = np.radians(self.ref_values[5])
-            a = self.ref_values[0]
-            b = self.ref_values[1]
-            c = self.ref_values[2]
+            alpha = np.radians(ref_values[3])
+            beta = np.radians(ref_values[4])
+            gamma = np.radians(ref_values[5])
+            a = ref_values[0]
+            b = ref_values[1]
+            c = ref_values[2]
             G = np.zeros((3, 3))
             G[0, 0] = a**2
             G[0, 1] = a * b * np.cos(gamma)
@@ -208,9 +208,9 @@ class Rotation:
             # convert the reference plane into fractional coordinates
 
             ref_plane = np.zeros((1, 3))
-            ref_plane[0, 0] = self.ref_plane[0]
-            ref_plane[0, 1] = self.ref_plane[1]
-            ref_plane[0, 2] = self.ref_plane[2]
+            ref_plane[0, 0] = ref_plane_i[0]
+            ref_plane[0, 1] = ref_plane_i[1]
+            ref_plane[0, 2] = ref_plane_i[2]
             ref_frac_coords = np.dot(ref_plane, M_star)
 
             ## Calculates the difference in angle between atom plane and reference plane
