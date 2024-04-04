@@ -16,6 +16,9 @@ class testGenerate(unittest.TestCase):
         self.required_top_level = {
             "module-platon-squeeze": ["file_name"],
             "pipeline-platon-squeeze": ["experiment_location"],
+            "module-platon-twinrotmat": ["file_name"],
+            "pipeline-platon-twinrotmat": ["experiment_location"],
+            "pipeline-shelxt-auto": ["experiment_location"],
             "module-adp-analysis": ["csv_path", "cell_path"],
             "module-refinement": [
                 "structure_location",
@@ -45,8 +48,8 @@ class testGenerate(unittest.TestCase):
                 "atoms_for_rotation_analysis",
                 "reference_plane",
                 "chemical_formula",
-                "crystal_colour",
                 "crystal_habit",
+                "crystal_colour",
                 "max_crystal_dimension",
                 "middle_crystal_dimension",
                 "min_crystal_dimension",
@@ -206,8 +209,8 @@ class testGenerate(unittest.TestCase):
                 "experiment_location",
                 "reference_location",
                 "chemical_formula",
-                "crystal_colour",
                 "crystal_habit",
+                "crystal_colour",
                 "max_crystal_dimension",
                 "middle_crystal_dimension",
                 "min_crystal_dimension",
@@ -229,8 +232,8 @@ class testGenerate(unittest.TestCase):
                 "atoms_for_rotation_analysis",
                 "reference_plane",
                 "chemical_formula",
-                "crystal_colour",
                 "crystal_habit",
+                "crystal_colour",
                 "max_crystal_dimension",
                 "middle_crystal_dimension",
                 "min_crystal_dimension",
@@ -355,6 +358,9 @@ class testGenerate(unittest.TestCase):
         self.required_second_level = [
             ["file_name"],
             ["experiment_location"],
+            ["file_name"],
+            ["experiment_location"],
+            ["experiment_location"],
             ["csv_path", "cell_path"],
             [
                 "structure_location",
@@ -384,8 +390,8 @@ class testGenerate(unittest.TestCase):
                 "atoms_for_rotation_analysis",
                 "reference_plane",
                 "chemical_formula",
-                "crystal_colour",
                 "crystal_habit",
+                "crystal_colour",
                 "max_crystal_dimension",
                 "middle_crystal_dimension",
                 "min_crystal_dimension",
@@ -545,8 +551,8 @@ class testGenerate(unittest.TestCase):
                 "experiment_location",
                 "reference_location",
                 "chemical_formula",
-                "crystal_colour",
                 "crystal_habit",
+                "crystal_colour",
                 "max_crystal_dimension",
                 "middle_crystal_dimension",
                 "min_crystal_dimension",
@@ -568,8 +574,8 @@ class testGenerate(unittest.TestCase):
                 "atoms_for_rotation_analysis",
                 "reference_plane",
                 "chemical_formula",
-                "crystal_colour",
                 "crystal_habit",
+                "crystal_colour",
                 "max_crystal_dimension",
                 "middle_crystal_dimension",
                 "min_crystal_dimension",
@@ -613,7 +619,7 @@ class testGenerate(unittest.TestCase):
                 "folder_containing_cifs",
             ],
             ["reference_plane", "lst_file_location"],
-            ["atoms_for_analysis", "bond_data", "angle_data", "torsion_data"],
+            ["atoms_for_analysis", "bond_data", "angle_data", "torsion_data", "hbond_data"],
             ["reference_plane", "experiment_location"],
             [
                 "cif_parameters",
@@ -1133,6 +1139,9 @@ class testConfig(unittest.TestCase):
                                 dic[key] = dic[key][original_path.start() :]
                     except TypeError:
                         pass
+
+        print(present_values)
+        print(self.correct_fields)        
 
         self.assertEqual(present_values, self.correct_fields)
 
