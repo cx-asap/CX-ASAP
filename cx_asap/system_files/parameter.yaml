@@ -278,6 +278,15 @@ pipeline-xprep:
   - chemical_formula
   - experiment_location
 
+pipeline-xprep-transform:
+  - experiment_location
+  - data_type
+  - lattice_type
+  - transformation_matrix
+  - space_group
+  - chemical_formula
+  - output_name
+
 module-cell-analysis:
   - csv_location
   - reference_unit_cell
