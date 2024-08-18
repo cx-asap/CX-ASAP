@@ -59,7 +59,7 @@ class XPREP_Pipeline:
 
         os.chdir(location)
         self.tree = Directory_Browse(location, self.test_mode)
-        files_to_copy = [".ins", ".hkl", ".cif_od"]
+        files_to_copy = [".ins", ".hkl", ".cif_od", ".cif"]
         for item in self.tree.directories:
             new_folder = new_location + "/" + str(item.stem)
             try:
@@ -176,8 +176,20 @@ class XPREP_Pipeline:
         for index, item in enumerate(self.tree.directories):
             # Files needed for eventual checking haven't been created yet, so '.ins' is just a dummy variable here - it doesn't really do anything
             self.tree.enter_directory(item, ".ins")
+            # converts ins to p4p by removing wavelength from CELL line
             if self.tree.item_file != "":
-                os.rename(self.tree.item_file, self.tree.item_file.stem + ".p4p")
+                with open(self.tree.item_file, "r") as f:
+                    lines = f.readlines()
+                with open(self.tree.item_file.stem + ".p4p", "w") as f:
+                    for line in lines:
+                        if line.startswith("CELL"):
+                            parts = line.split()
+                            parts.pop(1)
+                            line = " ".join(parts) + "\n"
+                        f.write(line)
+                    else:
+                        pass
+
                 self.xprep.xprep_custom(
                     location,
                     data_type,
@@ -189,12 +201,20 @@ class XPREP_Pipeline:
                     output_name,
                 )
                 # tidy up
+            # try:
+            #     os.remove(self.tree.item_file.stem + ".p4p")
+            # except:
+            #     pass
             try:
-                os.remove(self.tree.item_file.stem + ".p4p")
+                os.remove(self.tree.item_file.stem + ".ins")
             except:
                 pass
             try:
                 os.remove(self.tree.item_file.stem + ".hkl")
+            except:
+                pass
+            try:
+                os.remove(self.tree.item_file.stem + ".cif")
             except:
                 pass
             try:
