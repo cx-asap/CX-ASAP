@@ -157,7 +157,7 @@ class XPREP_Pipeline:
         chemical_formula: str,
         output_name: str,
     ) -> None:
-        """This function runs the transformation funciton of xprep for a range of structures
+        """This function runs the transformation function of xprep for a range of structures
         There should be a folder which contains folders of different data sets
         Each data set should have a reflection file in it for analysis
         Args:
@@ -198,7 +198,7 @@ class XPREP_Pipeline:
                     self.tree.item_file.stem,
                     space_group,
                     chemical_formula,
-                    output_name,
+                    output_name + str(index + 1),
                 )
                 # tidy up
             # try:
@@ -218,7 +218,10 @@ class XPREP_Pipeline:
             except:
                 pass
             try:
-                os.rename(self.tree.item_file.stem + ".cif_od", output_name + ".cif_od")
+                os.rename(
+                    self.tree.item_file.stem + ".cif_od",
+                    output_name + str(index + 1) + ".cif_od",
+                )
             except:
                 pass
 
