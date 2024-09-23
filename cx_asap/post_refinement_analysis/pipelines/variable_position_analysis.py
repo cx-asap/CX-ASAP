@@ -300,9 +300,9 @@ class VP_Analysis_Pipeline:
                     True,
                 )
         if hbonds != False:
-                hbond_df = pd.read_csv("HBond_details.csv")
-                discrete_cif_names_hbond = list(dict.fromkeys(hbond_df["CIF_File"]))
-                separated_by_cif_hbond = []
+            hbond_df = pd.read_csv("HBond_details.csv")
+            discrete_cif_names_hbond = list(dict.fromkeys(hbond_df["CIF_File"]))
+            separated_by_cif_hbond = []
 
             for item in discrete_cif_names_hbond:
                 condition = hbond_df["CIF_File"] == item
