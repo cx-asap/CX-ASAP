@@ -2785,7 +2785,7 @@ def pipeline_xprep(dependencies, files, configure, run):
 @click.option("--files", is_flag=True, help="view the required input files")
 @click.option("--configure", is_flag=True, help="generate your conf.yaml file")
 @click.option("--run", is_flag=True, help="run the code!")
-def pipeline_xprep(dependencies, files, configure, run):
+def pipeline_xprep_transform(dependencies, files, configure, run):
     """This module will use xprep to automatically matrix transform a series of dataset."""
     if dependencies:
         click.echo("\nYou require the below software in your path:")
@@ -3515,7 +3515,7 @@ def pipeline_position_analysis(dependencies, files, configure, run):
             " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
         )
         click.echo(
-    " - structural_analysis_hbonds: enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command"
+            " - structural_analysis_hbonds: enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command"
         )
         click.echo(
             " - wedge_angles: enter the wedge angles as a list for XDS processing"
@@ -4488,6 +4488,7 @@ else:
     cli.add_command(module_xprep)
     cli.add_command(pipeline_xds_reprocess)
     cli.add_command(pipeline_xprep)
+    cli.add_command(pipeline_xprep_transform)
     cli.add_command(pipeline_rotation_planes)
     cli.add_command(pipeline_position_analysis)
     cli.add_command(pipeline_AS_Brute)
