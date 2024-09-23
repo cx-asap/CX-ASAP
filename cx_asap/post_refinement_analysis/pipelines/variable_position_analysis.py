@@ -299,7 +299,7 @@ class VP_Analysis_Pipeline:
                     str(index + 1),
                     True,
                 )
-            if hbonds != False:
+        if hbonds != False:
                 hbond_df = pd.read_csv("HBond_details.csv")
                 discrete_cif_names_hbond = list(dict.fromkeys(hbond_df["CIF_File"]))
                 separated_by_cif_hbond = []

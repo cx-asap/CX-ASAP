@@ -3514,7 +3514,9 @@ def pipeline_position_analysis(dependencies, files, configure, run):
         click.echo(
             " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
         )
-
+        click.echo(
+    " - structural_analysis_hbonds: enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command"
+        )
         click.echo(
             " - wedge_angles: enter the wedge angles as a list for XDS processing"
         )
@@ -3553,6 +3555,7 @@ def pipeline_position_analysis(dependencies, files, configure, run):
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["ADP_analysis"],
             )
 
