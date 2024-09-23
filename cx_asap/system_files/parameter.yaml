@@ -61,7 +61,7 @@ pipeline-variable-position:
   - wedge_angles
   - min_pixels
   - spot_maximum_centroid
-  - strong_pixels
+  - signal_pixels
   - sepmin
   - mapping_step_size
   - total_angle
@@ -343,7 +343,7 @@ pipeline-position-analysis:
   - wedge_angles
   - min_pixels
   - spot_maximum_centroid
-  - strong_pixels
+  - signal_pixels
   - sepmin
   - mapping_step_size
 

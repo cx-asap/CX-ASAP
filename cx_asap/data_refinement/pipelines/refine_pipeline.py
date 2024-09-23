@@ -21,7 +21,6 @@ import logging
 
 class Refinement_Pipeline:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -58,7 +57,6 @@ class Refinement_Pipeline:
         tolerance: float,
         max_cycles: int,
     ) -> None:
-
         """Runs SHELXL on a series of structures based on one reference
 
         All of the new structures should be folders within a common folder
@@ -165,6 +163,7 @@ class Refinement_Pipeline:
                 except:
                     f.write("ERROR" + "\n")
                     logging.info(__name__ + " : Folder without .ins analysed")
+            f.write("Reference location:" + str(reference) + "\n" + "\N{rocket}")
 
         print(a)
         print(b)

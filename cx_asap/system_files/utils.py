@@ -214,7 +214,7 @@ class Configure_Flexible:
         self.XDS.change(
             self.sys["XDS_inp_organised"],
             "JOB",
-            "COLSPOT IDXREF DEFPIX INTEGRATE CORRECT",
+            "INIT COLSPOT IDXREF DEFPIX INTEGRATE CORRECT",
         )
         self.XDS.change(
             self.sys["XDS_inp_organised"], "NAME_TEMPLATE_OF_DATA_FRAMES", "img"
@@ -223,7 +223,7 @@ class Configure_Flexible:
         self.XDS.change(
             self.sys["XDS_inp_organised"], "MINIMUM_NUMBER_OF_PIXELS_IN_A_SPOT", 2
         )
-        self.XDS.change(self.sys["XDS_inp_organised"], "STRONG_PIXEL", 2)
+        self.XDS.change(self.sys["XDS_inp_organised"], "SIGNAL_PIXEL", 2)
 
         with open(self.sys["XDS_inp_organised"], "rt") as in_file:
             flag1 = 0
@@ -1855,7 +1855,7 @@ if __name__ == "__main__":
                 "wedge_angles",
                 "min_pixels",
                 "spot_maximum_centroid",
-                "strong_pixels",
+                "signal_pixels",
                 "sepmin",
                 "mapping_step_size",
                 "total_angle",
@@ -2117,7 +2117,7 @@ if __name__ == "__main__":
                 "wedge_angles",
                 "min_pixels",
                 "spot_maximum_centroid",
-                "strong_pixels",
+                "signal_pixels",
                 "sepmin",
                 "mapping_step_size",
             ],
