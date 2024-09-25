@@ -868,6 +868,7 @@ def pipeline_vp(dependencies, files, configure, run):
         click.echo(
             " - space_group_number: enter the space group number for your compound (ie 14)"
         )
+        click.echo(" - space_group: enter the space group name for entry into xprep ")
         click.echo(
             " - spot_maximum_centroid: enter the values for spot_maximum_centroid as a list for XDS processing"
         )
@@ -931,7 +932,7 @@ def pipeline_vp(dependencies, files, configure, run):
                 "1 0 0 0 1 0 0 0 1",
                 full_vp_analysis.sys["analysis_path"],
                 "XDS_ASCII.HKL",
-                full_vp_analysis.sys["space_group"],
+                cfg["space_group"],
                 cfg["chemical_formula"],
                 full_vp_analysis.sys["ref_path_organised"],
                 full_vp_analysis.sys["current_results_path"],

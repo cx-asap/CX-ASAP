@@ -40,6 +40,7 @@ pipeline-variable-position:
   - maximum_processors
   - neggia_library
   - space_group_number
+  - space_group
   - atoms_for_rotation_analysis
   - reference_plane
   - chemical_formula
