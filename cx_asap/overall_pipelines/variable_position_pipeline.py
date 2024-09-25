@@ -234,7 +234,7 @@ class VP_Pipeline:
         min_pixels: list,
         sepmin: list,
         spot_MC: list,
-        signal_pixels: list,
+        signal_pixel: list,
         solution_program: str,
         crystal_habit: str,
         crystal_colour: str,
@@ -276,7 +276,7 @@ class VP_Pipeline:
             min_pixels (list): list of MINIMUM_NUMBER_OF_PIXELS_IN_A_SPOT values to test (XDS param)
             sepmin (list): list of SEPMIN values to test (XDS param)
             spot_MC (list): list of SPOT_MAXIMUM-CENTROID values to test (XDS param)
-            signal_pixels (list): list of SIGNAL_PIXEL values to test (XDS param)
+            signal_pixel (list): list of SIGNAL_PIXEL values to test (XDS param)
             solution_program(str): the structure solution program used
             crystal_habit(str): the crystal habit
             crystal_colour(str): the colour of the crystal
@@ -290,7 +290,7 @@ class VP_Pipeline:
 
         # The current possible parameters to vary
 
-        parameters = [angles, min_pixels, sepmin, spot_MC, signal_pixels]
+        parameters = [angles, min_pixels, sepmin, spot_MC, signal_pixel]
 
         # Checks that the user is not trying to test an angle of 0 or an angle larger than the collected data
 
@@ -323,7 +323,7 @@ class VP_Pipeline:
 
         for item1 in spot_MC:
             for item2 in min_pixels:
-                for item3 in signal_pixels:
+                for item3 in signal_pixel:
                     for item4 in sepmin:
                         for item5 in angles:
                             self.sys["process_counter"] += 1
@@ -493,7 +493,7 @@ class VP_Pipeline:
         step_size: int,
         spot_MC: list,
         min_pixels: list,
-        signal_pixels: list,
+        signal_pixel: list,
         sepmin: list,
         wedge_angles: list,
         reference_plane: list,
@@ -520,7 +520,7 @@ class VP_Pipeline:
             step_size (int): step size used in mapping experiment
             spot_MC (list): list of SPOT_MAXIMUM-CENTROID values to test (XDS param)
             min_pixels (list): list of MINIMUM_NUMBER_OF_PIXELS_IN_A_SPOT values to test (XDS param)
-            signal_pixels (list): list of SIGAL_PIXEL values to test (XDS param)
+            signal_pixel (list): list of SIGAL_PIXEL values to test (XDS param)
             sepmin (list): list of SEPMIN values to test (XDS param)
             wedge_angles (list): list of wedge angles to test
             reference_plane (list): crystallographic plane to complare MPLA with
@@ -537,7 +537,7 @@ class VP_Pipeline:
             step_size,
             spot_MC,
             min_pixels,
-            signal_pixels,
+            signal_pixel,
             sepmin,
             wedge_angles,
             reference_plane,

@@ -268,7 +268,7 @@ def yaml_extraction(heading: str) -> dict:
         "wedge_angles",
         "min_pixels",
         "spot_maximum_centroid",
-        "signal_pixels",
+        "signal_pixel",
         "sepmin",
         "atoms_for_analysis",
         "varying_parameter_values",
@@ -872,7 +872,7 @@ def pipeline_vp(dependencies, files, configure, run):
             " - spot_maximum_centroid: enter the values for spot_maximum_centroid as a list for XDS processing"
         )
         click.echo(
-            " - signal_pixels: enter the values for signal_pixels as a list for XDS processing"
+            " - signal_pixel: enter the values for signal_pixel as a list for XDS processing"
         )
         click.echo(
             " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
@@ -944,7 +944,7 @@ def pipeline_vp(dependencies, files, configure, run):
                 cfg["min_pixels"],
                 cfg["sepmin"],
                 cfg["spot_maximum_centroid"],
-                cfg["signal_pixels"],
+                cfg["signal_pixel"],
                 "known_structure",
                 cfg["crystal_habit"],
                 cfg["crystal_colour"],
@@ -969,7 +969,7 @@ def pipeline_vp(dependencies, files, configure, run):
                 cfg["mapping_step_size"],
                 cfg["spot_maximum_centroid"],
                 cfg["min_pixels"],
-                cfg["signal_pixels"],
+                cfg["signal_pixel"],
                 cfg["sepmin"],
                 cfg["wedge_angles"],
                 cfg["reference_plane"],
@@ -3502,7 +3502,7 @@ def pipeline_position_analysis(dependencies, files, configure, run):
             " - spot_maximum_centroid: enter the values for spot_maximum_centroid as a list for XDS processing"
         )
         click.echo(
-            " - signal_pixels: enter the values for signal_pixels as a list for XDS processing"
+            " - signal_pixel: enter the values for signal_pixel as a list for XDS processing"
         )
 
         click.echo(
@@ -3548,7 +3548,7 @@ def pipeline_position_analysis(dependencies, files, configure, run):
                 cfg["mapping_step_size"],
                 cfg["spot_maximum_centroid"],
                 cfg["min_pixels"],
-                cfg["signal_pixels"],
+                cfg["signal_pixel"],
                 cfg["sepmin"],
                 cfg["wedge_angles"],
                 cfg["reference_plane"],
