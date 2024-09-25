@@ -163,7 +163,7 @@ class Refinement_Pipeline:
                 except:
                     f.write("ERROR" + "\n")
                     logging.info(__name__ + " : Folder without .ins analysed")
-            f.write("Reference location:" + str(reference) + "\n" + "\N{rocket}")
+            f.write("Reference location:" + str(reference) + "\n")
 
         print(a)
         print(b)
