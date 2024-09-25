@@ -278,5 +278,6 @@ class Rotation:
                 except FileNotFoundError:
                     self.df.to_csv("rotation_angles.csv", index=None)
                 else:
-                    new_df = old_data.append(self.df)
+                    # new_df = old_data.append(self.df)
+                    new_df = pd.concat([old_data, self.df])
                     new_df.to_csv("rotation_angles.csv", index=None)
