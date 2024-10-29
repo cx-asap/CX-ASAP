@@ -124,6 +124,12 @@ class Rotation:
             angle (float): the resulting angle from the calculations
         """
 
+        if ref_values:
+            self.ref_values = ref_values
+
+        if ref_plane:
+            self.ref_plane = ref_plane
+
         index = 3
         flag = 0
 

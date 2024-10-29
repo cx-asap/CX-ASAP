@@ -728,10 +728,10 @@ class testRotation(unittest.TestCase):
         """
 
         ref_plane = [1, 0, 0]
-        ref_values = [10.272757, 4.673770, 11.309690]
+        ref_values = [10.272757, 4.673770, 11.309690, 90, 92.1849, 90]
 
         output_angle = self.test.calculate_planes(
             self.sample_lst_file, ref_plane, ref_values
         )
 
-        self.assertEqual(round(output_angle, 2), 66.04)
+        self.assertEqual(round(output_angle, 2), 64.75)
