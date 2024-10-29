@@ -214,9 +214,9 @@ class Rotation:
             # convert the reference plane into fractional coordinates
 
             ref_plane = np.zeros((1, 3))
-            ref_plane[0, 0] = ref_plane_i[0]
-            ref_plane[0, 1] = ref_plane_i[1]
-            ref_plane[0, 2] = ref_plane_i[2]
+            ref_plane[0, 0] = ref_plane[0]
+            ref_plane[0, 1] = ref_plane[1]
+            ref_plane[0, 2] = ref_plane[2]
             ref_frac_coords = np.dot(ref_plane, M_star)
 
             ## Calculates the difference in angle between atom plane and reference plane
