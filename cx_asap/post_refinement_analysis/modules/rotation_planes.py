@@ -103,7 +103,7 @@ class Rotation:
         else:
             self.bad_flag = True
 
-    def calculate_planes(self, data: str, ref_plane_i: list, ref_values: list) -> float:
+    def calculate_planes(self, data: str, ref_plane: list, ref_values: list) -> float:
         """Finds the results from the MPLA command in the .lst file
 
         Converts into fractional coordinates using the unit cell from the
@@ -118,7 +118,7 @@ class Rotation:
 
         Args:
             data (str): .lst file with MPLA info as a string
-            ref_plane_i (lst): the reference plane for comparison
+            ref_plane (lst): the reference plane for comparison
 
         Returns:
             angle (float): the resulting angle from the calculations
