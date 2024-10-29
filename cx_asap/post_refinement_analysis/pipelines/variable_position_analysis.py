@@ -46,7 +46,7 @@ class VP_Analysis_Pipeline:
 
         self.extra_parameters = {}
 
-        self.parameters = ["angles", "spot_MC", "min_pixels", "strong_pixels", "sepmin"]
+        self.parameters = ["angles", "spot_MC", "min_pixels", "signal_pixel", "sepmin"]
 
         for item in self.parameters:
             self.extra_parameters[item] = []
@@ -61,7 +61,7 @@ class VP_Analysis_Pipeline:
         step_size: int,
         spot_MC: list,
         min_pixels: list,
-        strong_pixels: list,
+        signal_pixel: list,
         sepmin: list,
         wedge_angles: list,
         reference_plane: list,
@@ -98,7 +98,7 @@ class VP_Analysis_Pipeline:
             step_size (int): step size used in mapping experiment
             spot_MC (list): list of SPOT_MAXIMUM-CENTROID values to test (XDS param)
             min_pixels (list): list of MINIMUM_NUMBER_OF_PIXELS_IN_A_SPOT values to test (XDS param)
-            strong_pixels (list): list of STRONG_PIXEL values to test (XDS param)
+            signal_pixel (list): list of SIGNAL_PIXEL values to test (XDS param)
             sepmin (list): list of SEPMIN values to test (XDS param)
             wedge_angles (list): list of wedge angles to test
             reference_plane (list): crystallographic plane to complare MPLA with
@@ -135,7 +135,7 @@ class VP_Analysis_Pipeline:
         index = 0
         for item1 in spot_MC:
             for item2 in min_pixels:
-                for item3 in strong_pixels:
+                for item3 in signal_pixel:
                     for item4 in sepmin:
                         for item5 in wedge_angles:
                             count = 0
@@ -146,7 +146,7 @@ class VP_Analysis_Pipeline:
                                 self.extra_parameters["angles"].append(item5)
                                 self.extra_parameters["spot_MC"].append(item1)
                                 self.extra_parameters["min_pixels"].append(item2)
-                                self.extra_parameters["strong_pixels"].append(item3)
+                                self.extra_parameters["signal_pixel"].append(item3)
                                 self.extra_parameters["sepmin"].append(item4)
                             index += 1
 
@@ -157,7 +157,7 @@ class VP_Analysis_Pipeline:
         cell.df["Minimum Number of Pixels in a Spot"] = self.extra_parameters[
             "min_pixels"
         ]
-        cell.df["Strong Pixel"] = self.extra_parameters["strong_pixels"]
+        cell.df["Signal Pixel"] = self.extra_parameters["signal_pixel"]
         cell.df["Sepmin"] = self.extra_parameters["sepmin"]
         cell.df["Distance"] = distance_moved
         cell.df["Position"] = self.sys["Successful_Positions"]
@@ -299,10 +299,10 @@ class VP_Analysis_Pipeline:
                     str(index + 1),
                     True,
                 )
-            if hbonds != False:
-                hbond_df = pd.read_csv("HBond_details.csv")
-                discrete_cif_names_hbond = list(dict.fromkeys(hbond_df["CIF_File"]))
-                separated_by_cif_hbond = []
+        if hbonds != False:
+            hbond_df = pd.read_csv("HBond_details.csv")
+            discrete_cif_names_hbond = list(dict.fromkeys(hbond_df["CIF_File"]))
+            separated_by_cif_hbond = []
 
             for item in discrete_cif_names_hbond:
                 condition = hbond_df["CIF_File"] == item

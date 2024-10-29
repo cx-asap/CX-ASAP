@@ -40,6 +40,7 @@ pipeline-variable-position:
   - maximum_processors
   - neggia_library
   - space_group_number
+  - space_group
   - atoms_for_rotation_analysis
   - reference_plane
   - chemical_formula
@@ -61,7 +62,7 @@ pipeline-variable-position:
   - wedge_angles
   - min_pixels
   - spot_maximum_centroid
-  - strong_pixels
+  - signal_pixel
   - sepmin
   - mapping_step_size
   - total_angle
@@ -278,6 +279,15 @@ pipeline-xprep:
   - chemical_formula
   - experiment_location
 
+pipeline-xprep-transform:
+  - experiment_location
+  - data_type
+  - lattice_type
+  - transformation_matrix
+  - space_group
+  - chemical_formula
+  - output_name
+
 module-cell-analysis:
   - csv_location
   - reference_unit_cell
@@ -334,7 +344,7 @@ pipeline-position-analysis:
   - wedge_angles
   - min_pixels
   - spot_maximum_centroid
-  - strong_pixels
+  - signal_pixel
   - sepmin
   - mapping_step_size
 

@@ -20,7 +20,6 @@ import logging
 
 class XPREP:
     def __init__(self) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -50,8 +49,7 @@ class XPREP:
         chemical_formula: str,
         output_name: str,
     ) -> None:
-
-        """This function runs xprep for a single structure
+        """This function runs xprep for a single structure with the input matrix on XDS data
 
         Args:
             matrix (str): the matrix transformation to be input
@@ -100,8 +98,9 @@ class XPREP:
         # except subprocess.TimeoutExpired:
         # xprep.terminate()
 
-    def asdefaults(self, location: str, formula: str = "C40H30N6FeCl2O8", file_name: str = "cxasap") -> None:
-
+    def asdefaults(
+        self, location: str, formula: str = "C40H30N6FeCl2O8", file_name: str = "cxasap"
+    ) -> None:
         """This function runs xprep for a single aussynchrotron
 
         structure accepting all defaults (AS has default name XDS_ASCII.HKL_p1)
@@ -141,9 +140,10 @@ class XPREP:
         xprep.stdin.write("Q\n")
         xprep.stdin.close()
         xprep.wait(20)
-        
-    def asdefaults_sadabs(self, location: str, formula: str = "C40H30N6FeCl2O8", file_name: str = "cxasap") -> None:
 
+    def asdefaults_sadabs(
+        self, location: str, formula: str = "C40H30N6FeCl2O8", file_name: str = "cxasap"
+    ) -> None:
         """This function runs xprep for a single aussynchrotron
 
         structure accepting all defaults (AS has default name XDS_ASCII.HKL_p1)
@@ -189,3 +189,58 @@ class XPREP:
         ###xprep.wait(15)
         ###except subprocess.TimeoutExpired:
         ###xprep.terminate()
+
+    def xprep_custom(
+        self,
+        location: str,
+        data_type: str,
+        lattice_type: str,
+        matrix: str,
+        file_name: str,
+        space_group: str,
+        chemical_formula: str,
+        output_name: str,
+    ) -> None:
+        """This function runs the trasnformation function of xprep for a single structure with custom inputs at every stage
+        Args:
+            data_type (str): the type of data to be input (e.g. XDS, Shelx etc)
+            lattice_type (str): the type of lattice to be input (e.g. P, C, I etc)
+            matrix (str): the matrix transformation to be input
+            location (str): full path to the folder of the file to be run
+            file_name (str): name of the file to be run through xprep
+            space_group (str): space group to be input
+            chemical_formula (str): chemical formula to be input
+            output_name (str): name of the output .hkl/.ins file from xprep
+        """
+        xprep = subprocess.Popen(["xprep"], stdin=subprocess.PIPE, encoding="utf8")
+        xprep.stdin.write(file_name + "\n")
+        xprep.stdin.write(str(data_type) + "\n")
+        xprep.stdin.write(lattice_type + "\n")
+        xprep.stdin.write("U\n")
+        xprep.stdin.write("O\n")
+        xprep.stdin.write(matrix + "\n")
+        xprep.stdin.write("S\n")
+        xprep.stdin.write("I\n")
+        xprep.stdin.write(space_group + "\n")
+        xprep.stdin.write("Y\n")
+        xprep.stdin.write("D\n")
+        xprep.stdin.write("S\n")
+        xprep.stdin.write("A\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("E\n")
+        xprep.stdin.write("C\n")
+        xprep.stdin.write(chemical_formula + "\n")
+        xprep.stdin.write("E\n")
+        xprep.stdin.write("F\n")
+        xprep.stdin.write(output_name + "\n")
+        xprep.stdin.write("S\n")
+        xprep.stdin.write("Y\n")
+        xprep.stdin.write("\n")
+        xprep.stdin.write("Q\n")
+        xprep.stdin.close()
+        xprep.wait(20)
+        # Below code for windows... when add into main release need a better solution for closing xprep
+        # try:
+        # xprep.wait(120)
+        # except subprocess.TimeoutExpired:
+        # xprep.terminate()

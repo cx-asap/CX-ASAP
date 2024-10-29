@@ -268,7 +268,7 @@ def yaml_extraction(heading: str) -> dict:
         "wedge_angles",
         "min_pixels",
         "spot_maximum_centroid",
-        "strong_pixels",
+        "signal_pixel",
         "sepmin",
         "atoms_for_analysis",
         "varying_parameter_values",
@@ -868,11 +868,12 @@ def pipeline_vp(dependencies, files, configure, run):
         click.echo(
             " - space_group_number: enter the space group number for your compound (ie 14)"
         )
+        click.echo(" - space_group: enter the space group name for entry into xprep ")
         click.echo(
             " - spot_maximum_centroid: enter the values for spot_maximum_centroid as a list for XDS processing"
         )
         click.echo(
-            " - strong_pixels: enter the values for strong_pixels as a list for XDS processing"
+            " - signal_pixel: enter the values for signal_pixel as a list for XDS processing"
         )
         click.echo(
             " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
@@ -931,7 +932,7 @@ def pipeline_vp(dependencies, files, configure, run):
                 "1 0 0 0 1 0 0 0 1",
                 full_vp_analysis.sys["analysis_path"],
                 "XDS_ASCII.HKL",
-                full_vp_analysis.sys["space_group"],
+                cfg["space_group"],
                 cfg["chemical_formula"],
                 full_vp_analysis.sys["ref_path_organised"],
                 full_vp_analysis.sys["current_results_path"],
@@ -944,7 +945,7 @@ def pipeline_vp(dependencies, files, configure, run):
                 cfg["min_pixels"],
                 cfg["sepmin"],
                 cfg["spot_maximum_centroid"],
-                cfg["strong_pixels"],
+                cfg["signal_pixel"],
                 "known_structure",
                 cfg["crystal_habit"],
                 cfg["crystal_colour"],
@@ -969,7 +970,7 @@ def pipeline_vp(dependencies, files, configure, run):
                 cfg["mapping_step_size"],
                 cfg["spot_maximum_centroid"],
                 cfg["min_pixels"],
-                cfg["strong_pixels"],
+                cfg["signal_pixel"],
                 cfg["sepmin"],
                 cfg["wedge_angles"],
                 cfg["reference_plane"],
@@ -2760,6 +2761,102 @@ def pipeline_xprep(dependencies, files, configure, run):
         click.echo("Please select an option. To view options, add --help")
 
 
+######------Pipeline XPREP Transformation------######
+
+"""This module will use xprep to automatically perform a matrix transformation on a series of datasets.  
+    It will make a new folder to to this work in. 
+    Most of these click functions are specifying text output to commandline 
+    The main coding functions are checking the input of the yaml file
+    and setting up the corresponding class and calling its functions 
+    Args:
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-xprep-transform", short_help="transform multiple datasets using xprep"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_xprep_transform(dependencies, files, configure, run):
+    """This module will use xprep to automatically matrix transform a series of dataset."""
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- xprep")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(
+            " - a series of folders each containing a .ins and .hkl (all have the same name)"
+        )
+        click.echo(" - these folders should be in the same parent location")
+        click.echo("\nThis parent folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - data type: enter the data format of your hkl file (ie XDS, SHELX etc)"
+        )
+        click.echo(" - lattice type: enter the lattice type of your space group")
+        click.echo(" - chemical formula: enter the chemical formula of your crystal")
+        click.echo(
+            " - experiment_location: enter the full path to the folder containing all dataset folders"
+        )
+        click.echo(" - space group: enter the space group in xprep-readable form")
+        click.echo(
+            " - transformation matrix: enter the matrix for transformation (use 1 0 0 0 1 0 0 0 1 for no transformation)"
+        )
+        click.echo(
+            " - data type: enter the data format of your hkl file (ie XDS, SHELX etc)"
+        )
+        click.echo(" - output file name: name of your transformed ins and hkl file")
+
+        fields = yaml_extraction("pipeline-xprep-transform")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-xprep-transform")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            xprep = XPREP_Pipeline()
+            xprep.new_xprep_directory(cfg["experiment_location"])
+            xprep.multiple_xprep_custom(
+                xprep.new_location,
+                cfg["data_type"],
+                cfg["lattice_type"],
+                cfg["transformation_matrix"],
+                xprep.tree.item_file,
+                cfg["space_group"],
+                cfg["chemical_formula"],
+                cfg["output_name"],
+            )
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
 #####----- Module Cell Analysis------#####
 
 """This module will analyse changes in the unit cell from a .csv file.
@@ -3406,7 +3503,7 @@ def pipeline_position_analysis(dependencies, files, configure, run):
             " - spot_maximum_centroid: enter the values for spot_maximum_centroid as a list for XDS processing"
         )
         click.echo(
-            " - strong_pixels: enter the values for strong_pixels as a list for XDS processing"
+            " - signal_pixel: enter the values for signal_pixel as a list for XDS processing"
         )
 
         click.echo(
@@ -3418,7 +3515,9 @@ def pipeline_position_analysis(dependencies, files, configure, run):
         click.echo(
             " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
         )
-
+        click.echo(
+            " - structural_analysis_hbonds: enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command"
+        )
         click.echo(
             " - wedge_angles: enter the wedge angles as a list for XDS processing"
         )
@@ -3450,13 +3549,14 @@ def pipeline_position_analysis(dependencies, files, configure, run):
                 cfg["mapping_step_size"],
                 cfg["spot_maximum_centroid"],
                 cfg["min_pixels"],
-                cfg["strong_pixels"],
+                cfg["signal_pixel"],
                 cfg["sepmin"],
                 cfg["wedge_angles"],
                 cfg["reference_plane"],
                 cfg["structural_analysis_bonds"],
                 cfg["structural_analysis_angles"],
                 cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
                 cfg["ADP_analysis"],
             )
 
@@ -4389,6 +4489,7 @@ else:
     cli.add_command(module_xprep)
     cli.add_command(pipeline_xds_reprocess)
     cli.add_command(pipeline_xprep)
+    cli.add_command(pipeline_xprep_transform)
     cli.add_command(pipeline_rotation_planes)
     cli.add_command(pipeline_position_analysis)
     cli.add_command(pipeline_AS_Brute)
