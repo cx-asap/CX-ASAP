@@ -21,7 +21,6 @@ from system_files.utils import Nice_YAML_Dumper, Config, Directory_Browse
 
 class CIF_Compile_Pipeline:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -63,7 +62,6 @@ class CIF_Compile_Pipeline:
         instrument_file: str = False,
         additional_user_parameters: list = False,
     ) -> None:
-
         """Allows input of variables to be saved to the class
 
         Args:
@@ -97,7 +95,6 @@ class CIF_Compile_Pipeline:
         self.additional_user_parameters = additional_user_parameters
 
     def compile_cifs(self, output_location: str, ignored_folders: list = []) -> None:
-
         """Goes to a defined experiment location (self.location)
 
         Iterates through all the folders present in this location

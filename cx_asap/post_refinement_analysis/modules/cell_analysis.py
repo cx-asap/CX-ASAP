@@ -21,7 +21,6 @@ import logging
 
 class Cell_Deformation:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -50,7 +49,6 @@ class Cell_Deformation:
         self.sys_path = config.sys_path
 
     def import_data(self, csv: str, ref: str) -> None:
-
         """Imports unit cell data from a .csv file
 
         BEST TO RUN CIF_READ.py FIRST
@@ -85,7 +83,6 @@ class Cell_Deformation:
         self.sys_path = config.sys_path
 
     def import_dataframe(self, df: "pd.Dataframe") -> None:
-
         """Option to import data directly from a dataframe
 
         This is more useful in larger pipelines so that the user
@@ -103,7 +100,6 @@ class Cell_Deformation:
         self.df = df
 
     def deformation(self, df: "pd.DataFrame", ref: list) -> "pd.DataFrame":
-
         """Performs the actual calculations for the deformation of all unit cell parameters in the
 
         imported dataframes based on the reference unit cell
@@ -128,7 +124,6 @@ class Cell_Deformation:
         return df
 
     def calculate_deformations(self) -> None:
-
         """Calculates the deformation of all unit cell parameters in the
 
         imported dataframes based on the reference unit cell
@@ -173,7 +168,6 @@ class Cell_Deformation:
         figure_title_2: str = "angle_deformation.png",
         df: "pd.Dataframe" = None,
     ) -> None:
-
         """Makes graphs of the changes in cell axes deformation,
 
         cell angle deformation, and unit cell parameter deformation
@@ -297,7 +291,6 @@ class Cell_Deformation:
         figure_name: str = "Quality_Statistics.png",
         df: "pd.Dataframe" = None,
     ) -> None:
-
         """Makes graphs of the data quality statistics from dataframe
 
         Args:

@@ -18,7 +18,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="CX-ASAP",
-    version="2.0.0",
+    version="1.1.2",
     description="A Library of Tools for Automated Crystallographic Analysis with the Australian Synchrotron",
     author="Amy J. Thompson, Kate M. Smith, Daniel J. Eriksson, Jack K. Clegg, Jason R. Price",
     author_email="amy.thompson2@uqconnect.edu.au",
@@ -30,4 +30,3 @@ setup(
     },
     entry_points={"console_scripts": ["cxasap=cxasap:run"]},
 )
-

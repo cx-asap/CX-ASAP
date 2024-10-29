@@ -124,6 +124,12 @@ class Rotation:
             angle (float): the resulting angle from the calculations
         """
 
+        if ref_values:
+            self.ref_values = ref_values
+
+        if ref_plane:
+            self.ref_plane = ref_plane
+
         index = 3
         flag = 0
 
@@ -278,5 +284,6 @@ class Rotation:
                 except FileNotFoundError:
                     self.df.to_csv("rotation_angles.csv", index=None)
                 else:
-                    new_df = old_data.append(self.df)
+                    # new_df = old_data.append(self.df)
+                    new_df = pd.concat([old_data, self.df])
                     new_df.to_csv("rotation_angles.csv", index=None)

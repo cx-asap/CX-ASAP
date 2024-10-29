@@ -264,7 +264,7 @@ class Structural_Analysis:
             # Separates out important atoms by looking for them in any column and merging into one dataframe
 
             for item in atoms_for_analysis:
-                temp_df = df[df.eq(item).any(1)]
+                temp_df = df[df.eq(item).any(axis=1)]
                 important_df = pd.concat([important_df, temp_df], axis=0)
 
             # Need to make a new column of the indices - the above code will give you double ups if both atoms in a bond are "important"
@@ -384,7 +384,7 @@ class Structural_Analysis:
             os.chdir(folder_name)
 
             for item in discrete_atoms:
-                separated_df = df[df.eq(item).any(1)]
+                separated_df = df[df.eq(item).any(axis=1)]
                 separated_df.to_csv(
                     structure_type + "_" + str(item) + ".csv", index=None
                 )
@@ -422,12 +422,20 @@ class Structural_Analysis:
                 ):
                     x_unit = varying_parameter
 
-            graph.single_scatter_graph(
-                x_data[0],
-                y_data,
-                x_unit,
-                y_unit,
-                structure_type,
-                prefix + "_" + structure_type + ".png",
-                y_headers,
-            )
+            try:
+                graph.single_scatter_graph(
+                    x_data[0],
+                    y_data,
+                    x_unit,
+                    y_unit,
+                    structure_type,
+                    prefix + "_" + structure_type + ".png",
+                    y_headers,
+                )
+            except IndexError:
+                logging.info(
+                    "No "
+                    + structure_type
+                    + " data found for graphing, likely because structures not refined with CONF instruction or No HBonds around important atom "
+                )
+                pass

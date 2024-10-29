@@ -33,7 +33,6 @@ from typing import Tuple
 
 class Structure_Refinement:
     def __init__(self, test_mode: bool = False) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -100,7 +99,6 @@ class Structure_Refinement:
         return complete_file
 
     def import_refinement(self, file_name: str, ref_struct: str) -> None:
-
         """Imports the reference and the new .ins files
 
         Outputs the combined file
@@ -141,7 +139,6 @@ class Structure_Refinement:
         weights_old: list,
         weights_new: list,
     ) -> Tuple[bool, bool]:
-
         """Check if the structure has converged or not
 
         For the structure to have converged, it requires:
@@ -227,7 +224,6 @@ class Structure_Refinement:
         tolerance: float,
         refinement_failed: bool,
     ) -> Tuple[bool, list, bool]:
-
         """Function sets up values to check the convergence of the refinements
 
         The actual convergence check is in a separate function (above).
@@ -313,7 +309,6 @@ class Structure_Refinement:
         tolerance: float,
         max_cycles: int,
     ) -> bool:
-
         """Runs SHELXL on a single structure that has had a reference model
 
         imported into it

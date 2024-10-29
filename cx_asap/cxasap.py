@@ -443,7 +443,7 @@ def cli():
 
     #####################################################################\n
 
-    You are currently running version 2.0.0
+    You are currently running version 1.1.2
 
     #####################################################################\n
 
@@ -2058,20 +2058,20 @@ windows_modules = [
     module_cif_read,
     module_rotation_planes,
     module_structural_analysis,
-    pipeline_temperature_analysis,
+    # pipeline_temperature_analysis,
     pipeline_variable_analysis,
     module_adp_analysis,
-    module_platon_squeeze,
-    pipeline_platon_squeeze,
+    # module_platon_squeeze,
+    # pipeline_platon_squeeze,
 ]
 
-windows_modules_dev = [
-    module_intensity_compare,
-    pipeline_intensity_compare,
-    pipeline_rigaku_vt,
-    module_molecule_reconstruction,
-    pipeline_shelxt_auto,
-]
+# windows_modules_dev = [
+# module_intensity_compare,
+# pipeline_intensity_compare,
+# pipeline_rigaku_vt,
+# module_molecule_reconstruction,
+# pipeline_shelxt_auto,
+# ]
 
 if BadOS == True:
     # Modules for master branch ###
@@ -2101,7 +2101,7 @@ else:
     cli.add_command(module_cif_read)
     cli.add_command(module_rotation_planes)
     cli.add_command(module_structural_analysis)
-    cli.add_command(pipeline_temperature_analysis)
+    # cli.add_command(pipeline_temperature_analysis)
     cli.add_command(pipeline_variable_analysis)
     cli.add_command(module_adp_analysis)
 
