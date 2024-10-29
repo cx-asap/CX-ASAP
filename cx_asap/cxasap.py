@@ -133,7 +133,6 @@ from post_refinement_analysis.pipelines.variable_cif_parameter import (
 from overall_pipelines.cxasap_pipeline import General_Pipeline
 
 
-
 def reset_logs() -> None:
     """Resets logs at the start of each run, keeps up to the 5 most previous logs - change quickly by editing the variable below max_logs
     Returns:
@@ -1387,6 +1386,7 @@ def pipeline_cif(dependencies, files, configure, run):
     else:
         click.echo("Please select an option. To view options, add --help")
 
+
 #####----- Module Cell Analysis------#####
 
 """This module will analyse changes in the unit cell from a .csv file.
@@ -1955,6 +1955,7 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
     else:
         click.echo("Please select an option. To view options, add --help")
 
+
 ###------Module ADP Analysis-------###
 
 """This module will analyse the ADPs that have been previously   
@@ -2035,7 +2036,6 @@ def module_adp_analysis(dependencies, files, configure, run):
         click.echo("Please select an option. To view options, add --help")
 
 
-
 os_name = platform.system()
 BadOS = False
 if os_name == "Windows":
@@ -2107,24 +2107,24 @@ else:
 
     ### Modules for dev branch ###
 
-    cli.add_command(pipeline_vp)
-    cli.add_command(module_intensity_compare)
-    cli.add_command(pipeline_intensity_compare)
-    cli.add_command(pipeline_rigaku_vt)
-    cli.add_command(pipeline_aus_synch_vt)
-    cli.add_command(module_xds_cell_transformation)
-    cli.add_command(module_xds_reprocess)
-    cli.add_command(module_xprep)
-    cli.add_command(pipeline_xds_reprocess)
-    cli.add_command(pipeline_xprep)
-    cli.add_command(pipeline_rotation_planes)
-    cli.add_command(pipeline_position_analysis)
-    cli.add_command(pipeline_AS_Brute)
-    cli.add_command(module_molecule_reconstruction)
-    cli.add_command(pipeline_shelxt_auto)
-    cli.add_command(module_platon_squeeze)
-    cli.add_command(pipeline_platon_squeeze)
-    cli.add_command(pipeline_AS_Brute_individual)
+    # cli.add_command(pipeline_vp)
+    # cli.add_command(module_intensity_compare)
+    # cli.add_command(pipeline_intensity_compare)
+    # cli.add_command(pipeline_rigaku_vt)
+    # cli.add_command(pipeline_aus_synch_vt)
+    # cli.add_command(module_xds_cell_transformation)
+    # cli.add_command(module_xds_reprocess)
+    # cli.add_command(module_xprep)
+    # cli.add_command(pipeline_xds_reprocess)
+    # cli.add_command(pipeline_xprep)
+    # cli.add_command(pipeline_rotation_planes)
+    # cli.add_command(pipeline_position_analysis)
+    # cli.add_command(pipeline_AS_Brute)
+    # cli.add_command(module_molecule_reconstruction)
+    # cli.add_command(pipeline_shelxt_auto)
+    # cli.add_command(module_platon_squeeze)
+    # cli.add_command(pipeline_platon_squeeze)
+    # cli.add_command(pipeline_AS_Brute_individual)
 
 
 def run() -> None:
