@@ -438,7 +438,7 @@ class Test:
             analysis.data_output()
 
         except Exception as error:
-            self.logger.info(f"module-cif-read failed with error: {error}")
+            # self.logger.info(f"module-cif-read failed with error: {error}")
             logging.info(f"module-cif-read failed with error: {error}")
             message = "module-cif-read could not execute: open error log for details"
             self.outcome = False
@@ -585,7 +585,8 @@ class Test:
                 self.sys["module-structural-analysis"]["bond_data"],
                 self.sys["module-structural-analysis"]["angle_data"],
                 self.sys["module-structural-analysis"]["torsion_data"],
-                self.sys["module-structural-analysis"]["hbond_data"],
+                False,
+                #self.sys["module-structural-analysis"]["hbond_data"],
                 self.sys["module-structural-analysis"]["atoms_for_analysis"],
             )
         except Exception as error:

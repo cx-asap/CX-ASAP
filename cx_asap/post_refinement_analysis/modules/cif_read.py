@@ -203,7 +203,8 @@ class CIF_Read:
             )
             self.adp_analysis(cif_file, adp)
 
-            self.data = self.data.append(temp_data)
+            # self.data = self.data.append(temp_data)
+            self.data = pd.concat([self.data, temp_data])
             self.structures_in_cif.append(structures_in_cif_tmp)
             for item in successful_positions_tmp:
                 self.successful_positions.append(item.strip("structure_"))
@@ -281,28 +282,32 @@ class CIF_Read:
                 structures_in_cif_tmp_bonds,
                 successful_positions_tmp_bonds,
             ) = self.data_harvest(cif_file, bond_paras, varying_parameter)
-            self.bond_data = self.bond_data.append(temp_data_bonds)
+            # self.bond_data = self.bond_data.append(temp_data_bonds)
+            self.bond_data = pd.concat([self.bond_data, temp_data_bonds])
         if angles == True:
             (
                 temp_data_angles,
                 structures_in_cif_tmp_angles,
                 successful_positions_tmp_angles,
             ) = self.data_harvest(cif_file, angle_paras, varying_parameter)
-            self.angle_data = self.angle_data.append(temp_data_angles)
+            # self.angle_data = self.angle_data.append(temp_data_angles)
+            self.angle_data = pd.concat([self.angle_data, temp_data_angles])
         if torsions == True:
             (
                 temp_data_torsions,
                 structures_in_cif_tmp_torsions,
                 successful_positions_tmp_torsions,
             ) = self.data_harvest(cif_file, torsion_paras, varying_parameter)
-            self.torsion_data = self.torsion_data.append(temp_data_torsions)
+            # self.torsion_data = self.torsion_data.append(temp_data_torsions)
+            self.torsion_data = pd.concat([self.torsion_data, temp_data_torsions])
         if hbonds == True:
             (
                 temp_data_hbonds,
                 structures_in_cif_tmp_hbonds,
                 successful_positions_tmp_hbonds,
             ) = self.data_harvest(cif_file, hbond_paras, varying_parameter)
-            self.hbond_data = self.hbond_data.append(temp_data_hbonds)
+            # self.hbond_data = self.hbond_data.append(temp_data_hbonds)
+            self.hbond_data = pd.concat([self.hbond_data, temp_data_hbonds])
 
     def adp_analysis(
         self,
@@ -333,7 +338,8 @@ class CIF_Read:
                 structures_in_cif_tmp_adps,
                 successful_positions_tmp_adps,
             ) = self.data_harvest(cif_file, adps, varying_parameter)
-            self.adp_data = self.adp_data.append(temp_data_adps)
+            # self.adp_data = self.adp_data.append(temp_data_adps)
+            self.adp_data = pd.concat([self.adp_data, temp_data_adps])
 
     def data_harvest(
         self,

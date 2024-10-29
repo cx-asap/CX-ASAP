@@ -21,7 +21,6 @@ import logging
 
 class Rotation_Pipeline:
     def __init__(self) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -50,7 +49,6 @@ class Rotation_Pipeline:
     def analysis(
         self, working_directory: str, reference_plane: list, results_directory: str
     ) -> None:
-
         """Initialises the class
 
         Analyses the angle between the MPLA output and a user defined
@@ -79,15 +77,19 @@ class Rotation_Pipeline:
             tree.exit_directory()
         os.chdir(results_directory)
 
-        full_data = pd.read_csv("rotation_angles.csv")
-        x = full_data["Structure"]
-        angle = full_data["Rotation Angle"]
-        graph = Grapher()
-        graph.single_scatter_graph(
-            x,
-            angle,
-            "Structure Number",
-            "Angle($^\circ$)",
-            "Rotation Angles",
-            "rotation_angles.png",
-        )
+        try:
+            full_data = pd.read_csv("rotation_angles.csv")
+            x = full_data["Structure"]
+            angle = full_data["Rotation Angle"]
+            graph = Grapher()
+            graph.single_scatter_graph(
+                x,
+                angle,
+                "Structure Number",
+                "Angle($^\circ$)",
+                "Rotation Angles",
+                "rotation_angles.png",
+            )
+        except FileNotFoundError:
+            logging.error("No rotation angles file found...")
+            pass

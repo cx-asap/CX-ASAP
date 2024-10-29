@@ -21,7 +21,6 @@ import logging
 
 class Cif_Combine:
     def __init__(self) -> None:
-
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -43,7 +42,6 @@ class Cif_Combine:
         self.sys_path = config.sys_path
 
     def combine_cifs_single_folder(self, location: str) -> None:
-
         """Combines all the CIF files that are found within a single folder
 
         Args:
