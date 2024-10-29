@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import unittest
 
@@ -1168,6 +1168,7 @@ class testConfig(unittest.TestCase):
                                 dic[key] = dic[key][original_path.start() :]
                     except TypeError:
                         pass
+       
 
         self.assertEqual(present_values, self.correct_fields)
 
