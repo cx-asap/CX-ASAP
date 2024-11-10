@@ -2081,8 +2081,8 @@ if BadOS == True:
 
     # Modules for dev branch ###
 
-    for item in windows_modules_dev:
-        cli.add_command(item)
+# for item in windows_modules_dev:
+#    cli.add_command(item)
 
 else:
     ### Modules for master branch ###
