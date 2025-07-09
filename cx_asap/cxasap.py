@@ -216,7 +216,9 @@ def reset_logs() -> None:
 def copy_logs(destination: str) -> None:
     """Copies logs to the output folder defined.
     If the module / pipeline outputs results, it goes to the results folder
-    Otherwise, it goes to the experiment location folder
+    Otherwise, it goes to the experiment location folder.
+    In some virtual environment set ups (on windows) pathlib seems to have issues
+    resolving the path. So this sometimes fails - it does report so, though.
     Args:
         destination (string): path to the log destination
     """
@@ -228,10 +230,17 @@ def copy_logs(destination: str) -> None:
         pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output_1.txt"
     )
 
+    folder_name = pathlib.Path(destination).parent
+
     try:
         shutil.copy(log_location, destination)
     except FileNotFoundError:
-        shutil.copy(log_location_1, destination)
+        try:
+            shutil.copy(log_location_1, destination)
+        except FileNotFoundError:
+            print(
+                f"your log file is located in the error-logs folder inside the cx_asap folder but has not been copied to the {folder_name} folder"
+            )
 
 
 def yaml_extraction(heading: str) -> dict:
