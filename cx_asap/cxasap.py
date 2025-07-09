@@ -230,6 +230,8 @@ def copy_logs(destination: str) -> None:
         pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output_1.txt"
     )
 
+    folder_name = pathlib.Path(destination).parent
+
     try:
         shutil.copy(log_location, destination)
     except FileNotFoundError:
@@ -237,7 +239,7 @@ def copy_logs(destination: str) -> None:
             shutil.copy(log_location_1, destination)
         except FileNotFoundError:
             print(
-                "your log file is located in the error-logs folder inside cx_asap but has not been copied to the CIF_ANALYSIS folder"
+                f"your log file is located in the error-logs folder inside the cx_asap folder but has not been copied to the {folder_name} folder"
             )
 
 
