@@ -10,6 +10,7 @@
 
 # ----------Required Modules----------#
 
+from unittest import result
 from system_files.utils import Nice_YAML_Dumper, Config
 import pathlib
 import os
@@ -17,6 +18,7 @@ import math
 import pandas as pd
 import logging
 import numpy as np
+import re
 
 # ----------Class Definition----------#
 
@@ -104,7 +106,7 @@ class Rotation:
             self.bad_flag = True
 
     def calculate_planes(self, data: str, ref_plane: list, ref_values: list) -> float:
-        """Finds the results from the MPLA command in the .lst file
+        """Finds the results from the MPLA command in the .lst file (plane) and converts this into a list of values (vals)
 
         Converts into fractional coordinates using the unit cell from the
 
@@ -134,7 +136,7 @@ class Rotation:
         flag = 0
 
         angle = 0
-
+        # extract plane from lst and store in plane variable
         for line in data:
             if "Least-squares planes" in line:
                 plane = data[index]
@@ -142,18 +144,24 @@ class Rotation:
             index += 1
 
         data = []
-
-        # signs do not matter = just make sure angle closest to the 0 instead of 180
         index = 0
-
+        # extract coefficients from the plane string and append to data list
         if flag == 1:
-            for item in plane.split():
-                try:
-                    float(item)
-                except ValueError:
-                    pass
+            # remove parentheses and contents
+            s = re.sub(r"\([^)]*\)", "", plane)
+            # remove =
+            s = s.replace("=", " ")
+            # attach signs to numbers separated by spaces
+            s = re.sub(r"([+-])\s+(\d)", r"\1\2", s)
+            vals = re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", s)
+            # append to data keeping - but removing +
+            for item in vals:
+                if item.startswith("+"):
+                    item = item[1:]
+                if item.startswith("-"):
+                    data.append(f"-{item[1:]}")
                 else:
-                    data.append(float(item))
+                    data.append(item)
 
             # calculate G the metric matrix
             alpha = np.radians(self.ref_values[3])
