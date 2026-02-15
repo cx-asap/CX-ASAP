@@ -106,11 +106,9 @@ class Rotation:
             self.bad_flag = True
 
     def calculate_planes(self, data: str, ref_plane: list, ref_values: list) -> float:
-        """Finds the results from the MPLA command in the .lst file (plane) and converts this into a list of values (vals)
+        """Finds the results from the MPLA command in the .lst file (plane) and converts this into a list of values (vals) and then stores this in plane_data
 
-        Converts into fractional coordinates using the unit cell from the
-
-        above function
+        Converts plane_data into fractional coordinates using the unit cell from the above function
 
         Calculates the angle between it and the reference plane
 
@@ -143,7 +141,7 @@ class Rotation:
                 flag = 1
             index += 1
 
-        data = []
+        plane_data = []
         index = 0
         # extract coefficients from the plane string and append to data list
         if flag == 1:
@@ -159,9 +157,9 @@ class Rotation:
                 if item.startswith("+"):
                     item = item[1:]
                 if item.startswith("-"):
-                    data.append(f"-{item[1:]}")
+                    plane_data.append(f"-{item[1:]}")
                 else:
-                    data.append(item)
+                    plane_data.append(item)
 
             # calculate G the metric matrix
             alpha = np.radians(self.ref_values[3])
@@ -213,9 +211,9 @@ class Rotation:
 
             ## converst the molecule plane into fractional coordinates
             cart_coords = np.zeros((1, 3))
-            cart_coords[0, 0] = data[0]
-            cart_coords[0, 1] = data[1]
-            cart_coords[0, 2] = data[2]
+            cart_coords[0, 0] = float(plane_data[0])
+            cart_coords[0, 1] = float(plane_data[1])
+            cart_coords[0, 2] = float(plane_data[2])
             frac_coords = np.dot(cart_coords, M_star)
             molecule_plane = frac_coords
 
