@@ -10,6 +10,7 @@
 
 # ----------Required Modules----------#
 
+from unittest import result
 from system_files.utils import Nice_YAML_Dumper, Config
 import pathlib
 import os
@@ -17,6 +18,7 @@ import math
 import pandas as pd
 import logging
 import numpy as np
+import re
 
 # ----------Class Definition----------#
 
@@ -104,11 +106,9 @@ class Rotation:
             self.bad_flag = True
 
     def calculate_planes(self, data: str, ref_plane: list, ref_values: list) -> float:
-        """Finds the results from the MPLA command in the .lst file
+        """Finds the results from the MPLA command in the .lst file (plane) and converts this into a list of values (vals) and then stores this in plane_data
 
-        Converts into fractional coordinates using the unit cell from the
-
-        above function
+        Converts plane_data into fractional coordinates using the unit cell from the above function
 
         Calculates the angle between it and the reference plane
 
@@ -134,26 +134,32 @@ class Rotation:
         flag = 0
 
         angle = 0
-
+        # extract plane from lst and store in plane variable
         for line in data:
             if "Least-squares planes" in line:
                 plane = data[index]
                 flag = 1
             index += 1
 
-        data = []
-
-        # signs do not matter = just make sure angle closest to the 0 instead of 180
+        plane_data = []
         index = 0
-
+        # extract coefficients from the plane string and append to data list
         if flag == 1:
-            for item in plane.split():
-                try:
-                    float(item)
-                except ValueError:
-                    pass
+            # remove parentheses and contents
+            s = re.sub(r"\([^)]*\)", "", plane)
+            # remove =
+            s = s.replace("=", " ")
+            # attach signs to numbers separated by spaces
+            s = re.sub(r"([+-])\s+(\d)", r"\1\2", s)
+            vals = re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", s)
+            # append to data keeping - but removing +
+            for item in vals:
+                if item.startswith("+"):
+                    item = item[1:]
+                if item.startswith("-"):
+                    plane_data.append(f"-{item[1:]}")
                 else:
-                    data.append(float(item))
+                    plane_data.append(item)
 
             # calculate G the metric matrix
             alpha = np.radians(self.ref_values[3])
@@ -205,9 +211,9 @@ class Rotation:
 
             ## converst the molecule plane into fractional coordinates
             cart_coords = np.zeros((1, 3))
-            cart_coords[0, 0] = data[0]
-            cart_coords[0, 1] = data[1]
-            cart_coords[0, 2] = data[2]
+            cart_coords[0, 0] = float(plane_data[0])
+            cart_coords[0, 1] = float(plane_data[1])
+            cart_coords[0, 2] = float(plane_data[2])
             frac_coords = np.dot(cart_coords, M_star)
             molecule_plane = frac_coords
 
