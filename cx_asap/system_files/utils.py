@@ -1380,7 +1380,7 @@ class Grapher:
         if "alpha" or "beta" or "gamma" in title.lower():
             plt.ylabel("Angle(" + chr(176) + ")")
         elif "vol" in title.lower():
-            plt.ylabel("Volume (\u212B\u00B3)")
+            plt.ylabel("Volume (\u212b\u00b3)")
         else:
             plt.ylabel(r"Distance ($\AA$)")
         plt.title(title)
@@ -1573,6 +1573,8 @@ class XDS_File_Edit:
 
         # Honestly I forget why this is so complicated, but I remember having a lot of problems so it is the way that it is *shrugs in code*
 
+        new_value_str = str(new_value)
+
         flag = 0
         editing = ""
         with open(file_path, "rt") as in_file:
@@ -1585,7 +1587,7 @@ class XDS_File_Edit:
             test = to_edit
         except UnboundLocalError:
             with open(file_path, "a") as f:
-                f.write(" " + parameter + "= " + new_value)
+                f.write(" " + parameter + "= " + new_value_str)
         else:
             for element in to_edit:
                 editing += " " + str(element)
@@ -1594,7 +1596,7 @@ class XDS_File_Edit:
             for line in fileinput.input(file_path, inplace=True):
                 if parameter in line and flag == 0:
                     line = line.rstrip("\r\n")
-                    print(line.replace(edit, str(new_value)))
+                    print(line.replace(edit, new_value_str))
                     flag += 1
                 else:
                     line = line.rstrip("\r\n")
@@ -1639,13 +1641,24 @@ class XDS_File_Edit:
         Returns:
             angle (float): starting angle of the experiment
         """
-
+        match = None
         with open(file_path, "rt") as in_file:
             for line in in_file:
-                if "STARTING_ANGLE= " in line:
-                    angle = float(line.split()[1])
+                # Accepts variants like "STARTING_ANGLE=1.0" and "STARTING_ANGLE = 1.0"
+                candidate = re.search(
+                    r"\bSTARTING_ANGLE\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)",
+                    line,
+                )
+                if candidate:
+                    match = candidate
+                    break
 
-        return angle
+        if match:
+            return float(match.group(1))
+        else:
+            raise ValueError(
+                f"Could not find STARTING_ANGLE in XDS.INP file: {file_path}"
+            )
 
     def new_line_rewrite(self, file_path: str) -> None:
         """To make editing the file easier later,
