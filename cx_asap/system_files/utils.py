@@ -1641,18 +1641,24 @@ class XDS_File_Edit:
         Returns:
             angle (float): starting angle of the experiment
         """
-
+        match = None
         with open(file_path, "rt") as in_file:
             for line in in_file:
                 # Accepts variants like "STARTING_ANGLE=1.0" and "STARTING_ANGLE = 1.0"
-                match = re.search(
+                candidate = re.search(
                     r"\bSTARTING_ANGLE\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)",
                     line,
                 )
-                if match:
-                    return float(match.group(1))
+                if candidate:
+                    match = candidate
+                    break
 
-        raise ValueError(f"Could not find STARTING_ANGLE in XDS.INP file: {file_path}")
+        if match:
+            return float(match.group(1))
+        else:
+            raise ValueError(
+                f"Could not find STARTING_ANGLE in XDS.INP file: {file_path}"
+            )
 
     def new_line_rewrite(self, file_path: str) -> None:
         """To make editing the file easier later,
