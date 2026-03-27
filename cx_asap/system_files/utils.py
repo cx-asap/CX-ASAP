@@ -936,10 +936,14 @@ class Reprocess_Setup:
                 if f.is_file() and (f.name.endswith(".h5") or f.name.endswith(".img"))
             ]
             if direct_frames:
+                moved_count = 0
                 for frame_file in direct_frames:
                     destination = pathlib.Path(self.frames_path) / frame_file.name
                     if not destination.exists():
-                        shutil.copy2(frame_file, destination)
+                        shutil.move(frame_file, destination)
+                        moved_count += 1
+                if moved_count:
+                    print(f"Moved {moved_count} frame files to {self.frames_path}")
                 # Create one analysis folder per dataset, identified by _master.h5 files.
                 master_files = [
                     f for f in direct_frames if f.name.endswith("_master.h5")
@@ -997,10 +1001,16 @@ class Reprocess_Setup:
                         )
                         dataset_frames_path.mkdir(parents=True, exist_ok=True)
 
+                        moved_count = 0
                         for frame_file in frame_files:
                             destination = dataset_frames_path / frame_file.name
                             if not destination.exists():
-                                shutil.copy2(frame_file, destination)
+                                shutil.move(frame_file, destination)
+                                moved_count += 1
+                        if moved_count:
+                            print(
+                                f"Moved {moved_count} frame files to {dataset_frames_path}"
+                            )
 
                         analysis_dataset_path = (
                             pathlib.Path(self.analysis_path) / dataset_name
