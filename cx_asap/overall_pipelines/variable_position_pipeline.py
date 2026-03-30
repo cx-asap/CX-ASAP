@@ -292,6 +292,53 @@ class VP_Pipeline:
 
         parameters = [angles, min_pixels, sepmin, spot_MC, signal_pixel]
 
+        def _coerce_numeric_list(values: list, name: str) -> list:
+            """Normalise YAML-entered values to numeric types."""
+
+            if not isinstance(values, list):
+                values = [values]
+
+            coerced = []
+            for value in values:
+                if isinstance(value, (int, float)):
+                    coerced.append(value)
+                    continue
+
+                if isinstance(value, str):
+                    stripped = value.strip()
+                    try:
+                        numeric_value = float(stripped)
+                    except ValueError:
+                        logging.critical(
+                            __name__
+                            + f" : Invalid non-numeric value in {name}: {value}"
+                        )
+                        print("Error! Check logs")
+                        exit()
+
+                    if numeric_value.is_integer():
+                        coerced.append(int(numeric_value))
+                    else:
+                        coerced.append(numeric_value)
+                    continue
+
+                logging.critical(
+                    __name__
+                    + f" : Unsupported value type in {name}: {type(value).__name__}"
+                )
+                print("Error! Check logs")
+                exit()
+
+            return coerced
+
+        angles = _coerce_numeric_list(angles, "wedge_angles")
+        min_pixels = _coerce_numeric_list(min_pixels, "min_pixels")
+        sepmin = _coerce_numeric_list(sepmin, "sepmin")
+        spot_MC = _coerce_numeric_list(spot_MC, "spot_maximum_centroid")
+        signal_pixel = _coerce_numeric_list(signal_pixel, "signal_pixel")
+
+        parameters = [angles, min_pixels, sepmin, spot_MC, signal_pixel]
+
         # Checks that the user is not trying to test an angle of 0 or an angle larger than the collected data
 
         for item in angles:
