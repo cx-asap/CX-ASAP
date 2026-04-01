@@ -15,6 +15,7 @@ import yaml
 import os
 import shutil
 import logging
+import fileinput
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import math
