@@ -21,6 +21,7 @@ import logging
 
 class XDS_reprocess:
     def __init__(self) -> None:
+
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -51,6 +52,7 @@ class XDS_reprocess:
         location: str,
         structure_number: int,
     ) -> None:
+
         """Sets the correct frame name in the XDS_INP file
 
         Removes key XDS files from previous tests
@@ -75,28 +77,10 @@ class XDS_reprocess:
         os.chdir(location / "img")
 
         frame_type_flag = "h5"
-        detected_stem = None
 
         for item in os.listdir():
             if item.endswith(".img"):
                 frame_type_flag = "img"
-                if detected_stem is None:
-                    detected_stem = "_".join(item.split("_")[:-1])
-            elif item.endswith(".h5") and detected_stem is None:
-                # Strip trailing _master or _??????-style suffix to get the base stem
-                stem = pathlib.Path(item).stem
-                if stem.endswith("_master"):
-                    detected_stem = stem[: -len("_master")]
-                else:
-                    # Strip the last _NNNNNN numeric chunk if present
-                    parts = stem.rsplit("_", 1)
-                    if len(parts) == 2 and parts[1].isdigit():
-                        detected_stem = parts[0]
-                    else:
-                        detected_stem = stem
-
-        if detected_stem:
-            template_name = detected_stem
 
         if frame_type_flag == "h5":
             template_ending = "_??????.h5"
