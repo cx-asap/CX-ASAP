@@ -15,7 +15,6 @@ import yaml
 import os
 import shutil
 import logging
-import fileinput
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import math
@@ -1700,34 +1699,6 @@ class XDS_File_Edit:
 
         with open(file_path, "wt") as out_file:
             out_file.writelines(output_lines)
-        new_value_str = str(new_value)
-
-        flag = 0
-        editing = ""
-        with open(file_path, "rt") as in_file:
-            for line in in_file:
-                if parameter in line and flag == 0:
-                    to_edit = line.split()[1:]
-                    flag += 1
-
-        try:
-            test = to_edit
-        except UnboundLocalError:
-            with open(file_path, "a") as f:
-                f.write(" " + parameter + "= " + new_value_str)
-        else:
-            for element in to_edit:
-                editing += " " + str(element)
-            edit = editing.strip(" ")
-            flag = 0
-            for line in fileinput.input(file_path, inplace=True):
-                if parameter in line and flag == 0:
-                    line = line.rstrip("\r\n")
-                    print(line.replace(edit, new_value_str))
-                    flag += 1
-                else:
-                    line = line.rstrip("\r\n")
-                    print(line)
 
     def get_value(self, file_path: str, parameter: str) -> str:
         """Gets the value of a parameter in an XDS.INP
