@@ -133,7 +133,9 @@ from post_refinement_analysis.modules.cif_read import CIF_Read
 from post_refinement_analysis.modules.rotation_planes import Rotation
 from post_refinement_analysis.modules.structural_analysis import Structural_Analysis
 from post_refinement_analysis.modules.ADP_analysis import ADP_analysis
+from post_refinement_analysis.modules.centroids import Centroids
 from post_refinement_analysis.pipelines.rotation_pipeline import Rotation_Pipeline
+from post_refinement_analysis.pipelines.centroids_pipeline import Centroids_Pipeline
 from post_refinement_analysis.pipelines.variable_cif_parameter import (
     Variable_Analysis_Pipeline,
 )
@@ -3326,6 +3328,167 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
         click.echo("Please select an option. To view options, add --help")
 
 
+######----- Module Centroids ------#####
+
+
+@click.command(
+    "module-centroids",
+    short_help="calculate centroid distance and/or inter-plane angle",
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def module_centroids(dependencies, files, configure, run):
+    """For a single dataset, calculate the distance between two atom-group centroids
+    and/or the SHELXL inter-plane angle from a .lst file.
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a .lst file output after refinement in SHELXL")
+        click.echo(" - for inter-plane angle, the .lst must contain two MPLA commands")
+        click.echo("\nThis file can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - lst_file_location: enter the full path to your lst file for analysis"
+        )
+        click.echo(
+            " - centroid_1_atoms: list of atom labels for the first centroid group"
+        )
+        click.echo(
+            " - centroid_2_atoms: list of atom labels for the second centroid group"
+        )
+        click.echo(
+            " - calculate_interplane_angle: set to true to also extract the SHELXL inter-plane angle"
+        )
+
+        fields = yaml_extraction("module-centroids")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("module-centroids")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            results_dir = pathlib.Path(cfg["lst_file_location"]).parent
+            centroid_analysis = Centroids()
+            centroid_analysis.analysis_centroid_distance(
+                cfg["lst_file_location"],
+                1,
+                results_dir,
+                cfg["centroid_1_atoms"],
+                cfg["centroid_2_atoms"],
+            )
+            if cfg["calculate_interplane_angle"]:
+                rotation_analysis = Rotation()
+                rotation_analysis.analysis_interplane_angle(
+                    cfg["lst_file_location"],
+                    1,
+                    results_dir,
+                )
+
+            copy_logs(results_dir)
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+#####------ Pipeline Centroids -----#######
+
+
+@click.command(
+    "pipeline-centroids",
+    short_help="calculate centroids/inter-plane angles for multiple datasets",
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_centroids(dependencies, files, configure, run):
+    """For a series of datasets, calculate centroid distances and/or SHELXL
+    inter-plane angles from .lst files across multiple folders.
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(
+            " - a series of .lst files in separate folders contained in a single parent folder"
+        )
+        click.echo(" - for inter-plane angle, each .lst must contain two MPLA commands")
+        click.echo("\nThis parent folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - experiment_location: full path to the parent folder containing a series of folders with .lst files inside"
+        )
+        click.echo(
+            " - centroid_1_atoms: list of atom labels for the first centroid group"
+        )
+        click.echo(
+            " - centroid_2_atoms: list of atom labels for the second centroid group"
+        )
+        click.echo(
+            " - calculate_interplane_angle: set to true to also extract the SHELXL inter-plane angle"
+        )
+
+        fields = yaml_extraction("pipeline-centroids")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-centroids")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            multi_centroid = Centroids_Pipeline()
+            multi_centroid.centroid_distance_analysis(
+                cfg["experiment_location"],
+                cfg["centroid_1_atoms"],
+                cfg["centroid_2_atoms"],
+                cfg["experiment_location"],
+            )
+            if cfg["calculate_interplane_angle"]:
+                multi_rotation = Rotation_Pipeline()
+                multi_rotation.interplane_angle_analysis(
+                    cfg["experiment_location"],
+                    cfg["experiment_location"],
+                )
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
 #######------Pipeline varying parameter ---------######
 
 """This pipeline will analyse .cif files for a dynamic experiment where one    
@@ -4500,6 +4663,8 @@ else:
     cli.add_command(pipeline_xprep)
     cli.add_command(pipeline_xprep_transform)
     cli.add_command(pipeline_rotation_planes)
+    cli.add_command(module_centroids)
+    cli.add_command(pipeline_centroids)
     cli.add_command(pipeline_position_analysis)
     cli.add_command(pipeline_AS_Brute)
     cli.add_command(module_molecule_reconstruction)

@@ -10,11 +10,10 @@
 
 # ----------Required Modules----------#
 
-from unittest import result
 from system_files.utils import Nice_YAML_Dumper, Config
+from system_files.crystal_math import orthonorm_matrix
 import pathlib
 import os
-import math
 import pandas as pd
 import logging
 import numpy as np
@@ -161,52 +160,8 @@ class Rotation:
                 else:
                     plane_data.append(item)
 
-            # calculate G the metric matrix
-            alpha = np.radians(self.ref_values[3])
-            beta = np.radians(self.ref_values[4])
-            gamma = np.radians(self.ref_values[5])
-            a = self.ref_values[0]
-            b = self.ref_values[1]
-            c = self.ref_values[2]
-            G = np.zeros((3, 3))
-            G[0, 0] = a**2
-            G[0, 1] = a * b * np.cos(gamma)
-            G[0, 2] = a * c * np.cos(beta)
-            G[1, 0] = a * b * np.cos(gamma)
-            G[1, 1] = b**2
-            G[1, 2] = b * c * np.cos(alpha)
-            G[2, 0] = a * c * np.cos(beta)
-            G[2, 1] = b * c * np.cos(alpha)
-            G[2, 2] = c**2
-            detG = np.linalg.det(G)
-            V = np.sqrt(detG)
-            V_star = 1 / V
-            a_star = b * c * np.sin(alpha) * V_star
-            b_star = a * c * np.sin(beta) * V_star
-            c_star = a * b * np.sin(gamma) * V_star
-            alpha_star = np.arccos(
-                (np.cos(beta) * np.cos(gamma) - np.cos(alpha))
-                / (np.sin(beta) * np.sin(gamma))
-            )
-            beta_star = np.arccos(
-                (np.cos(alpha) * np.cos(gamma) - np.cos(beta))
-                / (np.sin(alpha) * np.sin(gamma))
-            )
-            gamma_star = np.arccos(
-                (np.cos(alpha) * np.cos(beta) - np.cos(gamma))
-                / (np.sin(alpha) * np.sin(beta))
-            )
-            # cacluates the orthonormalisation matrix M
-            M = np.zeros((3, 3))
-            M[0, 0] = a
-            M[0, 1] = b * np.cos(gamma)
-            M[0, 2] = c * np.cos(beta)
-            M[1, 0] = 0
-            M[1, 1] = b * np.sin(gamma)
-            M[1, 2] = -c * np.sin(beta) * np.cos(alpha_star)
-            M[2, 0] = 0
-            M[2, 1] = 0
-            M[2, 2] = c * np.sin(beta) * np.sin(alpha_star)
+            # build the orthonormalisation matrix and its inverse
+            M = orthonorm_matrix(self.ref_values)
             M_star = np.linalg.inv(M)
 
             ## converst the molecule plane into fractional coordinates
@@ -293,3 +248,57 @@ class Rotation:
                     # new_df = old_data.append(self.df)
                     new_df = pd.concat([old_data, self.df])
                     new_df.to_csv("rotation_angles.csv", index=None)
+
+    def find_interplane_angle(self, file_name: str) -> float:
+        """Reads a .lst file and extracts the SHELXL inter-plane angle.
+
+        Requires two MPLA commands in the .ins file so that SHELXL reports
+        'Angle to previous plane' in the Least-squares planes section.
+
+        Args:
+            file_name (str): full path to the .lst file
+
+        Returns:
+            angle (float): angle in degrees between the two planes,
+                           or 0.0 if not found
+        """
+
+        with open(file_name, "rt") as f:
+            for line in f:
+                if "Angle to previous plane" in line:
+                    match = re.search(r"=\s*([\d.]+)", line)
+                    if match:
+                        return float(match.group(1))
+        return 0.0
+
+    def analysis_interplane_angle(
+        self, lst_name: str, structure_number: int, results_path: str
+    ) -> None:
+        """Extracts the SHELXL inter-plane angle and appends it to a .csv file.
+
+        Requires two MPLA commands in the .ins file.
+
+        Args:
+            lst_name (str): full path to the .lst file with two MPLA commands
+            structure_number (int): structure number as the independent variable
+            results_path (str): full path to the output results directory
+        """
+
+        if lst_name == "":
+            logging.info(__name__ + " : Refinement failed, no mean planes to analyse")
+            return
+
+        angle = self.find_interplane_angle(pathlib.Path(lst_name))
+
+        df = pd.DataFrame(
+            {"Structure": [structure_number], "Interplane Angle": [angle]}
+        )
+
+        os.chdir(results_path)
+        try:
+            old_data = pd.read_csv("interplane_angles.csv")
+        except FileNotFoundError:
+            df.to_csv("interplane_angles.csv", index=None)
+        else:
+            new_df = pd.concat([old_data, df])
+            new_df.to_csv("interplane_angles.csv", index=None)

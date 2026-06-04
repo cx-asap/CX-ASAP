@@ -11,6 +11,7 @@
 # ----------Required Modules----------#
 
 from system_files.utils import Nice_YAML_Dumper, Config
+from system_files.crystal_math import metric_matrix
 import logging
 import pandas as pd
 import numpy as np
@@ -177,29 +178,7 @@ class ADP_analysis:
             beta = cell_df.iloc[counter]["_cell_angle_beta"]
             gamma = cell_df.iloc[counter]["_cell_angle_gamma"]
 
-            alpha_rad = alpha * (math.pi / 180)
-            beta_rad = beta * (math.pi / 180)
-            gamma_rad = gamma * (math.pi / 180)
-
-            G = np.array(
-                [
-                    [
-                        (a * a),
-                        (a * b * math.cos(gamma_rad)),
-                        (a * c * math.cos(beta_rad)),
-                    ],
-                    [
-                        (b * a * math.cos(gamma_rad)),
-                        (b * b),
-                        (b * c * math.cos(alpha_rad)),
-                    ],
-                    [
-                        (c * a * math.cos(beta_rad)),
-                        (c * b * math.cos(alpha_rad)),
-                        (c * c),
-                    ],
-                ]
-            )
+            G = metric_matrix([a, b, c, alpha, beta, gamma])
 
             G_recip = np.linalg.inv(G)
 

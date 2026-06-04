@@ -402,6 +402,8 @@ class Structural_Analysis:
                 )
 
             y_data = []
+            da_data = []
+            angle_data = []
             y_headers = []
             x_data = []
 
@@ -410,6 +412,9 @@ class Structural_Analysis:
             for i, g in grouped:
                 y_headers.append(i)
                 y_data.append(list(g[column_names[-6]]))
+                if structure_type == "Hbonds":
+                    da_data.append(list(g["_geom_hbond_distance_DA"]))
+                    angle_data.append(list(g["_geom_hbond_angle_DHA"]))
                 if flexible == True:
                     x_data.append(list(g["number"]))
                     x_unit = "Structure number"
@@ -422,20 +427,45 @@ class Structural_Analysis:
                 ):
                     x_unit = varying_parameter
 
-            try:
-                graph.single_scatter_graph(
-                    x_data[0],
-                    y_data,
-                    x_unit,
-                    y_unit,
-                    structure_type,
-                    prefix + "_" + structure_type + ".png",
-                    y_headers,
-                )
-            except IndexError:
-                logging.info(
-                    "No "
-                    + structure_type
-                    + " data found for graphing, likely because structures not refined with CONF instruction or No HBonds around important atom "
-                )
-                pass
+            if structure_type == "Hbonds":
+                try:
+                    graph.single_scatter_graph(
+                        x_data[0],
+                        da_data,
+                        x_unit,
+                        r"D$\cdots$A Distance ($\AA$)",
+                        "Hbond D···A Distances",
+                        prefix + "_Hbond_DA_distances.png",
+                        y_headers,
+                    )
+                    graph.single_scatter_graph(
+                        x_data[0],
+                        angle_data,
+                        x_unit,
+                        "D-H$\\cdots$A Angle ($^\\circ$)",
+                        "Hbond D-H···A Angles",
+                        prefix + "_Hbond_DHA_angles.png",
+                        y_headers,
+                    )
+                except IndexError:
+                    logging.info(
+                        "No Hbond data found for graphing, likely because structures not refined with HTAB instruction or No HBonds around important atom"
+                    )
+            else:
+                try:
+                    graph.single_scatter_graph(
+                        x_data[0],
+                        y_data,
+                        x_unit,
+                        y_unit,
+                        structure_type,
+                        prefix + "_" + structure_type + ".png",
+                        y_headers,
+                    )
+                except IndexError:
+                    logging.info(
+                        "No "
+                        + structure_type
+                        + " data found for graphing, likely because structures not refined with CONF instruction or No HBonds around important atom "
+                    )
+                    pass

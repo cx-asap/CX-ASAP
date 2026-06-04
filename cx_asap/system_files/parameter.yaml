@@ -306,6 +306,18 @@ module-rotation-planes:
   - reference_plane
   - lst_file_location
 
+module-centroids:
+  - lst_file_location
+  - centroid_1_atoms
+  - centroid_2_atoms
+  - calculate_interplane_angle
+
+pipeline-centroids:
+  - experiment_location
+  - centroid_1_atoms
+  - centroid_2_atoms
+  - calculate_interplane_angle
+
 module-structural-analysis:
   - atoms_for_analysis
   - bond_data
