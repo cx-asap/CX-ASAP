@@ -71,6 +71,9 @@ class testGenerate(unittest.TestCase):
                 "sepmin",
                 "mapping_step_size",
                 "total_angle",
+                "calculate_centroid_distance",
+                "centroid_1_atoms",
+                "centroid_2_atoms",
             ],
             "pipeline-general": [
                 "experiment_location",
@@ -294,7 +297,11 @@ class testGenerate(unittest.TestCase):
                 "ADP_analysis",
                 "folder_containing_cifs",
             ],
-            "module-rotation-planes": ["reference_plane", "lst_file_location"],
+            "module-rotation-planes": [
+                "reference_plane",
+                "lst_file_location",
+                "calculate_interplane_angle",
+            ],
             "module-structural-analysis": [
                 "atoms_for_analysis",
                 "bond_data",
@@ -302,7 +309,11 @@ class testGenerate(unittest.TestCase):
                 "torsion_data",
                 "hbond_data",
             ],
-            "pipeline-rotation-planes": ["reference_plane", "experiment_location"],
+            "pipeline-rotation-planes": [
+                "reference_plane",
+                "experiment_location",
+                "calculate_interplane_angle",
+            ],
             "pipeline-variable-analysis": [
                 "cif_parameters",
                 "atoms_for_analysis",
@@ -333,6 +344,9 @@ class testGenerate(unittest.TestCase):
                 "signal_pixel",
                 "sepmin",
                 "mapping_step_size",
+                "calculate_centroid_distance",
+                "centroid_1_atoms",
+                "centroid_2_atoms",
             ],
             "pipeline-temperature-analysis": [
                 "cif_parameters",
@@ -423,6 +437,9 @@ class testGenerate(unittest.TestCase):
                 "sepmin",
                 "mapping_step_size",
                 "total_angle",
+                "calculate_centroid_distance",
+                "centroid_1_atoms",
+                "centroid_2_atoms",
             ],
             [
                 "experiment_location",
@@ -638,7 +655,7 @@ class testGenerate(unittest.TestCase):
                 "ADP_analysis",
                 "folder_containing_cifs",
             ],
-            ["reference_plane", "lst_file_location"],
+            ["reference_plane", "lst_file_location", "calculate_interplane_angle"],
             [
                 "atoms_for_analysis",
                 "bond_data",
@@ -646,7 +663,7 @@ class testGenerate(unittest.TestCase):
                 "torsion_data",
                 "hbond_data",
             ],
-            ["reference_plane", "experiment_location"],
+            ["reference_plane", "experiment_location", "calculate_interplane_angle"],
             [
                 "cif_parameters",
                 "atoms_for_analysis",
@@ -677,6 +694,9 @@ class testGenerate(unittest.TestCase):
                 "signal_pixel",
                 "sepmin",
                 "mapping_step_size",
+                "calculate_centroid_distance",
+                "centroid_1_atoms",
+                "centroid_2_atoms",
             ],
             [
                 "cif_parameters",
@@ -1168,7 +1188,6 @@ class testConfig(unittest.TestCase):
                                 dic[key] = dic[key][original_path.start() :]
                     except TypeError:
                         pass
-       
 
         self.assertEqual(present_values, self.correct_fields)
 
