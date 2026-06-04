@@ -3333,7 +3333,7 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
 
 @click.command(
     "module-centroids",
-    short_help="calculate centroid distance and/or inter-plane angle",
+    short_help="calculate centroid distance between two atom groups",
 )
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -3414,7 +3414,7 @@ def module_centroids(dependencies, files, configure, run):
 
 @click.command(
     "pipeline-centroids",
-    short_help="calculate centroids/inter-plane angles for multiple datasets",
+    short_help="calculate centroid distances for multiple datasets",
 )
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
