@@ -904,6 +904,15 @@ def pipeline_vp(dependencies, files, configure, run):
         click.echo(
             " - wedge_angles: enter the wedge angles as a list for XDS processing"
         )
+        click.echo(
+            " - calculate_centroid_distance: enter True for centroid analysis between two atom-group centroids from the .lst files, otherwise enter False"
+        )
+        click.echo(
+            " - centroid_1_atoms: list of atom labels for the first centroid group (only needed if calculate_centroid_distance is true)"
+        )
+        click.echo(
+            " - centroid_2_atoms: list of atom labels for the second centroid group (only needed if calculate_centroid_distance is true)"
+        )
 
         fields = yaml_extraction("pipeline-variable-position")
         yaml_creation(fields)
@@ -986,6 +995,14 @@ def pipeline_vp(dependencies, files, configure, run):
                 cfg["wedge_angles"],
                 cfg["reference_plane"],
             )
+            if cfg["calculate_centroid_distance"]:
+                centroid_analysis = Centroids_Pipeline()
+                centroid_analysis.centroid_distance_analysis(
+                    full_vp_analysis.sys["current_results_path"],
+                    cfg["centroid_1_atoms"],
+                    cfg["centroid_2_atoms"],
+                    full_vp_analysis.sys["current_results_path"],
+                )
 
             copy_logs(full_vp_analysis.sys["current_results_path"])
 
@@ -3115,6 +3132,9 @@ def module_rotation_planes(dependencies, files, configure, run):
         click.echo(
             " - reference_plane: fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions."
         )
+        click.echo(
+            " - calculate_interplane_angle: set to true to also extract the SHELXL inter-plane angle (requires two MPLA commands in the .lst file)"
+        )
 
         fields = yaml_extraction("module-rotation-planes")
         yaml_creation(fields)
@@ -3140,6 +3160,12 @@ def module_rotation_planes(dependencies, files, configure, run):
                 1,
                 pathlib.Path(cfg["lst_file_location"]).parent,
             )
+            if cfg["calculate_interplane_angle"]:
+                rotation_analysis.analysis_interplane_angle(
+                    cfg["lst_file_location"],
+                    1,
+                    pathlib.Path(cfg["lst_file_location"]).parent,
+                )
 
             copy_logs(pathlib.Path(cfg["lst_file_location"]).parent)
 
@@ -3295,6 +3321,9 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
         click.echo(
             " - reference_plane: fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions."
         )
+        click.echo(
+            " - calculate_interplane_angle: set to true to also extract the SHELXL inter-plane angle (requires two MPLA commands in each .lst file)"
+        )
 
         fields = yaml_extraction("pipeline-rotation-planes")
         yaml_creation(fields)
@@ -3319,6 +3348,11 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
                 cfg["reference_plane"],
                 cfg["experiment_location"],
             )
+            if cfg["calculate_interplane_angle"]:
+                multi_rotation.interplane_angle_analysis(
+                    cfg["experiment_location"],
+                    cfg["experiment_location"],
+                )
 
             copy_logs(cfg["experiment_location"])
 
@@ -3363,9 +3397,6 @@ def module_centroids(dependencies, files, configure, run):
         click.echo(
             " - centroid_2_atoms: list of atom labels for the second centroid group"
         )
-        click.echo(
-            " - calculate_interplane_angle: set to true to also extract the SHELXL inter-plane angle"
-        )
 
         fields = yaml_extraction("module-centroids")
         yaml_creation(fields)
@@ -3393,13 +3424,6 @@ def module_centroids(dependencies, files, configure, run):
                 cfg["centroid_1_atoms"],
                 cfg["centroid_2_atoms"],
             )
-            if cfg["calculate_interplane_angle"]:
-                rotation_analysis = Rotation()
-                rotation_analysis.analysis_interplane_angle(
-                    cfg["lst_file_location"],
-                    1,
-                    results_dir,
-                )
 
             copy_logs(results_dir)
 
@@ -3446,9 +3470,6 @@ def pipeline_centroids(dependencies, files, configure, run):
         click.echo(
             " - centroid_2_atoms: list of atom labels for the second centroid group"
         )
-        click.echo(
-            " - calculate_interplane_angle: set to true to also extract the SHELXL inter-plane angle"
-        )
 
         fields = yaml_extraction("pipeline-centroids")
         yaml_creation(fields)
@@ -3474,12 +3495,6 @@ def pipeline_centroids(dependencies, files, configure, run):
                 cfg["centroid_2_atoms"],
                 cfg["experiment_location"],
             )
-            if cfg["calculate_interplane_angle"]:
-                multi_rotation = Rotation_Pipeline()
-                multi_rotation.interplane_angle_analysis(
-                    cfg["experiment_location"],
-                    cfg["experiment_location"],
-                )
 
             copy_logs(cfg["experiment_location"])
 
@@ -3693,6 +3708,15 @@ def pipeline_position_analysis(dependencies, files, configure, run):
         click.echo(
             " - wedge_angles: enter the wedge angles as a list for XDS processing"
         )
+        click.echo(
+            " - calculate_centroid_distance: enter True for centroid analysis between two atom-group centroids from the .lst files, otherwise enter False"
+        )
+        click.echo(
+            " - centroid_1_atoms: list of atom labels for the first centroid group (only needed if calculate_centroid_distance is true)"
+        )
+        click.echo(
+            " - centroid_2_atoms: list of atom labels for the second centroid group (only needed if calculate_centroid_distance is true)"
+        )
 
         fields = yaml_extraction("pipeline-position-analysis")
         yaml_creation(fields)
@@ -3731,6 +3755,14 @@ def pipeline_position_analysis(dependencies, files, configure, run):
                 cfg["structural_analysis_hbonds"],
                 cfg["ADP_analysis"],
             )
+            if cfg["calculate_centroid_distance"]:
+                centroid_analysis = Centroids_Pipeline()
+                centroid_analysis.centroid_distance_analysis(
+                    cfg["experiment_location"],
+                    cfg["centroid_1_atoms"],
+                    cfg["centroid_2_atoms"],
+                    cfg["experiment_location"],
+                )
 
             copy_logs(cfg["experiment_location"])
 
