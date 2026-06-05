@@ -1579,30 +1579,39 @@ class Cell_Import:
 
         self.cfg, self.sys = self.config.yaml_reload(self.test_mode)
 
-    def ref_edit(self, ins: str, MPLA_atoms: str) -> None:
+    def ref_edit(self, ins: str, MPLA_atoms) -> None:
         """Edits the reference .ins/.res file to put the MPLA
 
-        command in with the user defined atoms
+        command in with the user defined atoms.
+
+        MPLA_atoms can be:
+          - a flat list of atom labels (single MPLA plane), e.g. ["Cu1", "O1", "O2"]
+          - a list of lists (multiple MPLA planes), e.g. [["Cu1", "O1"], ["C3", "C4"]]
 
         Args:
             ins (str): full path to the .ins/.res file
-            MPLA_atoms (str): list of atoms for MPLA command
+            MPLA_atoms (list): atom labels for one MPLA plane, or list of atom-label
+                               lists for multiple MPLA planes
         """
+
+        # Normalise to list of lists
+        if MPLA_atoms and not isinstance(MPLA_atoms[0], list):
+            planes = [MPLA_atoms]
+        else:
+            planes = MPLA_atoms
 
         with open(ins, "rt") as ins_file:
             content = ins_file.readlines()
 
-        flag = False
+        flag = any("MPLA" in line for line in content)
 
         with open(ins, "w") as ins_file:
-            for line in content:
-                if "MPLA" in line:
-                    flag = True
-            if flag == False:
+            if not flag:
                 for line in content:
                     if "PLAN" in line:
                         ins_file.write(line)
-                        ins_file.write("MPLA " + MPLA_atoms + "\n")
+                        for plane in planes:
+                            ins_file.write("MPLA " + " ".join(plane) + "\n")
                         ins_file.write("CONF\n")
                     else:
                         ins_file.write(line)

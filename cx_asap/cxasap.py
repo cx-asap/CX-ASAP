@@ -818,7 +818,7 @@ def pipeline_vp(dependencies, files, configure, run):
             " - atoms_for_analysis: enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs"
         )
         click.echo(
-            " - atoms_for_rotation_analysis: enter the labels of the atoms for mean plane analysis"
+            " - atoms_for_rotation_analysis: enter atom labels for mean plane analysis as a list for a single MPLA plane (eg [Cu1, O1, O2]) or a list of lists for multiple planes (eg [[Cu1, O1], [C3, C4, C5]])"
         )
         click.echo(" - chemical_formula: enter the chemical formula of your crystal")
         click.echo(
@@ -2243,7 +2243,7 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
             " - atoms_for_analysis: enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs"
         )
         click.echo(
-            " - atoms_for_rotation_analysis: enter the labels of the atoms for mean plane analysis"
+            " - atoms_for_rotation_analysis: enter atom labels for mean plane analysis as a list for a single MPLA plane (eg [Cu1, O1, O2]) or a list of lists for multiple planes (eg [[Cu1, O1], [C3, C4, C5]])"
         )
         click.echo(" - chemical_formula: enter the chemical formula of your crystal")
         click.echo(
@@ -3663,7 +3663,7 @@ def pipeline_position_analysis(dependencies, files, configure, run):
             " - atoms_for_analysis: enter the label of the atoms you are most interested in"
         )
         click.echo(
-            " - atoms_for_rotation_analysis: enter the atoms you used in the MPLA command"
+            " - atoms_for_rotation_analysis: enter atom labels for mean plane analysis as a list for a single MPLA plane (eg [Cu1, O1, O2]) or a list of lists for multiple planes (eg [[Cu1, O1], [C3, C4, C5]])"
         )
         click.echo(
             " - cif_parameters: these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format"
