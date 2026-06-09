@@ -69,6 +69,8 @@ pipeline-variable-position:
   - calculate_centroid_distance
   - centroid_1_atoms
   - centroid_2_atoms
+  - centroid_1_symmetry
+  - centroid_2_symmetry
 
 pipeline-general:
   - experiment_location
@@ -314,11 +316,15 @@ module-centroids:
   - lst_file_location
   - centroid_1_atoms
   - centroid_2_atoms
+  - centroid_1_symmetry
+  - centroid_2_symmetry
 
 pipeline-centroids:
   - experiment_location
   - centroid_1_atoms
   - centroid_2_atoms
+  - centroid_1_symmetry
+  - centroid_2_symmetry
 
 module-structural-analysis:
   - atoms_for_analysis
@@ -365,6 +371,8 @@ pipeline-position-analysis:
   - calculate_centroid_distance
   - centroid_1_atoms
   - centroid_2_atoms
+  - centroid_1_symmetry
+  - centroid_2_symmetry
 
 pipeline-temperature-analysis:
   - cif_parameters

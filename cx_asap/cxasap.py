@@ -913,6 +913,12 @@ def pipeline_vp(dependencies, files, configure, run):
         click.echo(
             " - centroid_2_atoms: list of atom labels for the second centroid group (only needed if calculate_centroid_distance is true)"
         )
+        click.echo(
+            " - centroid_1_symmetry: optional symmetry operation for centroid 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
+        )
+        click.echo(
+            " - centroid_2_symmetry: optional symmetry operation for centroid 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
+        )
 
         fields = yaml_extraction("pipeline-variable-position")
         yaml_creation(fields)
@@ -995,13 +1001,15 @@ def pipeline_vp(dependencies, files, configure, run):
                 cfg["wedge_angles"],
                 cfg["reference_plane"],
             )
-            if cfg["calculate_centroid_distance"]:
+            if cfg.get("calculate_centroid_distance", False):
                 centroid_analysis = Centroids_Pipeline()
                 centroid_analysis.centroid_distance_analysis(
                     full_vp_analysis.sys["current_results_path"],
                     cfg["centroid_1_atoms"],
                     cfg["centroid_2_atoms"],
                     full_vp_analysis.sys["current_results_path"],
+                    symmetry_1=cfg.get("centroid_1_symmetry") or None,
+                    symmetry_2=cfg.get("centroid_2_symmetry") or None,
                 )
 
             copy_logs(full_vp_analysis.sys["current_results_path"])
@@ -3397,6 +3405,12 @@ def module_centroids(dependencies, files, configure, run):
         click.echo(
             " - centroid_2_atoms: list of atom labels for the second centroid group"
         )
+        click.echo(
+            " - centroid_1_symmetry: optional symmetry operation for centroid 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
+        )
+        click.echo(
+            " - centroid_2_symmetry: optional symmetry operation for centroid 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
+        )
 
         fields = yaml_extraction("module-centroids")
         yaml_creation(fields)
@@ -3423,6 +3437,8 @@ def module_centroids(dependencies, files, configure, run):
                 results_dir,
                 cfg["centroid_1_atoms"],
                 cfg["centroid_2_atoms"],
+                symmetry_1=cfg.get("centroid_1_symmetry") or None,
+                symmetry_2=cfg.get("centroid_2_symmetry") or None,
             )
 
             copy_logs(results_dir)
@@ -3470,6 +3486,12 @@ def pipeline_centroids(dependencies, files, configure, run):
         click.echo(
             " - centroid_2_atoms: list of atom labels for the second centroid group"
         )
+        click.echo(
+            " - centroid_1_symmetry: optional symmetry operation for centroid 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
+        )
+        click.echo(
+            " - centroid_2_symmetry: optional symmetry operation for centroid 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
+        )
 
         fields = yaml_extraction("pipeline-centroids")
         yaml_creation(fields)
@@ -3494,6 +3516,8 @@ def pipeline_centroids(dependencies, files, configure, run):
                 cfg["centroid_1_atoms"],
                 cfg["centroid_2_atoms"],
                 cfg["experiment_location"],
+                symmetry_1=cfg.get("centroid_1_symmetry") or None,
+                symmetry_2=cfg.get("centroid_2_symmetry") or None,
             )
 
             copy_logs(cfg["experiment_location"])
@@ -3717,6 +3741,12 @@ def pipeline_position_analysis(dependencies, files, configure, run):
         click.echo(
             " - centroid_2_atoms: list of atom labels for the second centroid group (only needed if calculate_centroid_distance is true)"
         )
+        click.echo(
+            " - centroid_1_symmetry: optional symmetry operation for centroid 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
+        )
+        click.echo(
+            " - centroid_2_symmetry: optional symmetry operation for centroid 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
+        )
 
         fields = yaml_extraction("pipeline-position-analysis")
         yaml_creation(fields)
@@ -3755,13 +3785,15 @@ def pipeline_position_analysis(dependencies, files, configure, run):
                 cfg["structural_analysis_hbonds"],
                 cfg["ADP_analysis"],
             )
-            if cfg["calculate_centroid_distance"]:
+            if cfg.get("calculate_centroid_distance", False):
                 centroid_analysis = Centroids_Pipeline()
                 centroid_analysis.centroid_distance_analysis(
                     cfg["experiment_location"],
                     cfg["centroid_1_atoms"],
                     cfg["centroid_2_atoms"],
                     cfg["experiment_location"],
+                    symmetry_1=cfg.get("centroid_1_symmetry") or None,
+                    symmetry_2=cfg.get("centroid_2_symmetry") or None,
                 )
 
             copy_logs(cfg["experiment_location"])

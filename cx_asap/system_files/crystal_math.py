@@ -81,3 +81,62 @@ def orthonorm_matrix(cell_params: list) -> np.ndarray:
     )
 
     return M
+
+
+def parse_symm_op(symm_str: str):
+    """Parses a SHELXL/CIF symmetry operation string into a rotation matrix and
+    translation vector (both in fractional coordinates).
+
+    Converts strings like "-x+1/2, y+1/2, -z+1/2" into a 3x3 matrix R and a
+    length-3 vector t such that:
+
+        frac_new = frac @ R.T + t   (row-vector convention)
+
+    Args:
+        symm_str (str): symmetry operation string, e.g. "-x+1/2, y, -z+1/2"
+
+    Returns:
+        R (np.ndarray): 3x3 rotation/inversion matrix (entries 0, +1, or -1)
+        t (np.ndarray): length-3 translation vector in fractional coordinates
+    """
+
+    import re
+
+    R = np.zeros((3, 3))
+    t = np.zeros(3)
+
+    axes = {"x": 0, "y": 1, "z": 2}
+    frac_re = re.compile(r"([+-]?\s*\d+)\s*/\s*(\d+)")
+    coeff_re = re.compile(r"([+-]?\s*\d*\.?\d*)\s*([xyz])")
+
+    for row, expr in enumerate(symm_str.split(",")):
+        expr = expr.strip()
+
+        # Extract and remove all fraction terms (e.g. +1/2, -1/3)
+        for m in frac_re.finditer(expr):
+            t[row] += float(m.group(1).replace(" ", "")) / float(m.group(2))
+        expr_no_frac = frac_re.sub("", expr)
+
+        # Extract remaining integer/float terms not attached to x/y/z
+        # (bare numbers like +1 or -2 without axis letter)
+        remainder = coeff_re.sub("", expr_no_frac).strip()
+        remainder = remainder.replace(" ", "")
+        if remainder and remainder not in ("+", "-", ""):
+            try:
+                t[row] += float(remainder)
+            except ValueError:
+                pass
+
+        # Extract axis coefficients
+        for m in coeff_re.finditer(expr_no_frac):
+            coeff_str = m.group(1).replace(" ", "")
+            axis = m.group(2)
+            if coeff_str in ("", "+"):
+                coeff = 1.0
+            elif coeff_str == "-":
+                coeff = -1.0
+            else:
+                coeff = float(coeff_str)
+            R[row, axes[axis]] = coeff
+
+    return R, t

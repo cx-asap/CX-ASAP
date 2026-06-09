@@ -46,6 +46,8 @@ class Centroids_Pipeline:
         atom_list_2: list,
         results_directory: str,
         label: str = "Centroid Distance",
+        symmetry_1: str = None,
+        symmetry_2: str = None,
     ) -> None:
         """Calculates centroid-to-centroid distances for a series of .lst files
         in separate folders within a common parent folder.
@@ -59,6 +61,8 @@ class Centroids_Pipeline:
             atom_list_2 (list): atom labels for the second centroid group
             results_directory (str): full path to the output directory
             label (str): column header for the output csv and graph y-axis
+            symmetry_1 (str): optional symmetry operation string for centroid 1
+            symmetry_2 (str): optional symmetry operation string for centroid 2
         """
 
         centroid = Centroids()
@@ -73,6 +77,8 @@ class Centroids_Pipeline:
                 atom_list_1,
                 atom_list_2,
                 label,
+                symmetry_1,
+                symmetry_2,
             )
             tree.exit_directory()
 
@@ -94,5 +100,3 @@ class Centroids_Pipeline:
             )
         except FileNotFoundError:
             logging.error(f"No {csv_name} file found...")
-
-

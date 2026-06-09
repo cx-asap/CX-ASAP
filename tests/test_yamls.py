@@ -74,6 +74,8 @@ class testGenerate(unittest.TestCase):
                 "calculate_centroid_distance",
                 "centroid_1_atoms",
                 "centroid_2_atoms",
+                "centroid_1_symmetry",
+                "centroid_2_symmetry",
             ],
             "pipeline-general": [
                 "experiment_location",
@@ -347,6 +349,8 @@ class testGenerate(unittest.TestCase):
                 "calculate_centroid_distance",
                 "centroid_1_atoms",
                 "centroid_2_atoms",
+                "centroid_1_symmetry",
+                "centroid_2_symmetry",
             ],
             "pipeline-temperature-analysis": [
                 "cif_parameters",
@@ -440,6 +444,8 @@ class testGenerate(unittest.TestCase):
                 "calculate_centroid_distance",
                 "centroid_1_atoms",
                 "centroid_2_atoms",
+                "centroid_1_symmetry",
+                "centroid_2_symmetry",
             ],
             [
                 "experiment_location",
@@ -697,6 +703,8 @@ class testGenerate(unittest.TestCase):
                 "calculate_centroid_distance",
                 "centroid_1_atoms",
                 "centroid_2_atoms",
+                "centroid_1_symmetry",
+                "centroid_2_symmetry",
             ],
             [
                 "cif_parameters",
