@@ -86,6 +86,9 @@ class Centroids:
                                    or None if no atoms were found
         """
 
+        if isinstance(atom_names, str):
+            atom_names = atom_names.split()
+
         positions = []
         for name in atom_names:
             key = name.upper()
@@ -131,9 +134,9 @@ class Centroids:
 
         M = orthonorm_matrix(self.cell_params)
 
-        # fractional row vector -> Cartesian: cart = frac @ M
-        cart1 = np.dot(c1, M)
-        cart2 = np.dot(c2, M)
+        # fractional row vector -> Cartesian: cart = frac @ M.T
+        cart1 = np.dot(c1, M.T)
+        cart2 = np.dot(c2, M.T)
 
         return float(np.linalg.norm(cart1 - cart2))
 
@@ -202,5 +205,3 @@ class Centroids:
         else:
             new_df = pd.concat([old_data, df])
             new_df.to_csv(csv_name, index=None)
-
-
