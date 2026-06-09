@@ -102,6 +102,10 @@ def parse_symm_op(symm_str: str):
 
     import re
 
+    # Accept a list (e.g. from YAML block syntax) or a plain string
+    if isinstance(symm_str, list):
+        symm_str = symm_str[0]
+
     R = np.zeros((3, 3))
     t = np.zeros(3)
 
