@@ -19,7 +19,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import math
 import re
-import fileinput
 from typing import Tuple
 
 # ----------Class Definition----------#
@@ -926,31 +925,127 @@ class Reprocess_Setup:
 
             os.chdir("..")
 
-            # For old detector images:
+            # Perform frame ingestion and symlink setup on first setup only.
+            location_path = pathlib.Path(self.home_path).parent
+            os.chdir(location_path)
 
-            folders_made = []
+            # Check if frames live directly in location (no dataset subfolders).
+            direct_frames = [
+                f
+                for f in location_path.iterdir()
+                if f.is_file() and (f.name.endswith(".h5") or f.name.endswith(".img"))
+            ]
+            if direct_frames:
+                moved_count = 0
+                for frame_file in direct_frames:
+                    destination = pathlib.Path(self.frames_path) / frame_file.name
+                    if not destination.exists():
+                        shutil.move(frame_file, destination)
+                        moved_count += 1
+                if moved_count:
+                    print(f"Moved {moved_count} frame files to {self.frames_path}")
+                # Create one analysis folder per dataset, identified by _master.h5 files.
+                master_files = [
+                    f for f in direct_frames if f.name.endswith("_master.h5")
+                ]
+                if master_files:
+                    for master in master_files:
+                        dataset_name = master.stem[: -len("_master")]
+                        analysis_dataset_path = (
+                            pathlib.Path(self.analysis_path) / dataset_name
+                        )
+                        if not os.path.exists(analysis_dataset_path):
+                            os.mkdir(analysis_dataset_path)
+                else:
+                    # No master files — fall back to one folder named after location
+                    analysis_dataset_path = (
+                        pathlib.Path(self.analysis_path) / location_path.name
+                    )
+                    if not os.path.exists(analysis_dataset_path):
+                        os.mkdir(analysis_dataset_path)
+            else:
+                folders_made = []
+                candidate_dirs = [
+                    item
+                    for item in os.listdir()
+                    if pathlib.Path(item).is_dir()
+                    and item != pathlib.Path(self.home_path).name
+                    and "analysis" not in item
+                ]
+                matching_dirs = [
+                    item for item in candidate_dirs if self.experiment_name in item
+                ]
+                dirs_to_process = matching_dirs or candidate_dirs
 
-            for item in os.listdir():
-                if self.experiment_name in item:
-                    if "analysis" not in item:
-                        shutil.move(item, pathlib.Path(self.frames_path) / item)
+                for item in dirs_to_process:
+                    source_path = pathlib.Path(item)
 
-                        if item.endswith("master.h5"):
-                            b = item.replace("_master.h5", "")
+                    # Handle one-folder-per-dataset layouts. Prefer an existing img
+                    # folder, otherwise look for frames directly in the dataset folder.
+                    if (source_path / "img").is_dir():
+                        frame_source = source_path / "img"
+                    else:
+                        frame_source = source_path
+
+                    frame_files = [
+                        frame
+                        for frame in frame_source.iterdir()
+                        if frame.is_file()
+                        and (frame.name.endswith(".h5") or frame.name.endswith(".img"))
+                    ]
+
+                    if frame_files:
+                        dataset_name = source_path.name
+                        dataset_frames_path = (
+                            pathlib.Path(self.frames_path) / dataset_name
+                        )
+                        dataset_frames_path.mkdir(parents=True, exist_ok=True)
+
+                        moved_count = 0
+                        for frame_file in frame_files:
+                            destination = dataset_frames_path / frame_file.name
+                            if not destination.exists():
+                                shutil.move(frame_file, destination)
+                                moved_count += 1
+                        if moved_count:
+                            print(
+                                f"Moved {moved_count} frame files to {dataset_frames_path}"
+                            )
+
+                        analysis_dataset_path = (
+                            pathlib.Path(self.analysis_path) / dataset_name
+                        )
+                        if not os.path.exists(analysis_dataset_path):
+                            os.mkdir(analysis_dataset_path)
+                        continue
+
+                    # Legacy support for flat frame layouts at the location root.
+                    shutil.move(item, pathlib.Path(self.frames_path) / item)
+
+                    if item.endswith("master.h5"):
+                        b = item.replace("_master.h5", "")
+                        os.mkdir(pathlib.Path(self.analysis_path) / b)
+
+                    if item.endswith(".img"):
+                        b = "_".join(item.split("_")[:-1])
+                        if b not in folders_made:
                             os.mkdir(pathlib.Path(self.analysis_path) / b)
-
-                        # For old detector images:
-
-                        if item.endswith(".img"):
-                            b = "_".join(item.split("_")[:-1])
-                            if b not in folders_made:
-                                os.mkdir(pathlib.Path(self.analysis_path) / b)
-                                folders_made.append(b)
+                            folders_made.append(b)
 
             os.chdir(self.analysis_path)
 
             for folder in os.listdir():
-                os.symlink(self.frames_path, os.path.join(folder, "img"))
+                link_path = pathlib.Path(folder) / "img"
+                target_frames_path = pathlib.Path(self.frames_path) / folder
+                target = (
+                    target_frames_path
+                    if os.path.exists(target_frames_path)
+                    else pathlib.Path(self.frames_path)
+                )
+
+                if link_path.is_symlink() or os.path.exists(link_path):
+                    continue
+                os.symlink(target, link_path)
 
         os.chdir(self.results_path)
 
@@ -1571,36 +1666,39 @@ class XDS_File_Edit:
             new_value (str): the new value of the XDS.INP parameter
         """
 
-        # Honestly I forget why this is so complicated, but I remember having a lot of problems so it is the way that it is *shrugs in code*
-
+        # Match the first explicit "PARAM = value" assignment regardless of spacing.
         new_value_str = str(new_value)
+        key_pattern = re.compile(
+            rf"^(\s*{re.escape(parameter)}\s*=\s*)([^!\r\n]*)(.*)$"
+        )
 
-        flag = 0
-        editing = ""
+        updated = False
+        output_lines = []
+
         with open(file_path, "rt") as in_file:
             for line in in_file:
-                if parameter in line and flag == 0:
-                    to_edit = line.split()[1:]
-                    flag += 1
+                if not updated:
+                    match = key_pattern.match(line)
+                    if match:
+                        line_ending = "\n" if line.endswith("\n") else ""
+                        prefix, _, suffix = match.groups()
+                        updated_line = prefix + new_value_str
+                        if suffix.lstrip().startswith(
+                            "!"
+                        ) and not updated_line.endswith(" "):
+                            updated_line += " "
+                        output_lines.append(updated_line + suffix + line_ending)
+                        updated = True
+                        continue
+                output_lines.append(line)
 
-        try:
-            test = to_edit
-        except UnboundLocalError:
-            with open(file_path, "a") as f:
-                f.write(" " + parameter + "= " + new_value_str)
-        else:
-            for element in to_edit:
-                editing += " " + str(element)
-            edit = editing.strip(" ")
-            flag = 0
-            for line in fileinput.input(file_path, inplace=True):
-                if parameter in line and flag == 0:
-                    line = line.rstrip("\r\n")
-                    print(line.replace(edit, new_value_str))
-                    flag += 1
-                else:
-                    line = line.rstrip("\r\n")
-                    print(line)
+        if not updated:
+            with open(file_path, "a") as out_file:
+                out_file.write(" " + parameter + "= " + new_value_str + "\n")
+            return
+
+        with open(file_path, "wt") as out_file:
+            out_file.writelines(output_lines)
 
     def get_value(self, file_path: str, parameter: str) -> str:
         """Gets the value of a parameter in an XDS.INP
@@ -1613,16 +1711,25 @@ class XDS_File_Edit:
             value (str): the value of the specified parameter in the XDS.INP file
         """
 
-        # Gets a value from the XDS INP file and saves it as a parameter
+        # Gets a value from the XDS INP file and saves it as a parameter.
+        # Accepts spacing variants like "KEY=1", "KEY = 1", and preserves
+        # historic behavior by returning the value with spaces removed.
 
-        self.value = ""
+        value_pattern = re.compile(rf"\b{re.escape(parameter)}\s*=\s*([^!\r\n]*)")
+        value = None
+
         with open(file_path, "rt") as in_file:
             for line in in_file:
-                if parameter in line:
-                    val_list = line.split()[1:]
-        for element in val_list:
-            self.value += "" + str(element)
-        return self.value
+                match = value_pattern.search(line)
+                if match:
+                    raw_value = match.group(1).strip()
+                    value = "".join(raw_value.split())
+                    break
+
+        if value is None:
+            raise ValueError(f"Could not find {parameter} in XDS.INP file: {file_path}")
+
+        return value
 
     def start_angle(self, file_path: str) -> float:
         """Gets start and total angle from XDS.INP
