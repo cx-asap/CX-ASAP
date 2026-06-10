@@ -374,6 +374,8 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
         "beta_gradient",
         "c_gradient",
         "gamma_gradient",
+        "centroid_1_symmetry",
+        "centroid_2_symmetry",
     ]
 
     if heading == "pipeline-AS-Brute-individual":
