@@ -1585,18 +1585,23 @@ class Cell_Import:
         command in with the user defined atoms.
 
         MPLA_atoms can be:
-          - a flat list of atom labels (single MPLA plane), e.g. ["Cu1", "O1", "O2"]
-          - a list of lists (multiple MPLA planes), e.g. [["Cu1", "O1"], ["C3", "C4"]]
+          - a space-separated string (single plane), e.g. "Cu1 O1 O2"
+          - a flat list of atom labels (single plane), e.g. ["Cu1", "O1", "O2"]
+          - a list of space-separated strings (multiple planes), e.g. ["Cu1 O1", "C3 C4"]
+          - a list of lists (multiple planes), e.g. [["Cu1", "O1"], ["C3", "C4"]]
 
         Args:
             ins (str): full path to the .ins/.res file
-            MPLA_atoms (list): atom labels for one MPLA plane, or list of atom-label
-                               lists for multiple MPLA planes
+            MPLA_atoms: atom labels in any of the above forms
         """
 
         # Normalise to list of lists
-        if MPLA_atoms and not isinstance(MPLA_atoms[0], list):
-            planes = [MPLA_atoms]
+        if isinstance(MPLA_atoms, str):
+            planes = [MPLA_atoms.split()]
+        elif MPLA_atoms and isinstance(MPLA_atoms[0], str):
+            planes = [
+                item.split() if isinstance(item, str) else item for item in MPLA_atoms
+            ]
         else:
             planes = MPLA_atoms
 
