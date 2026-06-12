@@ -23,6 +23,7 @@ from data_reduction.pipelines.xprep_pipeline import XPREP_Pipeline
 from data_refinement.pipelines.refine_pipeline import Refinement_Pipeline
 from cif_validation.pipelines.cif_pipeline import CIF_Compile_Pipeline
 from post_refinement_analysis.pipelines.rotation_pipeline import Rotation_Pipeline
+from post_refinement_analysis.pipelines.centroids_pipeline import Centroids_Pipeline
 from post_refinement_analysis.pipelines.variable_position_analysis import (
     VP_Analysis_Pipeline,
 )
@@ -60,6 +61,18 @@ class VP_Pipeline:
         self.sys = self.config.sys
         self.conf_path = self.config.conf_path
         self.sys_path = self.config.sys_path
+
+        # Setup logging to file
+        log_file = os.path.join(os.path.expanduser("~"), "cx_asap_pipeline.log")
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler(log_file),
+                logging.StreamHandler()
+            ]
+        )
+        logging.info(f"Pipeline log file: {log_file}")
 
         self.xds_edit = XDS_File_Edit()
         self.sys["process_counter"] = 0
@@ -510,6 +523,21 @@ class VP_Pipeline:
         )
         rotation = Rotation_Pipeline()
         rotation.analysis(location, reference_plane, graph_output_location)
+        centroids = Centroids_Pipeline()
+        logging.info(f"DEBUG: Running centroids with location={location}")
+        logging.info(f"DEBUG: centroid_1_atoms={self.cfg['centroid_1_atoms']}")
+        logging.info(f"DEBUG: centroid_2_atoms={self.cfg['centroid_2_atoms']}")
+        logging.info(f"DEBUG: centroid_1_symmetry={self.cfg.get('centroid_1_symmetry')}")
+        logging.info(f"DEBUG: centroid_2_symmetry={self.cfg.get('centroid_2_symmetry')}")
+        centroids.centroid_distance_analysis(
+            location,
+            self.cfg["centroid_1_atoms"],
+            self.cfg["centroid_2_atoms"],
+            graph_output_location,
+            symmetry_1=self.cfg.get("centroid_1_symmetry"),
+            symmetry_2=self.cfg.get("centroid_2_symmetry"),
+        )
+        logging.info("DEBUG: Centroids analysis completed")
         cif = CIF_Compile_Pipeline()
         cif.configure(
             location,
