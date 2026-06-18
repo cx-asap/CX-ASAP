@@ -37,6 +37,8 @@ import logging
 
 
 class Test:
+    __test__ = False
+
     def __init__(self) -> None:
         """Initialises the class
 

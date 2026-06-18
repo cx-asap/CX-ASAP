@@ -75,7 +75,16 @@ class Variable_Analysis_Pipeline:
 
         behaviour = []
 
-        data = df[param]
+        data = list(df[param])
+
+        if len(data) == 0:
+            df["behaviour"] = behaviour
+            return behaviour
+
+        if len(data) == 1:
+            behaviour.append("Did Not Change")
+            df["behaviour"] = behaviour
+            return behaviour
 
         for index, i in enumerate(data):
             if index != 0 and index != len(data) - 1:

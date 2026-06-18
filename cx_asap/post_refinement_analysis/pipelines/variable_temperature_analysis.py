@@ -66,7 +66,16 @@ class VT_Analysis_Pipeline:
 
         behaviour = []
 
-        data = df["_diffrn_ambient_temperature"]
+        data = list(df["_diffrn_ambient_temperature"])
+
+        if len(data) == 0:
+            df["behaviour"] = behaviour
+            return behaviour
+
+        if len(data) == 1:
+            behaviour.append("Did Not Change")
+            df["behaviour"] = behaviour
+            return behaviour
 
         # Searches through the data and classifies everything as a temperature minima, maxima, increasing or decreasing
 
