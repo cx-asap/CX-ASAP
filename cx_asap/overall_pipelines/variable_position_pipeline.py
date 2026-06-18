@@ -524,11 +524,6 @@ class VP_Pipeline:
         rotation = Rotation_Pipeline()
         rotation.analysis(location, reference_plane, graph_output_location)
         centroids = Centroids_Pipeline()
-        logging.info(f"DEBUG: Running centroids with location={location}")
-        logging.info(f"DEBUG: centroid_1_atoms={self.cfg['centroid_1_atoms']}")
-        logging.info(f"DEBUG: centroid_2_atoms={self.cfg['centroid_2_atoms']}")
-        logging.info(f"DEBUG: centroid_1_symmetry={self.cfg.get('centroid_1_symmetry')}")
-        logging.info(f"DEBUG: centroid_2_symmetry={self.cfg.get('centroid_2_symmetry')}")
         centroids.centroid_distance_analysis(
             location,
             self.cfg["centroid_1_atoms"],
@@ -537,7 +532,6 @@ class VP_Pipeline:
             symmetry_1=self.cfg.get("centroid_1_symmetry"),
             symmetry_2=self.cfg.get("centroid_2_symmetry"),
         )
-        logging.info("DEBUG: Centroids analysis completed")
         cif = CIF_Compile_Pipeline()
         cif.configure(
             location,

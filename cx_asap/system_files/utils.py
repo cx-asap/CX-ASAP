@@ -1579,7 +1579,9 @@ class Cell_Import:
 
         self.cfg, self.sys = self.config.yaml_reload(self.test_mode)
 
-    def ref_edit(self, ins: str, MPLA_atoms) -> None:
+    def ref_edit(
+        self, ins: str, MPLA_atoms: "str | list[str] | list[list[str]]"
+    ) -> None:
         """Edits the reference .ins/.res file to put the MPLA
 
         command in with the user defined atoms.
@@ -1589,10 +1591,14 @@ class Cell_Import:
           - a flat list of atom labels (single plane), e.g. ["Cu1", "O1", "O2"]
           - a list of space-separated strings (multiple planes), e.g. ["Cu1 O1", "C3 C4"]
           - a list of lists (multiple planes), e.g. [["Cu1", "O1"], ["C3", "C4"]]
+          - or a list of "-" separated stings (multiple planes): e.g. 
+          "- Cu1 O1 O2
+            - C3 C4 C5"
 
         Args:
             ins (str): full path to the .ins/.res file
-            MPLA_atoms: atom labels in any of the above forms
+            MPLA_atoms (str | list[str] | list[list[str]]):
+                atom labels in any of the above forms
         """
 
         # Normalise to list of lists

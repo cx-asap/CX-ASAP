@@ -438,6 +438,12 @@ class Structural_Analysis:
                         prefix + "_Hbond_DA_distances.png",
                         y_headers,
                     )
+                except IndexError:
+                    logging.info(
+                        "No Hbond D···A data found for graphing, likely because structures not refined with HTAB instruction or no HBonds around important atom"
+                    )
+
+                try:
                     graph.single_scatter_graph(
                         x_data[0],
                         angle_data,
@@ -449,7 +455,7 @@ class Structural_Analysis:
                     )
                 except IndexError:
                     logging.info(
-                        "No Hbond data found for graphing, likely because structures not refined with HTAB instruction or No HBonds around important atom"
+                        "No Hbond D-H···A angle data found for graphing, likely because structures not refined with HTAB instruction or no HBonds around important atom"
                     )
             else:
                 try:

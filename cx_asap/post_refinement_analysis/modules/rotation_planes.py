@@ -220,7 +220,7 @@ class Rotation:
                     new_df = pd.concat([old_data, self.df])
                     new_df.to_csv("rotation_angles.csv", index=None)
 
-    def find_interplane_angle(self, file_name: str) -> float:
+    def find_interplane_angle(self, file_name: str) -> "float | None":
         """Reads a .lst file and extracts the SHELXL inter-plane angle.
 
         Requires two MPLA commands in the .ins file so that SHELXL reports
@@ -231,7 +231,7 @@ class Rotation:
 
         Returns:
             angle (float): angle in degrees between the two planes,
-                           or 0.0 if not found
+                           or None if not found
         """
 
         with open(file_name, "rt") as f:
@@ -240,9 +240,9 @@ class Rotation:
                     match = re.search(r"=\s*([\d.]+)", line)
                     if match:
                         return float(match.group(1))
-        return 0.0
+        return None
 
-    def analysis_interplane_angle(
+    def analyse_interplane_angle(
         self, lst_name: str, structure_number: int, results_path: str
     ) -> None:
         """Extracts the SHELXL inter-plane angle and appends it to a .csv file.
@@ -260,6 +260,15 @@ class Rotation:
             return
 
         angle = self.find_interplane_angle(pathlib.Path(lst_name))
+        if angle is None:
+            logging.warning(
+                __name__
+                + " : Could not find 'Angle to previous plane' in "
+                + str(lst_name)
+                + ". This usually means fewer than two MPLA commands were present; "
+                + "using fallback value 0.0."
+            )
+            angle = 0.0
 
         df = pd.DataFrame(
             {"Structure": [structure_number], "Interplane Angle": [angle]}
@@ -273,3 +282,4 @@ class Rotation:
         else:
             new_df = pd.concat([old_data, df])
             new_df.to_csv("interplane_angles.csv", index=None)
+

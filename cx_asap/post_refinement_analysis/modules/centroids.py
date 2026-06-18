@@ -95,6 +95,15 @@ class Centroids:
 
         if isinstance(atom_names, str):
             atom_names = atom_names.split()
+        elif isinstance(atom_names, (list, tuple, set, np.ndarray)):
+            atom_names = list(atom_names)
+        else:
+            message = (
+                "atom_names must be a list/tuple/set/ndarray of labels or "
+                "a whitespace-delimited string"
+            )
+            logging.error(__name__ + f" : {message}. Got {type(atom_names).__name__}")
+            raise TypeError(message)
 
         R, t = parse_symm_op(symmetry) if symmetry else (None, None)
 
@@ -186,7 +195,7 @@ class Centroids:
             coords, atom_list_1, atom_list_2, symmetry_1, symmetry_2
         )
 
-    def analysis_centroid_distance(
+    def analyse_centroid_distance(
         self,
         lst_name: str,
         structure_number: int,
@@ -237,3 +246,4 @@ class Centroids:
         else:
             new_df = pd.concat([old_data, df])
             new_df.to_csv(csv_name, index=None)
+

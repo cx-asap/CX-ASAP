@@ -65,12 +65,22 @@ class Centroids_Pipeline:
             symmetry_2 (str): optional symmetry operation string for centroid 2
         """
 
+        logging.info(
+            "Running centroid distance analysis with "
+            f"working_directory={working_directory}, "
+            f"results_directory={results_directory}, "
+            f"atom_list_1={atom_list_1}, "
+            f"atom_list_2={atom_list_2}, "
+            f"symmetry_1={symmetry_1}, "
+            f"symmetry_2={symmetry_2}"
+        )
+
         centroid = Centroids()
         tree = Directory_Browse(working_directory)
 
         for index, item in enumerate(tree.directories):
             tree.enter_directory(item, ".lst")
-            centroid.analysis_centroid_distance(
+            centroid.analyse_centroid_distance(
                 tree.item_file,
                 index + 1,
                 results_directory,

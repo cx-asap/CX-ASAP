@@ -3171,7 +3171,7 @@ def module_rotation_planes(dependencies, files, configure, run):
                 pathlib.Path(cfg["lst_file_location"]).parent,
             )
             if cfg["calculate_interplane_angle"]:
-                rotation_analysis.analysis_interplane_angle(
+                rotation_analysis.analyse_interplane_angle(
                     cfg["lst_file_location"],
                     1,
                     pathlib.Path(cfg["lst_file_location"]).parent,
@@ -3433,7 +3433,7 @@ def module_centroids(dependencies, files, configure, run):
             reset_logs()
             results_dir = pathlib.Path(cfg["lst_file_location"]).parent
             centroid_analysis = Centroids()
-            centroid_analysis.analysis_centroid_distance(
+            centroid_analysis.analyse_centroid_distance(
                 cfg["lst_file_location"],
                 1,
                 results_dir,

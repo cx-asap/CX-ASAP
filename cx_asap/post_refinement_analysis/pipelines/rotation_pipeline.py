@@ -92,7 +92,7 @@ class Rotation_Pipeline:
                 x,
                 y_data,
                 "Structure Number",
-                "Angle($^\circ$)",
+                "Angle($^\\circ$)",
                 "Rotation Angles",
                 "rotation_angles.png",
                 y_series_title=labels if len(labels) > 1 else None,
@@ -122,7 +122,7 @@ class Rotation_Pipeline:
 
         for index, item in enumerate(tree.directories):
             tree.enter_directory(item, ".lst")
-            plane.analysis_interplane_angle(
+            plane.analyse_interplane_angle(
                 tree.item_file,
                 index + 1,
                 results_directory,
@@ -140,7 +140,7 @@ class Rotation_Pipeline:
                 x,
                 y,
                 "Structure Number",
-                "Angle($^\circ$)",
+                "Angle($^\\circ$)",
                 "Inter-plane Angles",
                 "interplane_angles.png",
             )
