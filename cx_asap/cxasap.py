@@ -285,6 +285,9 @@ def yaml_extraction(heading: str) -> dict:
         "varying_parameter_values",
         "atom_list",
         "bond_list",
+        "point_geometry_angles",
+        "point_geometry_torsions",
+        "point_geometry_plane_distances",
     ]
 
     structure_params = [
@@ -3530,6 +3533,188 @@ def pipeline_centroids(dependencies, files, configure, run):
         click.echo("Please select an option. To view options, add --help")
 
 
+#####------ Module Point Geometry -----#######
+
+
+@click.command(
+    "module-point-geometry",
+    short_help="calculate angles/torsions/point-plane distances from one .lst",
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def module_point_geometry(dependencies, files, configure, run):
+    """For a single dataset, calculate configured point-geometry values
+    from a .lst file.
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a .lst file output after refinement in SHELXL")
+        click.echo("\nThis file can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - lst_file_location: enter the full path to your lst file for analysis"
+        )
+        click.echo(
+            " - point_geometry_angles: list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry"
+        )
+        click.echo(
+            " - point_geometry_torsions: list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry"
+        )
+        click.echo(
+            " - point_geometry_plane_distances: list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry"
+        )
+
+        fields = yaml_extraction("module-point-geometry")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("module-point-geometry")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            angle_defs = cfg.get("point_geometry_angles") or []
+            torsion_defs = cfg.get("point_geometry_torsions") or []
+            plane_defs = cfg.get("point_geometry_plane_distances") or []
+
+            valid_defs = [
+                item
+                for item in angle_defs + torsion_defs + plane_defs
+                if isinstance(item, dict)
+            ]
+
+            if len(valid_defs) == 0:
+                click.echo(
+                    "No valid point geometry definitions found. Configure at least one angle/torsion/point-plane entry."
+                )
+                output_message()
+                return
+
+            results_dir = pathlib.Path(cfg["lst_file_location"]).parent
+            centroid_analysis = Centroids()
+            centroid_analysis.analyse_point_geometry(
+                cfg["lst_file_location"],
+                1,
+                results_dir,
+                angle_defs,
+                torsion_defs,
+                plane_defs,
+            )
+
+            copy_logs(results_dir)
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+#####------ Pipeline Point Geometry -----#######
+
+
+@click.command(
+    "pipeline-point-geometry",
+    short_help="calculate point geometry for multiple datasets",
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_point_geometry(dependencies, files, configure, run):
+    """For a series of datasets, calculate configured point-geometry values
+    from .lst files across multiple folders.
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(
+            " - a series of .lst files in separate folders contained in a single parent folder"
+        )
+        click.echo("\nThis parent folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - experiment_location: full path to the parent folder containing a series of folders with .lst files inside"
+        )
+        click.echo(
+            " - point_geometry_angles: list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry"
+        )
+        click.echo(
+            " - point_geometry_torsions: list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry"
+        )
+        click.echo(
+            " - point_geometry_plane_distances: list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry"
+        )
+
+        fields = yaml_extraction("pipeline-point-geometry")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-point-geometry")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            angle_defs = cfg.get("point_geometry_angles") or []
+            torsion_defs = cfg.get("point_geometry_torsions") or []
+            plane_defs = cfg.get("point_geometry_plane_distances") or []
+
+            valid_defs = [
+                item
+                for item in angle_defs + torsion_defs + plane_defs
+                if isinstance(item, dict)
+            ]
+
+            if len(valid_defs) == 0:
+                click.echo(
+                    "No valid point geometry definitions found. Configure at least one angle/torsion/point-plane entry."
+                )
+                output_message()
+                return
+
+            multi_geometry = Centroids_Pipeline()
+            multi_geometry.point_geometry_analysis(
+                cfg["experiment_location"],
+                cfg["experiment_location"],
+                angle_defs,
+                torsion_defs,
+                plane_defs,
+            )
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
 #######------Pipeline varying parameter ---------######
 
 """This pipeline will analyse .cif files for a dynamic experiment where one    
@@ -4681,6 +4866,8 @@ windows_modules_dev = [
     pipeline_rigaku_vt,
     module_molecule_reconstruction,
     pipeline_shelxt_auto,
+    module_point_geometry,
+    pipeline_point_geometry,
 ]
 
 if BadOS == True:
@@ -4731,6 +4918,8 @@ else:
     cli.add_command(pipeline_rotation_planes)
     cli.add_command(module_centroids)
     cli.add_command(pipeline_centroids)
+    cli.add_command(module_point_geometry)
+    cli.add_command(pipeline_point_geometry)
     cli.add_command(pipeline_position_analysis)
     cli.add_command(pipeline_AS_Brute)
     cli.add_command(module_molecule_reconstruction)

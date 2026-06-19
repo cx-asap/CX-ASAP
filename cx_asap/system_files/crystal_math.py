@@ -144,3 +144,104 @@ def parse_symm_op(symm_str: str):
             R[row, axes[axis]] = coeff
 
     return R, t
+
+
+def fractional_to_cartesian(
+    point_frac: "np.ndarray | list", cell_params: list
+) -> np.ndarray:
+    """Converts one fractional point into Cartesian coordinates."""
+
+    M = orthonorm_matrix(cell_params)
+    return np.dot(np.array(point_frac, dtype=float), M.T)
+
+
+def distance_between_points(point_1: "np.ndarray | list", point_2: "np.ndarray | list") -> float:
+    """Calculates Euclidean distance between two Cartesian points."""
+
+    p1 = np.array(point_1, dtype=float)
+    p2 = np.array(point_2, dtype=float)
+    return float(np.linalg.norm(p1 - p2))
+
+
+def angle_between_points(
+    point_1: "np.ndarray | list",
+    point_2: "np.ndarray | list",
+    point_3: "np.ndarray | list",
+) -> float:
+    """Calculates the angle in degrees for points 1-2-3 at point 2."""
+
+    p1 = np.array(point_1, dtype=float)
+    p2 = np.array(point_2, dtype=float)
+    p3 = np.array(point_3, dtype=float)
+
+    v1 = p1 - p2
+    v2 = p3 - p2
+
+    norm1 = np.linalg.norm(v1)
+    norm2 = np.linalg.norm(v2)
+
+    if norm1 == 0.0 or norm2 == 0.0:
+        raise ValueError("Zero-length vector in angle calculation")
+
+    cos_theta = np.dot(v1, v2) / (norm1 * norm2)
+    cos_theta = np.clip(cos_theta, -1.0, 1.0)
+    return float(np.degrees(np.arccos(cos_theta)))
+
+
+def torsion_between_points(
+    point_1: "np.ndarray | list",
+    point_2: "np.ndarray | list",
+    point_3: "np.ndarray | list",
+    point_4: "np.ndarray | list",
+) -> float:
+    """Calculates torsion angle in degrees for points 1-2-3-4."""
+
+    c1 = np.array(point_1, dtype=float)
+    c2 = np.array(point_2, dtype=float)
+    c3 = np.array(point_3, dtype=float)
+    c4 = np.array(point_4, dtype=float)
+
+    b0 = c2 - c1
+    b1 = c3 - c2
+    b2 = c4 - c3
+
+    b1_norm = np.linalg.norm(b1)
+    if b1_norm == 0.0:
+        raise ValueError("Zero-length central bond in torsion calculation")
+
+    b1_unit = b1 / b1_norm
+    v = b0 - np.dot(b0, b1_unit) * b1_unit
+    w = b2 - np.dot(b2, b1_unit) * b1_unit
+
+    v_norm = np.linalg.norm(v)
+    w_norm = np.linalg.norm(w)
+    if v_norm == 0.0 or w_norm == 0.0:
+        raise ValueError("Degenerate geometry in torsion calculation")
+
+    x = np.dot(v, w)
+    y = np.dot(np.cross(b1_unit, v), w)
+    return float(np.degrees(np.arctan2(y, x)))
+
+
+def point_to_plane_distance(
+    point: "np.ndarray | list", plane_points: "list[np.ndarray] | np.ndarray | list"
+) -> float:
+    """Calculates absolute Cartesian distance from a point to a best-fit plane."""
+
+    p = np.array(point, dtype=float)
+    plane = np.array(plane_points, dtype=float)
+
+    if len(plane) < 3:
+        raise ValueError("Need at least 3 points to define a plane")
+
+    centroid = np.mean(plane, axis=0)
+    centered = plane - centroid
+    _, _, vh = np.linalg.svd(centered)
+    normal = vh[-1]
+
+    normal_norm = np.linalg.norm(normal)
+    if normal_norm == 0.0:
+        raise ValueError("Could not resolve plane normal")
+
+    normal_unit = normal / normal_norm
+    return float(abs(np.dot(p - centroid, normal_unit)))

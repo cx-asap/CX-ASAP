@@ -110,3 +110,105 @@ class Centroids_Pipeline:
             )
         except FileNotFoundError:
             logging.error(f"No {csv_name} file found...")
+
+    def point_geometry_analysis(
+        self,
+        working_directory: str,
+        results_directory: str,
+        angle_definitions: "list[dict]" = None,
+        torsion_definitions: "list[dict]" = None,
+        plane_distance_definitions: "list[dict]" = None,
+    ) -> None:
+        """Calculates point-based geometry values across multiple .lst files.
+
+        Supported metrics are:
+          - 3-point angles
+          - 4-point torsions
+          - point-to-plane distances
+        """
+
+        logging.info(
+            "Running point geometry analysis with "
+            f"working_directory={working_directory}, "
+            f"results_directory={results_directory}, "
+            f"angle_definitions={len(angle_definitions or [])}, "
+            f"torsion_definitions={len(torsion_definitions or [])}, "
+            f"plane_distance_definitions={len(plane_distance_definitions or [])}"
+        )
+
+        centroid = Centroids()
+        tree = Directory_Browse(working_directory)
+        processed_structures = 0
+
+        for index, item in enumerate(tree.directories):
+            tree.enter_directory(item, ".lst")
+            centroid.analyse_point_geometry(
+                tree.item_file,
+                index + 1,
+                results_directory,
+                angle_definitions,
+                torsion_definitions,
+                plane_distance_definitions,
+            )
+            processed_structures += 1
+            tree.exit_directory()
+
+        os.chdir(results_directory)
+
+        self._graph_point_geometry_csv(
+            "point_geometry_angles.csv",
+            "Point Geometry Angles",
+            "Angle($^\\circ$)",
+            "point_geometry_angles.png",
+        )
+        self._graph_point_geometry_csv(
+            "point_geometry_torsions.csv",
+            "Point Geometry Torsions",
+            "Angle($^\\circ$)",
+            "point_geometry_torsions.png",
+        )
+        self._graph_point_geometry_csv(
+            "point_geometry_plane_distances.csv",
+            "Point to Plane Distances",
+            r"Distance ($\AA$)",
+            "point_geometry_plane_distances.png",
+        )
+
+        logging.info(
+            "Point geometry analysis finished with "
+            f"processed_structures={processed_structures}, "
+            f"angles_csv={os.path.exists('point_geometry_angles.csv')}, "
+            f"torsions_csv={os.path.exists('point_geometry_torsions.csv')}, "
+            "plane_distances_csv="
+            f"{os.path.exists('point_geometry_plane_distances.csv')}"
+        )
+
+    def _graph_point_geometry_csv(
+        self, csv_name: str, graph_title: str, y_axis_title: str, figure_name: str
+    ) -> None:
+        """Creates a summary scatter graph for one point-geometry CSV file."""
+
+        try:
+            full_data = pd.read_csv(csv_name)
+        except FileNotFoundError:
+            return
+
+        if "Structure" not in full_data.columns:
+            return
+
+        y_cols = [col for col in full_data.columns if col != "Structure"]
+        if not y_cols:
+            return
+
+        x = full_data["Structure"]
+        y_data = [list(full_data[col]) for col in y_cols]
+        graph = Grapher()
+        graph.single_scatter_graph(
+            x,
+            y_data,
+            "Structure Number",
+            y_axis_title,
+            graph_title,
+            figure_name,
+            y_series_title=y_cols if len(y_cols) > 1 else None,
+        )

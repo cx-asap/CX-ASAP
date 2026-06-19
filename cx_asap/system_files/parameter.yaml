@@ -319,12 +319,24 @@ module-centroids:
   - centroid_1_symmetry
   - centroid_2_symmetry
 
+module-point-geometry:
+  - lst_file_location
+  - point_geometry_angles
+  - point_geometry_torsions
+  - point_geometry_plane_distances
+
 pipeline-centroids:
   - experiment_location
   - centroid_1_atoms
   - centroid_2_atoms
   - centroid_1_symmetry
   - centroid_2_symmetry
+
+pipeline-point-geometry:
+  - experiment_location
+  - point_geometry_angles
+  - point_geometry_torsions
+  - point_geometry_plane_distances
 
 module-structural-analysis:
   - atoms_for_analysis
