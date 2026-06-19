@@ -321,9 +321,11 @@ module-centroids:
 
 module-point-geometry:
   - lst_file_location
+  - point_geometry_distances
   - point_geometry_angles
   - point_geometry_torsions
   - point_geometry_plane_distances
+  - mercury_output
 
 pipeline-centroids:
   - experiment_location
@@ -334,9 +336,11 @@ pipeline-centroids:
 
 pipeline-point-geometry:
   - experiment_location
+  - point_geometry_distances
   - point_geometry_angles
   - point_geometry_torsions
   - point_geometry_plane_distances
+  - mercury_output
 
 module-structural-analysis:
   - atoms_for_analysis

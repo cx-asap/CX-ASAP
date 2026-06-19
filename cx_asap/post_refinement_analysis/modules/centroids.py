@@ -163,6 +163,7 @@ class Centroids:
         coords: dict,
         atom_names: "str | list[str] | tuple | set | np.ndarray",
         symmetry: str = None,
+        centroid_round_dp: int = None,
     ) -> "np.ndarray | None":
         """Calculates a single point from atom input.
 
@@ -184,7 +185,21 @@ class Centroids:
                 return None
             return positions[0]
 
-        return self.calculate_centroid(coords, atom_names, symmetry)
+        centroid = self.calculate_centroid(coords, atom_names, symmetry)
+        if centroid is None:
+            return None
+
+        if centroid_round_dp is not None:
+            return np.round(centroid, centroid_round_dp)
+
+        return centroid
+
+    def _point_uses_centroid(
+        self, atom_names: "str | list[str] | tuple | set | np.ndarray"
+    ) -> bool:
+        """Returns True when a point definition resolves via centroid averaging."""
+
+        return len(self._normalise_atom_names(atom_names)) > 1
 
     def _fractional_to_cartesian(self, point_frac: "np.ndarray | list") -> np.ndarray:
         """Converts one fractional point into Cartesian coordinates."""
@@ -198,11 +213,12 @@ class Centroids:
         point_2_atoms: "str | list[str] | tuple | set | np.ndarray",
         symmetry_1: str = None,
         symmetry_2: str = None,
+        centroid_round_dp: int = None,
     ) -> float:
         """Calculates Cartesian distance between two points."""
 
-        p1 = self.calculate_point(coords, point_1_atoms, symmetry_1)
-        p2 = self.calculate_point(coords, point_2_atoms, symmetry_2)
+        p1 = self.calculate_point(coords, point_1_atoms, symmetry_1, centroid_round_dp)
+        p2 = self.calculate_point(coords, point_2_atoms, symmetry_2, centroid_round_dp)
 
         if p1 is None or p2 is None:
             return 0.0
@@ -220,12 +236,13 @@ class Centroids:
         symmetry_1: str = None,
         symmetry_2: str = None,
         symmetry_3: str = None,
+        centroid_round_dp: int = None,
     ) -> float:
         """Calculates angle (degrees) formed by points 1-2-3 at point 2."""
 
-        p1 = self.calculate_point(coords, point_1_atoms, symmetry_1)
-        p2 = self.calculate_point(coords, point_2_atoms, symmetry_2)
-        p3 = self.calculate_point(coords, point_3_atoms, symmetry_3)
+        p1 = self.calculate_point(coords, point_1_atoms, symmetry_1, centroid_round_dp)
+        p2 = self.calculate_point(coords, point_2_atoms, symmetry_2, centroid_round_dp)
+        p3 = self.calculate_point(coords, point_3_atoms, symmetry_3, centroid_round_dp)
 
         if p1 is None or p2 is None or p3 is None:
             return 0.0
@@ -251,13 +268,27 @@ class Centroids:
         symmetry_2: str = None,
         symmetry_3: str = None,
         symmetry_4: str = None,
+        centroid_round_dp: int = None,
     ) -> float:
         """Calculates torsion angle (degrees) for points 1-2-3-4."""
 
-        p1 = self.calculate_point(coords, point_1_atoms, symmetry_1)
-        p2 = self.calculate_point(coords, point_2_atoms, symmetry_2)
-        p3 = self.calculate_point(coords, point_3_atoms, symmetry_3)
-        p4 = self.calculate_point(coords, point_4_atoms, symmetry_4)
+        point_1_list = self._normalise_atom_names(point_1_atoms)
+        point_2_list = self._normalise_atom_names(point_2_atoms)
+        point_3_list = self._normalise_atom_names(point_3_atoms)
+        point_4_list = self._normalise_atom_names(point_4_atoms)
+
+        p1 = self.calculate_point(
+            coords, point_1_list, symmetry_1, centroid_round_dp
+        )
+        p2 = self.calculate_point(
+            coords, point_2_list, symmetry_2, centroid_round_dp
+        )
+        p3 = self.calculate_point(
+            coords, point_3_list, symmetry_3, centroid_round_dp
+        )
+        p4 = self.calculate_point(
+            coords, point_4_list, symmetry_4, centroid_round_dp
+        )
 
         if p1 is None or p2 is None or p3 is None or p4 is None:
             return 0.0
@@ -268,10 +299,23 @@ class Centroids:
         c4 = self._fractional_to_cartesian(p4)
 
         try:
-            return torsion_between_points(c1, c2, c3, c4)
+            torsion_value = torsion_between_points(c1, c2, c3, c4)
         except ValueError as error:
             logging.warning(__name__ + f" : {error}")
             return 0.0
+
+        has_symmetry = any(
+            item is not None for item in [symmetry_1, symmetry_2, symmetry_3, symmetry_4]
+        )
+        has_centroid_point = any(
+            len(item) > 1
+            for item in [point_1_list, point_2_list, point_3_list, point_4_list]
+        )
+
+        if has_symmetry and has_centroid_point and abs(torsion_value) < 90.0:
+            return torsion_value - 180.0 if torsion_value > 0.0 else torsion_value + 180.0
+
+        return torsion_value
 
     def point_plane_distance(
         self,
@@ -280,10 +324,13 @@ class Centroids:
         plane_atoms: "str | list[str] | tuple | set | np.ndarray",
         point_symmetry: str = None,
         plane_symmetry: str = None,
+        centroid_round_dp: int = None,
     ) -> float:
         """Calculates absolute distance from a point to a best-fit plane."""
 
-        point_frac = self.calculate_point(coords, point_atoms, point_symmetry)
+        point_frac = self.calculate_point(
+            coords, point_atoms, point_symmetry, centroid_round_dp
+        )
         if point_frac is None:
             return 0.0
 
@@ -336,9 +383,11 @@ class Centroids:
         lst_name: str,
         structure_number: int,
         results_path: str,
+        distance_definitions: "list[dict]" = None,
         angle_definitions: "list[dict]" = None,
         torsion_definitions: "list[dict]" = None,
         plane_distance_definitions: "list[dict]" = None,
+        mercury_output: bool = False,
     ) -> None:
         """Calculates configured point-geometry values and appends CSV outputs."""
 
@@ -353,9 +402,38 @@ class Centroids:
         data = self.lst_reader.read(lst_name)
         coords = self.lst_reader.extract_atom_coordinates(data)
 
+        distance_values = {}
+        mercury_distance_values = {}
         angle_values = {}
+        mercury_angle_values = {}
         torsion_values = {}
+        mercury_torsion_values = {}
         plane_distance_values = {}
+        mercury_plane_distance_values = {}
+
+        for index, definition in enumerate(distance_definitions or []):
+            if not isinstance(definition, dict):
+                continue
+            label = definition.get("label", f"Distance_{index + 1}")
+            distance_values[label] = self.point_distance(
+                coords,
+                definition.get("point_1_atoms", []),
+                definition.get("point_2_atoms", []),
+                definition.get("point_1_symmetry") or None,
+                definition.get("point_2_symmetry") or None,
+            )
+            if mercury_output and any(
+                self._point_uses_centroid(definition.get(key, []))
+                for key in ["point_1_atoms", "point_2_atoms"]
+            ):
+                mercury_distance_values[label] = self.point_distance(
+                    coords,
+                    definition.get("point_1_atoms", []),
+                    definition.get("point_2_atoms", []),
+                    definition.get("point_1_symmetry") or None,
+                    definition.get("point_2_symmetry") or None,
+                    centroid_round_dp=3,
+                )
 
         for index, definition in enumerate(angle_definitions or []):
             if not isinstance(definition, dict):
@@ -370,6 +448,20 @@ class Centroids:
                 definition.get("point_2_symmetry") or None,
                 definition.get("point_3_symmetry") or None,
             )
+            if mercury_output and any(
+                self._point_uses_centroid(definition.get(key, []))
+                for key in ["point_1_atoms", "point_2_atoms", "point_3_atoms"]
+            ):
+                mercury_angle_values[label] = self.point_angle(
+                    coords,
+                    definition.get("point_1_atoms", []),
+                    definition.get("point_2_atoms", []),
+                    definition.get("point_3_atoms", []),
+                    definition.get("point_1_symmetry") or None,
+                    definition.get("point_2_symmetry") or None,
+                    definition.get("point_3_symmetry") or None,
+                    centroid_round_dp=3,
+                )
 
         for index, definition in enumerate(torsion_definitions or []):
             if not isinstance(definition, dict):
@@ -386,6 +478,27 @@ class Centroids:
                 definition.get("point_3_symmetry") or None,
                 definition.get("point_4_symmetry") or None,
             )
+            if mercury_output and any(
+                self._point_uses_centroid(definition.get(key, []))
+                for key in [
+                    "point_1_atoms",
+                    "point_2_atoms",
+                    "point_3_atoms",
+                    "point_4_atoms",
+                ]
+            ):
+                mercury_torsion_values[label] = self.point_torsion(
+                    coords,
+                    definition.get("point_1_atoms", []),
+                    definition.get("point_2_atoms", []),
+                    definition.get("point_3_atoms", []),
+                    definition.get("point_4_atoms", []),
+                    definition.get("point_1_symmetry") or None,
+                    definition.get("point_2_symmetry") or None,
+                    definition.get("point_3_symmetry") or None,
+                    definition.get("point_4_symmetry") or None,
+                    centroid_round_dp=3,
+                )
 
         for index, definition in enumerate(plane_distance_definitions or []):
             if not isinstance(definition, dict):
@@ -398,22 +511,67 @@ class Centroids:
                 definition.get("point_symmetry") or None,
                 definition.get("plane_symmetry") or None,
             )
+            if mercury_output and self._point_uses_centroid(
+                definition.get("point_atoms", [])
+            ):
+                mercury_plane_distance_values[label] = self.point_plane_distance(
+                    coords,
+                    definition.get("point_atoms", []),
+                    definition.get("plane_atoms", []),
+                    definition.get("point_symmetry") or None,
+                    definition.get("plane_symmetry") or None,
+                    centroid_round_dp=3,
+                )
 
+        self._append_measurements_csv(
+            "point_geometry_distances.csv",
+            structure_number,
+            distance_values,
+            results_path,
+        )
+        if mercury_output:
+            self._append_measurements_csv(
+                "point_geometry_distances_mercury.csv",
+                structure_number,
+                mercury_distance_values,
+                results_path,
+            )
         self._append_measurements_csv(
             "point_geometry_angles.csv", structure_number, angle_values, results_path
         )
+        if mercury_output:
+            self._append_measurements_csv(
+                "point_geometry_angles_mercury.csv",
+                structure_number,
+                mercury_angle_values,
+                results_path,
+            )
         self._append_measurements_csv(
             "point_geometry_torsions.csv",
             structure_number,
             torsion_values,
             results_path,
         )
+        if mercury_output:
+            self._append_measurements_csv(
+                "point_geometry_torsions_mercury.csv",
+                structure_number,
+                mercury_torsion_values,
+                results_path,
+            )
         self._append_measurements_csv(
             "point_geometry_plane_distances.csv",
             structure_number,
             plane_distance_values,
             results_path,
         )
+        if mercury_output:
+            self._append_measurements_csv(
+                "point_geometry_plane_distances_mercury.csv",
+                structure_number,
+                mercury_plane_distance_values,
+                results_path,
+            )
 
     def centroid_distance(
         self,

@@ -285,6 +285,7 @@ def yaml_extraction(heading: str) -> dict:
         "varying_parameter_values",
         "atom_list",
         "bond_list",
+        "point_geometry_distances",
         "point_geometry_angles",
         "point_geometry_torsions",
         "point_geometry_plane_distances",
@@ -300,6 +301,7 @@ def yaml_extraction(heading: str) -> dict:
         "bond_data",
         "hbond_data",
         "torsion_data",
+        "mercury_output",
     ]
 
     for item in list_of_params:
@@ -316,6 +318,52 @@ def yaml_extraction(heading: str) -> dict:
                 "_diffrn_measured_fraction_theta_full",
                 "_diffrn_ambient_temperature",
                 "_refine_ls_R_factor_gt",
+            ]
+        elif item == "point_geometry_distances":
+            yaml_dict[item] = [
+                {
+                    "label": 0,
+                    "point_1_atoms": 0,
+                    "point_2_atoms": 0,
+                    "point_1_symmetry": 0,
+                    "point_2_symmetry": 0,
+                }
+            ]
+        elif item == "point_geometry_angles":
+            yaml_dict[item] = [
+                {
+                    "label": 0,
+                    "point_1_atoms": 0,
+                    "point_2_atoms": 0,
+                    "point_3_atoms": 0,
+                    "point_1_symmetry": 0,
+                    "point_2_symmetry": 0,
+                    "point_3_symmetry": 0,
+                }
+            ]
+        elif item == "point_geometry_torsions":
+            yaml_dict[item] = [
+                {
+                    "label": 0,
+                    "point_1_atoms": 0,
+                    "point_2_atoms": 0,
+                    "point_3_atoms": 0,
+                    "point_4_atoms": 0,
+                    "point_1_symmetry": 0,
+                    "point_2_symmetry": 0,
+                    "point_3_symmetry": 0,
+                    "point_4_symmetry": 0,
+                }
+            ]
+        elif item == "point_geometry_plane_distances":
+            yaml_dict[item] = [
+                {
+                    "label": 0,
+                    "point_atoms": 0,
+                    "plane_atoms": 0,
+                    "point_symmetry": 0,
+                    "plane_symmetry": 0,
+                }
             ]
         elif item == "reference_plane" or item == "starting_coordinates":
             yaml_dict[item] = [0, 0, 0]
@@ -429,6 +477,31 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
                 cfg["cif_parameters"].append(cfg["varying_cif_parameter"])
 
     return flag, cfg
+
+
+def _point_geometry_definition_complete(definition: dict, required_keys: list) -> bool:
+    """Checks that a point-geometry definition contains non-placeholder values."""
+
+    if not isinstance(definition, dict):
+        return False
+
+    for key in required_keys:
+        value = definition.get(key)
+        if value is None:
+            return False
+
+        if isinstance(value, str):
+            if value.strip() == "" or value.strip() == "0":
+                return False
+        elif isinstance(value, (list, tuple, set)):
+            if len(value) == 0:
+                return False
+            if all(str(item).strip() in ["", "0"] for item in value):
+                return False
+        elif value == 0:
+            return False
+
+    return True
 
 
 @click.group()
@@ -3478,12 +3551,18 @@ def pipeline_centroids(dependencies, files, configure, run):
         )
         click.echo(" - for inter-plane angle, each .lst must contain two MPLA commands")
         click.echo("\nThis parent folder can be located anywhere ")
+        click.echo(
+            "Results will be written to a numbered folder inside Centroid_Analysis within this parent folder"
+        )
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
         click.echo(
             " - experiment_location: full path to the parent folder containing a series of folders with .lst files inside"
+        )
+        click.echo(
+            " - output: results will be written to a numbered folder inside Centroid_Analysis in the experiment_location folder"
         )
         click.echo(
             " - centroid_1_atoms: list of atom labels for the first centroid group"
@@ -3516,16 +3595,19 @@ def pipeline_centroids(dependencies, files, configure, run):
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
             multi_centroid = Centroids_Pipeline()
+            results_dir = multi_centroid.create_numbered_results_directory(
+                cfg["experiment_location"], "Centroid_Analysis"
+            )
             multi_centroid.centroid_distance_analysis(
                 cfg["experiment_location"],
                 cfg["centroid_1_atoms"],
                 cfg["centroid_2_atoms"],
-                cfg["experiment_location"],
+                results_dir,
                 symmetry_1=cfg.get("centroid_1_symmetry") or None,
                 symmetry_2=cfg.get("centroid_2_symmetry") or None,
             )
 
-            copy_logs(cfg["experiment_location"])
+            copy_logs(results_dir)
 
         output_message()
 
@@ -3538,7 +3620,7 @@ def pipeline_centroids(dependencies, files, configure, run):
 
 @click.command(
     "module-point-geometry",
-    short_help="calculate angles/torsions/point-plane distances from one .lst",
+    short_help="calculate point (atom/centroid) distances/angles/torsions/plane distances",
 )
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -3562,6 +3644,9 @@ def module_point_geometry(dependencies, files, configure, run):
             " - lst_file_location: enter the full path to your lst file for analysis"
         )
         click.echo(
+            " - point_geometry_distances: list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry"
+        )
+        click.echo(
             " - point_geometry_angles: list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry"
         )
         click.echo(
@@ -3569,6 +3654,9 @@ def module_point_geometry(dependencies, files, configure, run):
         )
         click.echo(
             " - point_geometry_plane_distances: list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry"
+        )
+        click.echo(
+            " - mercury_output: set to true to also write Mercury-style companion outputs using 3 dp rounded centroid coordinates"
         )
 
         fields = yaml_extraction("module-point-geometry")
@@ -3588,19 +3676,60 @@ def module_point_geometry(dependencies, files, configure, run):
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
+            distance_defs = cfg.get("point_geometry_distances") or []
             angle_defs = cfg.get("point_geometry_angles") or []
             torsion_defs = cfg.get("point_geometry_torsions") or []
             plane_defs = cfg.get("point_geometry_plane_distances") or []
 
+            valid_distance_defs = [
+                item
+                for item in distance_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms"]
+                )
+            ]
+            valid_angle_defs = [
+                item
+                for item in angle_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms", "point_3_atoms"]
+                )
+            ]
+            valid_torsion_defs = [
+                item
+                for item in torsion_defs
+                if _point_geometry_definition_complete(
+                    item,
+                    [
+                        "point_1_atoms",
+                        "point_2_atoms",
+                        "point_3_atoms",
+                        "point_4_atoms",
+                    ],
+                )
+            ]
+            valid_plane_defs = [
+                item
+                for item in plane_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_atoms", "plane_atoms"]
+                )
+            ]
+
             valid_defs = [
                 item
-                for item in angle_defs + torsion_defs + plane_defs
+                for item in (
+                    valid_distance_defs
+                    + valid_angle_defs
+                    + valid_torsion_defs
+                    + valid_plane_defs
+                )
                 if isinstance(item, dict)
             ]
 
             if len(valid_defs) == 0:
                 click.echo(
-                    "No valid point geometry definitions found. Configure at least one angle/torsion/point-plane entry."
+                    "No valid point geometry definitions found. Fill in at least one angle/torsion/point-plane entry in conf.yaml."
                 )
                 output_message()
                 return
@@ -3611,9 +3740,11 @@ def module_point_geometry(dependencies, files, configure, run):
                 cfg["lst_file_location"],
                 1,
                 results_dir,
-                angle_defs,
-                torsion_defs,
-                plane_defs,
+                valid_distance_defs,
+                valid_angle_defs,
+                valid_torsion_defs,
+                valid_plane_defs,
+                mercury_output=cfg.get("mercury_output", False),
             )
 
             copy_logs(results_dir)
@@ -3629,7 +3760,7 @@ def module_point_geometry(dependencies, files, configure, run):
 
 @click.command(
     "pipeline-point-geometry",
-    short_help="calculate point geometry for multiple datasets",
+    short_help="calculate point (atom/centroid) distances/angles/torsions/plane distances",
 )
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -3647,12 +3778,21 @@ def pipeline_point_geometry(dependencies, files, configure, run):
             " - a series of .lst files in separate folders contained in a single parent folder"
         )
         click.echo("\nThis parent folder can be located anywhere ")
+        click.echo(
+            "Results will be written to a numbered folder inside Geometry_Analysis within this parent folder"
+        )
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
         click.echo("Descriptions are listed below:")
         click.echo(
             " - experiment_location: full path to the parent folder containing a series of folders with .lst files inside"
+        )
+        click.echo(
+            " - output: results will be written to a numbered folder inside Geometry_Analysis in the experiment_location folder"
+        )
+        click.echo(
+            " - point_geometry_distances: list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry"
         )
         click.echo(
             " - point_geometry_angles: list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry"
@@ -3662,6 +3802,9 @@ def pipeline_point_geometry(dependencies, files, configure, run):
         )
         click.echo(
             " - point_geometry_plane_distances: list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry"
+        )
+        click.echo(
+            " - mercury_output: set to true to also write Mercury-style companion outputs using 3 dp rounded centroid coordinates"
         )
 
         fields = yaml_extraction("pipeline-point-geometry")
@@ -3681,33 +3824,79 @@ def pipeline_point_geometry(dependencies, files, configure, run):
         else:
             click.echo("READY TO RUN SCRIPT!\n")
             reset_logs()
+            distance_defs = cfg.get("point_geometry_distances") or []
             angle_defs = cfg.get("point_geometry_angles") or []
             torsion_defs = cfg.get("point_geometry_torsions") or []
             plane_defs = cfg.get("point_geometry_plane_distances") or []
 
+            valid_distance_defs = [
+                item
+                for item in distance_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms"]
+                )
+            ]
+            valid_angle_defs = [
+                item
+                for item in angle_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms", "point_3_atoms"]
+                )
+            ]
+            valid_torsion_defs = [
+                item
+                for item in torsion_defs
+                if _point_geometry_definition_complete(
+                    item,
+                    [
+                        "point_1_atoms",
+                        "point_2_atoms",
+                        "point_3_atoms",
+                        "point_4_atoms",
+                    ],
+                )
+            ]
+            valid_plane_defs = [
+                item
+                for item in plane_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_atoms", "plane_atoms"]
+                )
+            ]
+
             valid_defs = [
                 item
-                for item in angle_defs + torsion_defs + plane_defs
+                for item in (
+                    valid_distance_defs
+                    + valid_angle_defs
+                    + valid_torsion_defs
+                    + valid_plane_defs
+                )
                 if isinstance(item, dict)
             ]
 
             if len(valid_defs) == 0:
                 click.echo(
-                    "No valid point geometry definitions found. Configure at least one angle/torsion/point-plane entry."
+                    "No valid point geometry definitions found. Fill in at least one angle/torsion/point-plane entry in conf.yaml."
                 )
                 output_message()
                 return
 
             multi_geometry = Centroids_Pipeline()
+            results_dir = multi_geometry.create_numbered_results_directory(
+                cfg["experiment_location"], "Geometry_Analysis"
+            )
             multi_geometry.point_geometry_analysis(
                 cfg["experiment_location"],
-                cfg["experiment_location"],
-                angle_defs,
-                torsion_defs,
-                plane_defs,
+                results_dir,
+                valid_distance_defs,
+                valid_angle_defs,
+                valid_torsion_defs,
+                valid_plane_defs,
+                mercury_output=cfg.get("mercury_output", False),
             )
 
-            copy_logs(cfg["experiment_location"])
+            copy_logs(results_dir)
 
         output_message()
 
@@ -4916,8 +5105,6 @@ else:
     cli.add_command(pipeline_xprep)
     cli.add_command(pipeline_xprep_transform)
     cli.add_command(pipeline_rotation_planes)
-    cli.add_command(module_centroids)
-    cli.add_command(pipeline_centroids)
     cli.add_command(module_point_geometry)
     cli.add_command(pipeline_point_geometry)
     cli.add_command(pipeline_position_analysis)

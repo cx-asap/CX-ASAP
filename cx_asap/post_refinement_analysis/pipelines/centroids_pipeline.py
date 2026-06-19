@@ -13,6 +13,7 @@
 from system_files.utils import Config, Directory_Browse, Grapher
 from post_refinement_analysis.modules.centroids import Centroids
 import os
+import pathlib
 import pandas as pd
 import logging
 
@@ -38,6 +39,28 @@ class Centroids_Pipeline:
         self.sys = config.sys
         self.conf_path = config.conf_path
         self.sys_path = config.sys_path
+
+    def create_numbered_results_directory(
+        self, base_directory: str, folder_name: str
+    ) -> pathlib.Path:
+        """Creates a numbered results directory inside base_directory/folder_name."""
+
+        base_path = pathlib.Path(base_directory)
+        results_root = base_path / folder_name
+        results_root.mkdir(exist_ok=True)
+
+        existing_numbers = []
+        for item in results_root.iterdir():
+            if item.is_dir():
+                try:
+                    existing_numbers.append(int(item.name))
+                except ValueError:
+                    continue
+
+        next_number = max(existing_numbers) + 1 if existing_numbers else 1
+        results_path = results_root / str(next_number)
+        results_path.mkdir()
+        return results_path
 
     def centroid_distance_analysis(
         self,
@@ -115,13 +138,16 @@ class Centroids_Pipeline:
         self,
         working_directory: str,
         results_directory: str,
+        distance_definitions: "list[dict]" = None,
         angle_definitions: "list[dict]" = None,
         torsion_definitions: "list[dict]" = None,
         plane_distance_definitions: "list[dict]" = None,
+        mercury_output: bool = False,
     ) -> None:
         """Calculates point-based geometry values across multiple .lst files.
 
         Supported metrics are:
+                    - 2-point distances
           - 3-point angles
           - 4-point torsions
           - point-to-plane distances
@@ -131,6 +157,7 @@ class Centroids_Pipeline:
             "Running point geometry analysis with "
             f"working_directory={working_directory}, "
             f"results_directory={results_directory}, "
+            f"distance_definitions={len(distance_definitions or [])}, "
             f"angle_definitions={len(angle_definitions or [])}, "
             f"torsion_definitions={len(torsion_definitions or [])}, "
             f"plane_distance_definitions={len(plane_distance_definitions or [])}"
@@ -146,9 +173,11 @@ class Centroids_Pipeline:
                 tree.item_file,
                 index + 1,
                 results_directory,
+                distance_definitions,
                 angle_definitions,
                 torsion_definitions,
                 plane_distance_definitions,
+                mercury_output=mercury_output,
             )
             processed_structures += 1
             tree.exit_directory()
@@ -156,31 +185,68 @@ class Centroids_Pipeline:
         os.chdir(results_directory)
 
         self._graph_point_geometry_csv(
+            "point_geometry_distances.csv",
+            "Point Geometry Distances",
+            r"Distance ($\AA$)",
+            "point_geometry_distances.png",
+        )
+        if mercury_output:
+            self._graph_point_geometry_csv(
+                "point_geometry_distances_mercury.csv",
+                "Point Geometry Distances (Mercury)",
+                r"Distance ($\AA$)",
+                "point_geometry_distances_mercury.png",
+            )
+        self._graph_point_geometry_csv(
             "point_geometry_angles.csv",
             "Point Geometry Angles",
             "Angle($^\\circ$)",
             "point_geometry_angles.png",
         )
+        if mercury_output:
+            self._graph_point_geometry_csv(
+                "point_geometry_angles_mercury.csv",
+                "Point Geometry Angles (Mercury)",
+                "Angle($^\\circ$)",
+                "point_geometry_angles_mercury.png",
+            )
         self._graph_point_geometry_csv(
             "point_geometry_torsions.csv",
             "Point Geometry Torsions",
             "Angle($^\\circ$)",
             "point_geometry_torsions.png",
         )
+        if mercury_output:
+            self._graph_point_geometry_csv(
+                "point_geometry_torsions_mercury.csv",
+                "Point Geometry Torsions (Mercury)",
+                "Angle($^\\circ$)",
+                "point_geometry_torsions_mercury.png",
+            )
         self._graph_point_geometry_csv(
             "point_geometry_plane_distances.csv",
             "Point to Plane Distances",
             r"Distance ($\AA$)",
             "point_geometry_plane_distances.png",
         )
+        if mercury_output:
+            self._graph_point_geometry_csv(
+                "point_geometry_plane_distances_mercury.csv",
+                "Point to Plane Distances (Mercury)",
+                r"Distance ($\AA$)",
+                "point_geometry_plane_distances_mercury.png",
+            )
 
         logging.info(
             "Point geometry analysis finished with "
             f"processed_structures={processed_structures}, "
+            f"distances_csv={os.path.exists('point_geometry_distances.csv')}, "
             f"angles_csv={os.path.exists('point_geometry_angles.csv')}, "
             f"torsions_csv={os.path.exists('point_geometry_torsions.csv')}, "
             "plane_distances_csv="
-            f"{os.path.exists('point_geometry_plane_distances.csv')}"
+            f"{os.path.exists('point_geometry_plane_distances.csv')}, "
+            "mercury_output="
+            f"{mercury_output}"
         )
 
     def _graph_point_geometry_csv(
