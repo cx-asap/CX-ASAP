@@ -66,6 +66,11 @@ pipeline-variable-position:
   - sepmin
   - mapping_step_size
   - total_angle
+  - calculate_centroid_distance
+  - centroid_1_atoms
+  - centroid_2_atoms
+  - centroid_1_symmetry
+  - centroid_2_symmetry
 
 pipeline-general:
   - experiment_location
@@ -305,6 +310,21 @@ module-cif-read:
 module-rotation-planes:
   - reference_plane
   - lst_file_location
+  - calculate_interplane_angle
+
+module-centroids:
+  - lst_file_location
+  - centroid_1_atoms
+  - centroid_2_atoms
+  - centroid_1_symmetry
+  - centroid_2_symmetry
+
+pipeline-centroids:
+  - experiment_location
+  - centroid_1_atoms
+  - centroid_2_atoms
+  - centroid_1_symmetry
+  - centroid_2_symmetry
 
 module-structural-analysis:
   - atoms_for_analysis
@@ -316,6 +336,7 @@ module-structural-analysis:
 pipeline-rotation-planes:
   - reference_plane
   - experiment_location
+  - calculate_interplane_angle
 
 pipeline-variable-analysis:
   - cif_parameters
@@ -347,6 +368,11 @@ pipeline-position-analysis:
   - signal_pixel
   - sepmin
   - mapping_step_size
+  - calculate_centroid_distance
+  - centroid_1_atoms
+  - centroid_2_atoms
+  - centroid_1_symmetry
+  - centroid_2_symmetry
 
 pipeline-temperature-analysis:
   - cif_parameters

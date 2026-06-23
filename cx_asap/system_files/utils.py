@@ -1579,30 +1579,50 @@ class Cell_Import:
 
         self.cfg, self.sys = self.config.yaml_reload(self.test_mode)
 
-    def ref_edit(self, ins: str, MPLA_atoms: str) -> None:
+    def ref_edit(
+        self, ins: str, MPLA_atoms: "str | list[str] | list[list[str]]"
+    ) -> None:
         """Edits the reference .ins/.res file to put the MPLA
 
-        command in with the user defined atoms
+        command in with the user defined atoms.
+
+        MPLA_atoms can be:
+          - a space-separated string (single plane), e.g. "Cu1 O1 O2"
+          - a flat list of atom labels (single plane), e.g. ["Cu1", "O1", "O2"]
+          - a list of space-separated strings (multiple planes), e.g. ["Cu1 O1", "C3 C4"]
+          - a list of lists (multiple planes), e.g. [["Cu1", "O1"], ["C3", "C4"]]
+          - or a list of "-" separated stings (multiple planes): e.g. 
+          "- Cu1 O1 O2
+            - C3 C4 C5"
 
         Args:
             ins (str): full path to the .ins/.res file
-            MPLA_atoms (str): list of atoms for MPLA command
+            MPLA_atoms (str | list[str] | list[list[str]]):
+                atom labels in any of the above forms
         """
+
+        # Normalise to list of lists
+        if isinstance(MPLA_atoms, str):
+            planes = [MPLA_atoms.split()]
+        elif MPLA_atoms and isinstance(MPLA_atoms[0], str):
+            planes = [
+                item.split() if isinstance(item, str) else item for item in MPLA_atoms
+            ]
+        else:
+            planes = MPLA_atoms
 
         with open(ins, "rt") as ins_file:
             content = ins_file.readlines()
 
-        flag = False
+        flag = any("MPLA" in line for line in content)
 
         with open(ins, "w") as ins_file:
-            for line in content:
-                if "MPLA" in line:
-                    flag = True
-            if flag == False:
+            if not flag:
                 for line in content:
                     if "PLAN" in line:
                         ins_file.write(line)
-                        ins_file.write("MPLA " + MPLA_atoms + "\n")
+                        for plane in planes:
+                            ins_file.write("MPLA " + " ".join(plane) + "\n")
                         ins_file.write("CONF\n")
                     else:
                         ins_file.write(line)

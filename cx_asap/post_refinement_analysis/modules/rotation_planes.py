@@ -10,11 +10,11 @@
 
 # ----------Required Modules----------#
 
-from unittest import result
 from system_files.utils import Nice_YAML_Dumper, Config
+from system_files.crystal_math import orthonorm_matrix
+from post_refinement_analysis.modules.lst_read import LST_Read
 import pathlib
 import os
-import math
 import pandas as pd
 import logging
 import numpy as np
@@ -51,6 +51,8 @@ class Rotation:
         self.sys = config.sys
         self.conf_path = config.conf_path
         self.sys_path = config.sys_path
+
+        self.lst_reader = LST_Read(self.test_mode)
 
     def configure(self, ref_plane: list) -> None:
         """Checks that the user has input a valid reference plane
@@ -105,23 +107,18 @@ class Rotation:
         else:
             self.bad_flag = True
 
-    def calculate_planes(self, data: str, ref_plane: list, ref_values: list) -> float:
-        """Finds the results from the MPLA command in the .lst file (plane) and converts this into a list of values (vals) and then stores this in plane_data
-
-        Converts plane_data into fractional coordinates using the unit cell from the above function
-
-        Calculates the angle between it and the reference plane
-
-        Note that the requires a number of calculations to be peformed on the unit cell. Some of these are planned to be moved to the unit cell class in the future.
-
-        The unit cell class may then also be moved to the system_files folder.
+    def calculate_planes(self, data: list, ref_plane: list, ref_values: list) -> list:
+        """Calculates the angle between the reference plane and every MPLA plane
+        found in the .lst file.
 
         Args:
-            data (str): .lst file with MPLA info as a string
-            ref_plane (lst): the reference plane for comparison
+            data (list): lines of the .lst file
+            ref_plane (list): reference crystallographic plane as [h, k, l]
+            ref_values (list): unit cell parameters [a, b, c, alpha, beta, gamma]
 
         Returns:
-            angle (float): the resulting angle from the calculations
+            angles (list): angle in degrees between the reference plane and each
+                           MPLA plane in order; empty list if no planes found
         """
 
         if ref_values:
@@ -130,142 +127,62 @@ class Rotation:
         if ref_plane:
             self.ref_plane = ref_plane
 
-        index = 3
-        flag = 0
+        plane_normals = self.lst_reader.extract_plane_normals(data)
 
-        angle = 0
-        # extract plane from lst and store in plane variable
-        for line in data:
-            if "Least-squares planes" in line:
-                plane = data[index]
-                flag = 1
-            index += 1
+        if not plane_normals:
+            logging.warning(__name__ + " : No MPLA planes found in .lst file")
+            return []
 
-        plane_data = []
-        index = 0
-        # extract coefficients from the plane string and append to data list
-        if flag == 1:
-            # remove parentheses and contents
-            s = re.sub(r"\([^)]*\)", "", plane)
-            # remove =
-            s = s.replace("=", " ")
-            # attach signs to numbers separated by spaces
-            s = re.sub(r"([+-])\s+(\d)", r"\1\2", s)
-            vals = re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", s)
-            # append to data keeping - but removing +
-            for item in vals:
-                if item.startswith("+"):
-                    item = item[1:]
-                if item.startswith("-"):
-                    plane_data.append(f"-{item[1:]}")
-                else:
-                    plane_data.append(item)
+        M = orthonorm_matrix(self.ref_values)
+        M_star = np.linalg.inv(M)
 
-            # calculate G the metric matrix
-            alpha = np.radians(self.ref_values[3])
-            beta = np.radians(self.ref_values[4])
-            gamma = np.radians(self.ref_values[5])
-            a = self.ref_values[0]
-            b = self.ref_values[1]
-            c = self.ref_values[2]
-            G = np.zeros((3, 3))
-            G[0, 0] = a**2
-            G[0, 1] = a * b * np.cos(gamma)
-            G[0, 2] = a * c * np.cos(beta)
-            G[1, 0] = a * b * np.cos(gamma)
-            G[1, 1] = b**2
-            G[1, 2] = b * c * np.cos(alpha)
-            G[2, 0] = a * c * np.cos(beta)
-            G[2, 1] = b * c * np.cos(alpha)
-            G[2, 2] = c**2
-            detG = np.linalg.det(G)
-            V = np.sqrt(detG)
-            V_star = 1 / V
-            a_star = b * c * np.sin(alpha) * V_star
-            b_star = a * c * np.sin(beta) * V_star
-            c_star = a * b * np.sin(gamma) * V_star
-            alpha_star = np.arccos(
-                (np.cos(beta) * np.cos(gamma) - np.cos(alpha))
-                / (np.sin(beta) * np.sin(gamma))
-            )
-            beta_star = np.arccos(
-                (np.cos(alpha) * np.cos(gamma) - np.cos(beta))
-                / (np.sin(alpha) * np.sin(gamma))
-            )
-            gamma_star = np.arccos(
-                (np.cos(alpha) * np.cos(beta) - np.cos(gamma))
-                / (np.sin(alpha) * np.sin(beta))
-            )
-            # cacluates the orthonormalisation matrix M
-            M = np.zeros((3, 3))
-            M[0, 0] = a
-            M[0, 1] = b * np.cos(gamma)
-            M[0, 2] = c * np.cos(beta)
-            M[1, 0] = 0
-            M[1, 1] = b * np.sin(gamma)
-            M[1, 2] = -c * np.sin(beta) * np.cos(alpha_star)
-            M[2, 0] = 0
-            M[2, 1] = 0
-            M[2, 2] = c * np.sin(beta) * np.sin(alpha_star)
-            M_star = np.linalg.inv(M)
+        # Convert reference plane vector to fractional space
+        ref = np.array(
+            [[self.ref_plane[0], self.ref_plane[1], self.ref_plane[2]]], dtype=float
+        )
+        ref_frac = np.dot(ref, M_star)
 
-            ## converst the molecule plane into fractional coordinates
-            cart_coords = np.zeros((1, 3))
-            cart_coords[0, 0] = float(plane_data[0])
-            cart_coords[0, 1] = float(plane_data[1])
-            cart_coords[0, 2] = float(plane_data[2])
-            frac_coords = np.dot(cart_coords, M_star)
-            molecule_plane = frac_coords
+        angles = []
+        for normal in plane_normals:
+            cart = np.array([[normal[0], normal[1], normal[2]]], dtype=float)
+            frac = np.dot(cart, M_star)
 
-            # convert the reference plane into fractional coordinates
-
-            ref_plane = np.zeros((1, 3))
-            ref_plane[0, 0] = self.ref_plane[0]
-            ref_plane[0, 1] = self.ref_plane[1]
-            ref_plane[0, 2] = self.ref_plane[2]
-            ref_frac_coords = np.dot(ref_plane, M_star)
-
-            ## Calculates the difference in angle between atom plane and reference plane
-
-            angle = np.degrees(
-                np.arccos(
-                    np.dot(molecule_plane, ref_frac_coords.T)
-                    / (
-                        np.dot(
-                            (np.linalg.norm(molecule_plane)),
-                            (np.linalg.norm(ref_frac_coords)),
-                        )
+            angle = float(
+                np.degrees(
+                    np.arccos(
+                        np.dot(frac, ref_frac.T)
+                        / (np.linalg.norm(frac) * np.linalg.norm(ref_frac))
                     )
-                )
+                )[0][0]
             )
-            # there is probably a better way to do this it seems to be required for the plotting function in pipeline to get a single value without double square brackets around it!
-            angle = angle[0]
-            angle = angle[0]
             if 180 - angle < 90:
                 angle = 180 - angle
-        return angle
+            angles.append(angle)
 
-    def find_planes(self, file_name: str) -> float:
-        """Imports .lst file and then runs the function to calculate the rotation angle
+        return angles
+
+    def find_planes(self, file_name: str) -> list:
+        """Reads a .lst file and calculates rotation angles for all MPLA planes.
 
         Args:
             file_name (str): full path to the .lst file with MPLA info
 
         Returns:
-            angle (float): the resulting angle from the calculations
+            angles (list): angle in degrees between the reference plane and each
+                           MPLA plane in order
         """
-
-        # Finds the calculation in the .lst file
 
         with open(file_name, "rt") as lst_file:
             data = lst_file.readlines()
 
-        angle = self.calculate_planes(data, self.ref_plane, self.ref_values)
-
-        return angle
+        return self.calculate_planes(data, self.ref_plane, self.ref_values)
 
     def analysis(self, lst_name: str, structure_number: int, results_path: str) -> None:
-        """Runs the previous functions and also outputs the results to a .csv file
+        """Calculates rotation angles for all MPLA planes and appends to a .csv.
+
+        One column per MPLA plane is written, named 'MPLA_1_Rotation_Angle',
+        'MPLA_2_Rotation_Angle', etc.
+
         Args:
             lst_name (str): full path to the .lst file for analysis
             structure_number (int): gives the structure number as independent variable
@@ -280,16 +197,89 @@ class Rotation:
             self.grab_cell(pathlib.Path(lst_name))
 
             if self.bad_flag == False:
-                rot_angle = self.find_planes(pathlib.Path(lst_name))
-                self.df = pd.DataFrame(
-                    {"Structure": [structure_number], "Rotation Angle": [rot_angle]}
-                )
+                rot_angles = self.find_planes(pathlib.Path(lst_name))
+                if not rot_angles:
+                    logging.warning(
+                        __name__
+                        + " : No rotation angles calculated for "
+                        + str(lst_name)
+                    )
+                    return
+
+                row = {"Structure": [structure_number]}
+                for i, angle in enumerate(rot_angles, start=1):
+                    row[f"MPLA_{i}_Rotation_Angle"] = [angle]
+
+                self.df = pd.DataFrame(row)
                 os.chdir(results_path)
                 try:
                     old_data = pd.read_csv("rotation_angles.csv")
                 except FileNotFoundError:
                     self.df.to_csv("rotation_angles.csv", index=None)
                 else:
-                    # new_df = old_data.append(self.df)
                     new_df = pd.concat([old_data, self.df])
                     new_df.to_csv("rotation_angles.csv", index=None)
+
+    def find_interplane_angle(self, file_name: str) -> "float | None":
+        """Reads a .lst file and extracts the SHELXL inter-plane angle.
+
+        Requires two MPLA commands in the .ins file so that SHELXL reports
+        'Angle to previous plane' in the Least-squares planes section.
+
+        Args:
+            file_name (str): full path to the .lst file
+
+        Returns:
+            angle (float): angle in degrees between the two planes,
+                           or None if not found
+        """
+
+        with open(file_name, "rt") as f:
+            for line in f:
+                if "Angle to previous plane" in line:
+                    match = re.search(r"=\s*([\d.]+)", line)
+                    if match:
+                        return float(match.group(1))
+        return None
+
+    def analyse_interplane_angle(
+        self, lst_name: str, structure_number: int, results_path: str
+    ) -> None:
+        """Extracts the SHELXL inter-plane angle and appends it to a .csv file.
+
+        Requires two MPLA commands in the .ins file.
+
+        Args:
+            lst_name (str): full path to the .lst file with two MPLA commands
+            structure_number (int): structure number as the independent variable
+            results_path (str): full path to the output results directory
+        """
+
+        if lst_name == "":
+            logging.info(__name__ + " : Refinement failed, no mean planes to analyse")
+            return
+
+        angle = self.find_interplane_angle(pathlib.Path(lst_name))
+        if angle is None:
+            logging.warning(
+                __name__
+                + " : Could not find 'Angle to previous plane' in "
+                + str(lst_name)
+                + ". This usually means fewer than two MPLA commands were present; "
+                + "using fallback value 0.0."
+            )
+            angle = 0.0
+
+        df = pd.DataFrame(
+            {"Structure": [structure_number], "Interplane Angle": [angle]}
+        )
+
+        os.chdir(results_path)
+        try:
+            old_data = pd.read_csv("interplane_angles.csv")
+        except FileNotFoundError:
+            df.to_csv("interplane_angles.csv", index=None)
+        else:
+            new_df = pd.concat([old_data, df])
+            new_df.to_csv("interplane_angles.csv", index=None)
+

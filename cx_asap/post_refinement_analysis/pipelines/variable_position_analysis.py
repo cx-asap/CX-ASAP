@@ -239,7 +239,7 @@ class VP_Analysis_Pipeline:
                 separated_by_cif_bond.append(bond_df[condition])
 
             for index, item in enumerate(separated_by_cif_bond):
-                item.to_csv("Bond_Lengths_" + discrete_cif_names_bond[index] + ".csv")
+                item.to_csv("Bond_Lengths_" + discrete_cif_names_bond[index] + ".csv", index=None)
 
                 geometry.import_and_analyse(
                     "Bond_Lengths_" + discrete_cif_names_bond[index] + ".csv",
@@ -262,7 +262,7 @@ class VP_Analysis_Pipeline:
                 separated_by_cif_angle.append(angle_df[condition])
 
             for index, item in enumerate(separated_by_cif_angle):
-                item.to_csv("Bond_Angles_" + discrete_cif_names_angle[index] + ".csv")
+                item.to_csv("Bond_Angles_" + discrete_cif_names_angle[index] + ".csv", index=None)
 
                 geometry.import_and_analyse(
                     False,
@@ -286,7 +286,8 @@ class VP_Analysis_Pipeline:
 
             for index, item in enumerate(separated_by_cif_torsion):
                 item.to_csv(
-                    "Bond_Torsions_" + discrete_cif_names_torsion[index] + ".csv"
+                    "Bond_Torsions_" + discrete_cif_names_torsion[index] + ".csv",
+                    index=None,
                 )
 
                 geometry.import_and_analyse(
@@ -309,7 +310,7 @@ class VP_Analysis_Pipeline:
                 separated_by_cif_hbond.append(hbond_df[condition])
 
             for index, item in enumerate(separated_by_cif_hbond):
-                item.to_csv("HBond_details_" + discrete_cif_names_hbond[index] + ".csv")
+                item.to_csv("HBond_details_" + discrete_cif_names_hbond[index] + ".csv", index=None)
 
                 geometry.import_and_analyse(
                     False,
