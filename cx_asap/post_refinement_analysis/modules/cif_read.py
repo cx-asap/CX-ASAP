@@ -22,6 +22,8 @@ from typing import Tuple
 
 
 class CIF_Read:
+    """Reads CIF inputs and extracts tabular data for downstream analysis."""
+
     def __init__(self, test_mode: bool = False) -> None:
         """Initialises the class
 
@@ -54,6 +56,7 @@ class CIF_Read:
         self.successful_positions = []
         self.results = {}
         self.errors = {}
+        self._cif_cache = {}
 
         # Sets these to 0 to reset from previous runs
 
@@ -81,6 +84,7 @@ class CIF_Read:
         # Pulls parameters from the configuration file as necessary, and uses it to set up an empty dataframe
 
         self.search_items = search_items
+        self._cif_cache = {}
 
         for item in self.search_items:
             self.results[item] = []
@@ -92,6 +96,83 @@ class CIF_Read:
         self.hbond_data = pd.DataFrame()
         self.temp_df = pd.DataFrame()
         self.adp_data = pd.DataFrame()
+
+    def _read_cif(self, cif_file: pathlib.Path):
+        """Reads a CIF once per file path during a run and reuses it."""
+
+        cache_key = str(pathlib.Path(cif_file).resolve())
+        if cache_key not in self._cif_cache:
+            self._cif_cache[cache_key] = ReadCif(str(pathlib.Path(cif_file)))
+        return self._cif_cache[cache_key]
+
+    @staticmethod
+    def _read_cif_files(location: str) -> list:
+        """Collects CIF files from a file path, root, or one level below.
+
+        Root-first policy:
+        - If root contains CIFs, use only those.
+        - If root has no CIFs, scan one level down while skipping likely
+          CX-ASAP results folders.
+        """
+
+        base = pathlib.Path(location)
+
+        if base.is_file():
+            if base.suffix.lower() == ".cif":
+                return [base.resolve()]
+            return []
+
+        if not base.exists() or not base.is_dir():
+            return []
+
+        def _is_results_folder(folder_name: str) -> bool:
+            name = folder_name.strip().lower()
+            blocked_exact = {
+                "cif_analysis",
+                "geometry_analysis",
+                "refinement_statistics",
+                "results",
+                "analysis",
+                "ref",
+                "failed_autoprocessing",
+            }
+            if name in blocked_exact:
+                return True
+            if name.startswith("_"):
+                return True
+            return False
+
+        root_files = [item for item in sorted(base.glob("*.cif")) if item.is_file()]
+
+        files = []
+        for child in sorted(base.iterdir()):
+            if not child.is_dir():
+                continue
+            if _is_results_folder(child.name):
+                continue
+            files.extend(
+                [item for item in sorted(child.glob("*.cif")) if item.is_file()]
+            )
+
+        if len(root_files) > 0:
+            if len(files) > 0:
+                logging.warning(
+                    __name__
+                    + " : Mixed CIF layout detected (root-level and nested CIFs). "
+                    + "Using root-level CIFs only; nested CIFs will be ignored."
+                )
+            return [item.resolve() for item in root_files]
+
+        seen = set()
+        unique_files = []
+        for item in files:
+            key = str(item.resolve())
+            if key in seen:
+                continue
+            seen.add(key)
+            unique_files.append(item)
+
+        return unique_files
 
     def parameter_tidy(self, raw: str, item: str) -> None:
         """This tidies the output from the CIF and separates
@@ -181,14 +262,15 @@ class CIF_Read:
 
         # This function searches through all of the folders in the current working directory for a cif file
 
-        self.tree_browse = Directory_Browse(pathlib.Path(location), self.test_mode)
-
-        self.tree_browse.enter_directory_multiple(pathlib.Path(location), ".cif")
+        cif_files = self._read_cif_files(location)
+        if len(cif_files) == 0:
+            logging.warning(__name__ + " : No .cif files found in " + str(location))
+            return
 
         # For all found cif_files:
 
-        for index, item in enumerate(self.tree_browse.item_files):
-            cif_file = self.tree_browse.item_files[index].absolute()
+        for cif_file in cif_files:
+            cif_obj = self._read_cif(cif_file)
 
             # extracts the desired cif parameters, as well as how many structures per cif and which positions were successful
 
@@ -196,12 +278,20 @@ class CIF_Read:
                 temp_data,
                 structures_in_cif_tmp,
                 successful_positions_tmp,
-            ) = self.data_harvest(cif_file, self.search_items, varying_parameter)
+            ) = self.data_harvest(
+                cif_file, self.search_items, varying_parameter, cif_obj=cif_obj
+            )
 
             self.structural_analysis(
-                cif_file, bonds, angles, torsions, hbonds, varying_parameter
+                cif_file,
+                bonds,
+                angles,
+                torsions,
+                hbonds,
+                varying_parameter,
+                cif_obj=cif_obj,
             )
-            self.adp_analysis(cif_file, adp)
+            self.adp_analysis(cif_file, adp, varying_parameter, cif_obj=cif_obj)
 
             # self.data = self.data.append(temp_data)
             self.data = pd.concat([self.data, temp_data])
@@ -229,6 +319,7 @@ class CIF_Read:
         torsions: bool = False,
         hbonds: bool = False,
         varying_parameter: str = "_diffrn_ambient_temperature",
+        cif_obj=None,
     ) -> None:
         """Extracts structural information from CIF
 
@@ -281,7 +372,9 @@ class CIF_Read:
                 temp_data_bonds,
                 structures_in_cif_tmp_bonds,
                 successful_positions_tmp_bonds,
-            ) = self.data_harvest(cif_file, bond_paras, varying_parameter)
+            ) = self.data_harvest(
+                cif_file, bond_paras, varying_parameter, cif_obj=cif_obj
+            )
             # self.bond_data = self.bond_data.append(temp_data_bonds)
             self.bond_data = pd.concat([self.bond_data, temp_data_bonds])
         if angles == True:
@@ -289,7 +382,9 @@ class CIF_Read:
                 temp_data_angles,
                 structures_in_cif_tmp_angles,
                 successful_positions_tmp_angles,
-            ) = self.data_harvest(cif_file, angle_paras, varying_parameter)
+            ) = self.data_harvest(
+                cif_file, angle_paras, varying_parameter, cif_obj=cif_obj
+            )
             # self.angle_data = self.angle_data.append(temp_data_angles)
             self.angle_data = pd.concat([self.angle_data, temp_data_angles])
         if torsions == True:
@@ -297,7 +392,9 @@ class CIF_Read:
                 temp_data_torsions,
                 structures_in_cif_tmp_torsions,
                 successful_positions_tmp_torsions,
-            ) = self.data_harvest(cif_file, torsion_paras, varying_parameter)
+            ) = self.data_harvest(
+                cif_file, torsion_paras, varying_parameter, cif_obj=cif_obj
+            )
             # self.torsion_data = self.torsion_data.append(temp_data_torsions)
             self.torsion_data = pd.concat([self.torsion_data, temp_data_torsions])
         if hbonds == True:
@@ -305,7 +402,9 @@ class CIF_Read:
                 temp_data_hbonds,
                 structures_in_cif_tmp_hbonds,
                 successful_positions_tmp_hbonds,
-            ) = self.data_harvest(cif_file, hbond_paras, varying_parameter)
+            ) = self.data_harvest(
+                cif_file, hbond_paras, varying_parameter, cif_obj=cif_obj
+            )
             # self.hbond_data = self.hbond_data.append(temp_data_hbonds)
             self.hbond_data = pd.concat([self.hbond_data, temp_data_hbonds])
 
@@ -314,6 +413,7 @@ class CIF_Read:
         cif_file: str,
         adp: bool = False,
         varying_parameter: str = "_diffrn_ambient_temperature",
+        cif_obj=None,
     ) -> None:
         """Extracts ADP information from CIF
 
@@ -337,7 +437,9 @@ class CIF_Read:
                 temp_data_adps,
                 structures_in_cif_tmp_adps,
                 successful_positions_tmp_adps,
-            ) = self.data_harvest(cif_file, adps, varying_parameter)
+            ) = self.data_harvest(
+                cif_file, adps, varying_parameter, cif_obj=cif_obj
+            )
             # self.adp_data = self.adp_data.append(temp_data_adps)
             self.adp_data = pd.concat([self.adp_data, temp_data_adps])
 
@@ -346,6 +448,7 @@ class CIF_Read:
         cif_file: str,
         search_items: list,
         varying_parameter: str = "_diffrn_ambient_temperature",
+        cif_obj=None,
     ) -> Tuple["pd.DataFrame", int, list]:
         """Extracts all other desired parameters from CIF
 
@@ -373,7 +476,7 @@ class CIF_Read:
 
         # Use of the PyCifRW library for easy parsing of CIF Files
 
-        cif = ReadCif(cif_file.name)
+        cif = cif_obj if cif_obj is not None else self._read_cif(pathlib.Path(cif_file))
 
         # Identifies datablocks within the CIF File
 
@@ -396,9 +499,14 @@ class CIF_Read:
             self.cif_list = []
             structure_analysis_counter[item] = []
 
-            for experiment in self.data_blocks:
+            for block_index, experiment in enumerate(self.data_blocks):
                 try:
-                    raw = cif[experiment][item]
+                    if item == "Data_Block":
+                        raw = str(experiment)
+                    elif item == "Structure":
+                        raw = block_index + 1
+                    else:
+                        raw = cif[experiment][item]
                 except:
                     logging.critical("Failed to find " + item + " in " + cif_file.stem)
                     print("Critical Failure - see error log for details")
@@ -442,21 +550,65 @@ class CIF_Read:
                     self.results[item] += [numbers_to_multiply[index]] * i
                     self.errors[item] += [errors_to_multiply[index]] * i
 
-        self.temp_df["CIF_File"] = self.cif_list
+        # Build a robust per-datablock repeat profile from all harvested parameters.
+        counters = list(structure_analysis_counter.values())
+        target_counter = []
+        if len(counters) != 0:
+            n_blocks = len(counters[0])
+            for block_index in range(n_blocks):
+                target_counter.append(
+                    max(counter_list[block_index] for counter_list in counters)
+                )
+
+        target_len = len(self.cif_list)
+        if len(target_counter) != 0:
+            target_len = max(target_len, sum(target_counter))
+        for para in search_items:
+            target_len = max(target_len, len(self.results[para]))
+
+        def _expand_or_pad(values: list, target: int, counts: list) -> list:
+            if len(values) == target:
+                return values
+
+            if len(values) == len(counts):
+                expanded = []
+                for idx, count in enumerate(counts):
+                    expanded += [values[idx]] * count
+                if len(expanded) == target:
+                    return expanded
+
+            if len(values) == 1 and target > 1:
+                return values * target
+
+            if len(values) < target:
+                return values + [None] * (target - len(values))
+
+            return values[:target]
+
+        self.temp_df = pd.DataFrame(index=range(target_len))
+
+        if target_len == len(self.cif_list):
+            self.temp_df["CIF_File"] = self.cif_list
+            self.temp_df["Data_Block"] = list(self.data_blocks)
+        else:
+            expanded_cif = []
+            expanded_blocks = []
+            block_names = list(self.data_blocks)
+            if len(target_counter) != 0:
+                for index, count in enumerate(target_counter):
+                    expanded_cif += [self.cif_list[index]] * count
+                    expanded_blocks += [block_names[index]] * count
+
+            expanded_cif = _expand_or_pad(expanded_cif, target_len, target_counter)
+            expanded_blocks = _expand_or_pad(expanded_blocks, target_len, target_counter)
+            self.temp_df["CIF_File"] = expanded_cif
+            self.temp_df["Data_Block"] = expanded_blocks
 
         for para in search_items:
-            if len(self.results[para]) != len(self.cif_list):
-                self.temp_df = pd.DataFrame()
-
-        for para in search_items:
-            self.temp_df[para] = self.results[para]
-            self.temp_df[para + "_error"] = self.errors[para]
-
-        if len(self.temp_df) != len(self.cif_list):
-            (
-                self.temp_df["CIF_File"],
-                self.temp_df["Data_Block"],
-            ) = self.generate_cif_list(self.temp_df, test_val)
+            values = _expand_or_pad(self.results[para], target_len, target_counter)
+            errors = _expand_or_pad(self.errors[para], target_len, target_counter)
+            self.temp_df[para] = values
+            self.temp_df[para + "_error"] = errors
 
         return self.temp_df, number_of_structures, self.data_blocks
 

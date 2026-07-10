@@ -11,7 +11,11 @@
 # ----------Required Modules----------#
 
 from system_files.utils import Nice_YAML_Dumper, Config
-from system_files.crystal_math import orthonorm_matrix
+from system_files.crystal_math import (
+    cartesian_plane_normal_to_fractional,
+    angle_between_vectors,
+    reciprocal_orthonorm_matrix,
+)
 from post_refinement_analysis.modules.lst_read import LST_Read
 import pathlib
 import os
@@ -133,30 +137,13 @@ class Rotation:
             logging.warning(__name__ + " : No MPLA planes found in .lst file")
             return []
 
-        M = orthonorm_matrix(self.ref_values)
-        M_star = np.linalg.inv(M)
-
-        # Convert reference plane vector to fractional space
-        ref = np.array(
-            [[self.ref_plane[0], self.ref_plane[1], self.ref_plane[2]]], dtype=float
-        )
-        ref_frac = np.dot(ref, M_star)
+        M_star = reciprocal_orthonorm_matrix(self.ref_values)
+        ref_frac = np.dot(np.array(self.ref_plane, dtype=float), M_star)
 
         angles = []
         for normal in plane_normals:
-            cart = np.array([[normal[0], normal[1], normal[2]]], dtype=float)
-            frac = np.dot(cart, M_star)
-
-            angle = float(
-                np.degrees(
-                    np.arccos(
-                        np.dot(frac, ref_frac.T)
-                        / (np.linalg.norm(frac) * np.linalg.norm(ref_frac))
-                    )
-                )[0][0]
-            )
-            if 180 - angle < 90:
-                angle = 180 - angle
+            frac = cartesian_plane_normal_to_fractional(normal, self.ref_values)
+            angle = angle_between_vectors(frac, ref_frac, fold_to_acute=True)
             angles.append(angle)
 
         return angles

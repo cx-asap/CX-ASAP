@@ -261,27 +261,9 @@ class Structural_Analysis:
         important_df = pd.DataFrame()
 
         if df.empty == False:
-            # Separates out important atoms by looking for them in any column and merging into one dataframe
-
-            for item in atoms_for_analysis:
-                temp_df = df[df.eq(item).any(axis=1)]
-                important_df = pd.concat([important_df, temp_df], axis=0)
-
-            # Need to make a new column of the indices - the above code will give you double ups if both atoms in a bond are "important"
-
-            # When concatanating the dataframes, it keeps the indicies of the original dataframes
-
-            # Meaning... doubleup indices AND out of order indices
-
-            # Both are bad, so make a new column of the indicies, use it to drop duplicates, and then resets the index of the important dataframe
-
-            important_df["index_2"] = list(important_df.index)
-
-            important_df = important_df.drop_duplicates(subset=["index_2"])
-
-            important_df = important_df.drop(["index_2"], axis=1)
-
-            important_df = important_df.reset_index(drop=True)
+            # One-pass mask is equivalent to the previous per-atom concat/deduplicate flow.
+            important_mask = df.isin(atoms_for_analysis).any(axis=1)
+            important_df = df[important_mask].copy().reset_index(drop=True)
 
             # Making symmetry equivalent bonds (ie same atom 1 and atom 2) distinguishable
 
@@ -316,39 +298,12 @@ class Structural_Analysis:
                 logging.info("Something went weird.")
 
             dup = important_df.duplicated(["Joined", varying_parameter], keep=False)
-
-            # The below function counts the number of each group of duplicates
-
-            list_dup = important_df.pivot_table(
-                columns=["Joined", varying_parameter], aggfunc="size"
-            ).to_dict()
-
-            counter = 0
-
-            new_column = []
-
-            # This appends a suffix to each duplicated bond in the joined column based on how many there are
-
-            for j, i in enumerate(dup):
-                bond = important_df["Joined"][j]
-
-                # NOTE HERE VARIABLE 'TEMPERATURE' CAN BE ANY PARAMETER BUT I DIDN'T WANT TO CHANGE WHOLE CODE
-
-                temperature = important_df[varying_parameter][j]
-
-                if i == True:
-                    temp = important_df["Joined"][j]
-                    new_column.append(important_df["Joined"][j] + "_" + str(counter))
-                    counter += 1
-                else:
-                    new_column.append(important_df["Joined"][j])
-                try:
-                    if counter == list_dup[(bond, temperature)]:
-                        counter = 0
-                except UnboundLocalError:
-                    pass
-
-            important_df["Joined"] = new_column
+            dup_order = important_df.groupby(["Joined", varying_parameter]).cumcount()
+            important_df.loc[dup, "Joined"] = (
+                important_df.loc[dup, "Joined"]
+                + "_"
+                + dup_order[dup].astype(str)
+            )
 
             important_df.to_csv(prefix + "_Important_" + file_name, index=None)
 
@@ -384,7 +339,7 @@ class Structural_Analysis:
             os.chdir(folder_name)
 
             for item in discrete_atoms:
-                separated_df = df[df.eq(item).any(axis=1)]
+                separated_df = df[df["Joined"] == item]
                 separated_df.to_csv(
                     structure_type + "_" + str(item) + ".csv", index=None
                 )
@@ -418,19 +373,17 @@ class Structural_Analysis:
                 if flexible == True:
                     x_data.append(list(g["number"]))
                     x_unit = "Structure number"
-                x_data.append(list(g[varying_parameter]))
-                if column_names[-4] == "_diffrn_ambient_temperature":
-                    x_unit = "Temperature (K)"
-                elif (
-                    flexible == False
-                    and column_names[-4] != "_diffrn_ambient_temperature"
-                ):
-                    x_unit = varying_parameter
+                else:
+                    x_data.append(list(g[varying_parameter]))
+                    if column_names[-4] == "_diffrn_ambient_temperature":
+                        x_unit = "Temperature (K)"
+                    else:
+                        x_unit = varying_parameter
 
             if structure_type == "Hbonds":
                 try:
                     graph.single_scatter_graph(
-                        x_data[0],
+                        x_data,
                         da_data,
                         x_unit,
                         r"D$\cdots$A Distance ($\AA$)",
@@ -445,7 +398,7 @@ class Structural_Analysis:
 
                 try:
                     graph.single_scatter_graph(
-                        x_data[0],
+                        x_data,
                         angle_data,
                         x_unit,
                         "D-H$\\cdots$A Angle ($^\\circ$)",
@@ -460,7 +413,7 @@ class Structural_Analysis:
             else:
                 try:
                     graph.single_scatter_graph(
-                        x_data[0],
+                        x_data,
                         y_data,
                         x_unit,
                         y_unit,

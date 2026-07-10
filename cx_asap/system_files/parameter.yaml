@@ -327,6 +327,28 @@ module-point-geometry:
   - point_geometry_plane_distances
   - mercury_output
 
+module-cif-analysis:
+  - folder_containing_cifs
+  - cif_parameters
+  - atoms_for_analysis
+  - varying_cif_parameter
+  - reference_unit_cell
+  - structural_analysis_bonds
+  - structural_analysis_angles
+  - structural_analysis_torsions
+  - structural_analysis_hbonds
+  - ADP_analysis
+  - point_geometry_distances
+  - point_geometry_angles
+  - point_geometry_torsions
+  - point_geometry_plane_distances
+  - mercury_output
+  - rotation_reference_plane
+  - rotation_plane_definitions
+  - mean_plane_definitions
+  - calculate_interplane_angle
+  - lst_file_location
+
 pipeline-centroids:
   - experiment_location
   - centroid_1_atoms
@@ -341,6 +363,29 @@ pipeline-point-geometry:
   - point_geometry_torsions
   - point_geometry_plane_distances
   - mercury_output
+
+pipeline-cif-analysis:
+  - experiment_location
+  - cif_input_mode
+  - precombine_cifs
+  - cif_parameters
+  - atoms_for_analysis
+  - varying_cif_parameter
+  - reference_unit_cell
+  - structural_analysis_bonds
+  - structural_analysis_angles
+  - structural_analysis_torsions
+  - structural_analysis_hbonds
+  - ADP_analysis
+  - point_geometry_distances
+  - point_geometry_angles
+  - point_geometry_torsions
+  - point_geometry_plane_distances
+  - mercury_output
+  - rotation_reference_plane
+  - rotation_plane_definitions
+  - mean_plane_definitions
+  - calculate_interplane_angle
 
 module-structural-analysis:
   - atoms_for_analysis
