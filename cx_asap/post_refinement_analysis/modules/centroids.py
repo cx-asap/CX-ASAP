@@ -109,6 +109,7 @@ class Centroids:
         """Gets transformed fractional coordinates for each requested atom."""
 
         atom_names = self._normalise_atom_names(atom_names)
+        symmetry = self._normalise_symmetry(symmetry)
         R, t = parse_symm_op(symmetry) if symmetry else (None, None)
 
         positions = []
@@ -125,6 +126,24 @@ class Centroids:
                 )
 
         return positions
+
+    @staticmethod
+    def _normalise_symmetry(symmetry: "str | list | None") -> "str | None":
+        """Converts placeholder symmetry values to None and normalises strings."""
+
+        if isinstance(symmetry, list):
+            if len(symmetry) == 0:
+                return None
+            symmetry = symmetry[0]
+
+        if symmetry is None:
+            return None
+
+        value = str(symmetry).strip()
+        if value in ["", "0", ".", "?"]:
+            return None
+
+        return value
 
     def calculate_centroid(
         self,
@@ -304,9 +323,13 @@ class Centroids:
             logging.warning(__name__ + f" : {error}")
             return 0.0
 
-        has_symmetry = any(
-            item is not None for item in [symmetry_1, symmetry_2, symmetry_3, symmetry_4]
-        )
+        symmetry_values = [
+            self._normalise_symmetry(symmetry_1),
+            self._normalise_symmetry(symmetry_2),
+            self._normalise_symmetry(symmetry_3),
+            self._normalise_symmetry(symmetry_4),
+        ]
+        has_symmetry = any(item is not None for item in symmetry_values)
         has_centroid_point = any(
             len(item) > 1
             for item in [point_1_list, point_2_list, point_3_list, point_4_list]
