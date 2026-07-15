@@ -143,6 +143,7 @@ class Configure_Flexible:
         space_group_number: int,
         MPLA_atoms: str,
         total_angle: int,
+        minimum_fraction_of_indexed_spots: float = 0.2,
     ) -> None:
         """Primarily sets up the XDS.INP file for a flexible crystal experiment
 
@@ -155,6 +156,7 @@ class Configure_Flexible:
             MPLA_atoms (str): atoms for MPLA command to be written into reference
                                 .ins/.res file
             total_angle (int): total wedge angle measured in the experiment
+            minimum_fraction_of_indexed_spots (float): minimum fraction of indexed spots threshold for XDS indexing
 
         """
 
@@ -236,7 +238,7 @@ class Configure_Flexible:
                     self.XDS.change(
                         self.sys["XDS_inp_organised"],
                         "MINIMUM_FRACTION_OF_INDEXED_SPOTS",
-                        0.2,
+                        minimum_fraction_of_indexed_spots,
                     )
                     flag1 += 1
                 elif "SEPMIN" in line:
@@ -271,7 +273,11 @@ class Configure_Flexible:
 
         with open(self.sys["XDS_inp_organised"], "a") as in_file:
             if flag1 == 0:
-                in_file.write(" MINIMUM_FRACTION_OF_INDEXED_SPOTS= 0.2\n")
+                in_file.write(
+                    " MINIMUM_FRACTION_OF_INDEXED_SPOTS= "
+                    + str(minimum_fraction_of_indexed_spots)
+                    + "\n"
+                )
             if flag2 == 0:
                 in_file.write(" SEPMIN= 7\n")
             if flag3 == 0:

@@ -64,6 +64,7 @@ pipeline-variable-position:
   - spot_maximum_centroid
   - signal_pixel
   - sepmin
+  - minimum_fraction_of_indexed_spots
   - mapping_step_size
   - total_angle
   - calculate_centroid_distance

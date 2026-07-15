@@ -402,6 +402,8 @@ def yaml_extraction(heading: str) -> dict:
             yaml_dict[item] = 8
         elif item == "tolerance":
             yaml_dict[item] = 0.002
+        elif item == "minimum_fraction_of_indexed_spots":
+            yaml_dict[item] = 0.2
         elif item == "transformation_matrix":
             yaml_dict[item] = "1 0 0 0 1 0 0 0 1"
         elif item == "maximum_cycles":
@@ -1002,6 +1004,9 @@ def pipeline_vp(dependencies, files, configure, run):
             " - signal_pixel: enter the values for signal_pixel as a list for XDS processing"
         )
         click.echo(
+            " - minimum_fraction_of_indexed_spots: enter the minimum fraction of indexed spots threshold for XDS processing"
+        )
+        click.echo(
             " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
         )
         click.echo(
@@ -1067,6 +1072,7 @@ def pipeline_vp(dependencies, files, configure, run):
                 cfg["atoms_for_rotation_analysis"],
                 cfg["instrument_cif_path"],
                 cfg["total_angle"],
+                cfg["minimum_fraction_of_indexed_spots"],
             )
 
             full_vp_analysis.flexible_parameter_loops(
