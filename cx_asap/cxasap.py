@@ -133,9 +133,9 @@ from post_refinement_analysis.modules.cif_read import CIF_Read
 from post_refinement_analysis.modules.rotation_planes import Rotation
 from post_refinement_analysis.modules.structural_analysis import Structural_Analysis
 from post_refinement_analysis.modules.ADP_analysis import ADP_analysis
-from post_refinement_analysis.modules.centroids import Centroids
+from post_refinement_analysis.modules.points import PointGeometryEngine
 from post_refinement_analysis.pipelines.rotation_pipeline import Rotation_Pipeline
-from post_refinement_analysis.pipelines.centroids_pipeline import Centroids_Pipeline
+from post_refinement_analysis.pipelines.points_pipeline import PointsPipeline
 from post_refinement_analysis.pipelines.variable_cif_parameter import (
     Variable_Analysis_Pipeline,
 )
@@ -425,8 +425,8 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
         "beta_gradient",
         "c_gradient",
         "gamma_gradient",
-        "centroid_1_symmetry",
-        "centroid_2_symmetry",
+        "point_group_1_symmetry",
+        "point_group_2_symmetry",
     ]
 
     if heading == "pipeline-AS-Brute-individual":
@@ -983,19 +983,19 @@ def pipeline_vp(dependencies, files, configure, run):
             " - wedge_angles: enter the wedge angles as a list for XDS processing"
         )
         click.echo(
-            " - calculate_centroid_distance: enter True for centroid analysis between two atom-group centroids from the .lst files, otherwise enter False"
+            " - calculate_point_group_distance: enter True for group-center analysis between two atom groups from the .lst files, otherwise enter False"
         )
         click.echo(
-            " - centroid_1_atoms: list of atom labels for the first centroid group (only needed if calculate_centroid_distance is true)"
+            " - point_group_1_atoms: list of atom labels for the first point group (only needed if calculate_point_group_distance is true)"
         )
         click.echo(
-            " - centroid_2_atoms: list of atom labels for the second centroid group (only needed if calculate_centroid_distance is true)"
+            " - point_group_2_atoms: list of atom labels for the second point group (only needed if calculate_point_group_distance is true)"
         )
         click.echo(
-            " - centroid_1_symmetry: optional symmetry operation for centroid 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
+            " - point_group_1_symmetry: optional symmetry operation for point group 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
         )
         click.echo(
-            " - centroid_2_symmetry: optional symmetry operation for centroid 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
+            " - point_group_2_symmetry: optional symmetry operation for point group 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
         )
 
         fields = yaml_extraction("pipeline-variable-position")
@@ -1079,15 +1079,15 @@ def pipeline_vp(dependencies, files, configure, run):
                 cfg["wedge_angles"],
                 cfg["reference_plane"],
             )
-            if cfg.get("calculate_centroid_distance", False):
-                centroid_analysis = Centroids_Pipeline()
-                centroid_analysis.centroid_distance_analysis(
+            if cfg.get("calculate_point_group_distance", False):
+                centroid_analysis = PointsPipeline()
+                centroid_analysis.point_group_distance_analysis(
                     full_vp_analysis.sys["current_results_path"],
-                    cfg["centroid_1_atoms"],
-                    cfg["centroid_2_atoms"],
+                    cfg["point_group_1_atoms"],
+                    cfg["point_group_2_atoms"],
                     full_vp_analysis.sys["current_results_path"],
-                    symmetry_1=cfg.get("centroid_1_symmetry") or None,
-                    symmetry_2=cfg.get("centroid_2_symmetry") or None,
+                    symmetry_1=cfg.get("point_group_1_symmetry") or None,
+                    symmetry_2=cfg.get("point_group_2_symmetry") or None,
                 )
 
             copy_logs(full_vp_analysis.sys["current_results_path"])
@@ -3448,179 +3448,12 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
         click.echo("Please select an option. To view options, add --help")
 
 
-######----- Module Centroids ------#####
-
-
-@click.command(
-    "module-centroids",
-    short_help="calculate centroid distance between two atom groups",
-)
-@click.option("--dependencies", is_flag=True, help="view the software dependencies")
-@click.option("--files", is_flag=True, help="view the required input files")
-@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
-@click.option("--run", is_flag=True, help="run the code!")
-def module_centroids(dependencies, files, configure, run):
-    """For a single dataset, calculate the distance between two atom-group centroids
-    and/or the SHELXL inter-plane angle from a .lst file.
-    """
-    if dependencies:
-        click.echo("\nYou do not require any additional software in your path!\n")
-    elif files:
-        click.echo("\nYou require the below files:")
-        click.echo(" - a .lst file output after refinement in SHELXL")
-        click.echo(" - for inter-plane angle, the .lst must contain two MPLA commands")
-        click.echo("\nThis file can be located anywhere ")
-    elif configure:
-        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
-        click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - lst_file_location: enter the full path to your lst file for analysis"
-        )
-        click.echo(
-            " - centroid_1_atoms: list of atom labels for the first centroid group"
-        )
-        click.echo(
-            " - centroid_2_atoms: list of atom labels for the second centroid group"
-        )
-        click.echo(
-            " - centroid_1_symmetry: optional symmetry operation for centroid 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
-        )
-        click.echo(
-            " - centroid_2_symmetry: optional symmetry operation for centroid 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
-        )
-
-        fields = yaml_extraction("module-centroids")
-        yaml_creation(fields)
-
-    elif run:
-        click.echo("\nChecking to see if experiment configured....\n")
-
-        check, cfg = configuration_check("module-centroids")
-
-        if check == False:
-            click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo("Re-run configuration for description of each parameter\n")
-        else:
-            click.echo("READY TO RUN SCRIPT!\n")
-            reset_logs()
-            results_dir = pathlib.Path(cfg["lst_file_location"]).parent
-            centroid_analysis = Centroids()
-            centroid_analysis.analyse_centroid_distance(
-                cfg["lst_file_location"],
-                1,
-                results_dir,
-                cfg["centroid_1_atoms"],
-                cfg["centroid_2_atoms"],
-                symmetry_1=cfg.get("centroid_1_symmetry") or None,
-                symmetry_2=cfg.get("centroid_2_symmetry") or None,
-            )
-
-            copy_logs(results_dir)
-
-        output_message()
-
-    else:
-        click.echo("Please select an option. To view options, add --help")
-
-
-#####------ Pipeline Centroids -----#######
-
-
-@click.command(
-    "pipeline-centroids",
-    short_help="calculate centroid distances for multiple datasets",
-)
-@click.option("--dependencies", is_flag=True, help="view the software dependencies")
-@click.option("--files", is_flag=True, help="view the required input files")
-@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
-@click.option("--run", is_flag=True, help="run the code!")
-def pipeline_centroids(dependencies, files, configure, run):
-    """For a series of datasets, calculate centroid distances and/or SHELXL
-    inter-plane angles from .lst files across multiple folders.
-    """
-    if dependencies:
-        click.echo("\nYou do not require any additional software in your path!\n")
-    elif files:
-        click.echo("\nYou require the below files:")
-        click.echo(
-            " - a series of .lst files in separate folders contained in a single parent folder"
-        )
-        click.echo(" - for inter-plane angle, each .lst must contain two MPLA commands")
-        click.echo("\nThis parent folder can be located anywhere ")
-        click.echo(
-            "Results will be written to a numbered folder inside Centroid_Analysis within this parent folder"
-        )
-    elif configure:
-        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
-        click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - experiment_location: full path to the parent folder containing a series of folders with .lst files inside"
-        )
-        click.echo(
-            " - output: results will be written to a numbered folder inside Centroid_Analysis in the experiment_location folder"
-        )
-        click.echo(
-            " - centroid_1_atoms: list of atom labels for the first centroid group"
-        )
-        click.echo(
-            " - centroid_2_atoms: list of atom labels for the second centroid group"
-        )
-        click.echo(
-            " - centroid_1_symmetry: optional symmetry operation for centroid 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
-        )
-        click.echo(
-            " - centroid_2_symmetry: optional symmetry operation for centroid 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
-        )
-
-        fields = yaml_extraction("pipeline-centroids")
-        yaml_creation(fields)
-
-    elif run:
-        click.echo("\nChecking to see if experiment configured....\n")
-
-        check, cfg = configuration_check("pipeline-centroids")
-
-        if check == False:
-            click.echo("Make sure you fill in the configuration file!")
-            click.echo(
-                "If you last ran a different code, make sure you reconfigure for the new script!"
-            )
-            click.echo("Re-run configuration for description of each parameter\n")
-        else:
-            click.echo("READY TO RUN SCRIPT!\n")
-            reset_logs()
-            multi_centroid = Centroids_Pipeline()
-            results_dir = multi_centroid.create_numbered_results_directory(
-                cfg["experiment_location"], "Centroid_Analysis"
-            )
-            multi_centroid.centroid_distance_analysis(
-                cfg["experiment_location"],
-                cfg["centroid_1_atoms"],
-                cfg["centroid_2_atoms"],
-                results_dir,
-                symmetry_1=cfg.get("centroid_1_symmetry") or None,
-                symmetry_2=cfg.get("centroid_2_symmetry") or None,
-            )
-
-            copy_logs(results_dir)
-
-        output_message()
-
-    else:
-        click.echo("Please select an option. To view options, add --help")
-
-
 #####------ Module Point Geometry -----#######
 
 
 @click.command(
     "module-point-geometry",
-    short_help="calculate point (atom/centroid) distances/angles/torsions/plane distances",
+    short_help="calculate point (atom/group-center) distances/angles/torsions/plane distances",
 )
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -3656,7 +3489,7 @@ def module_point_geometry(dependencies, files, configure, run):
             " - point_geometry_plane_distances: list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry"
         )
         click.echo(
-            " - mercury_output: set to true to also write Mercury-style companion outputs using 3 dp rounded centroid coordinates"
+            " - mercury_output: set to true to also write Mercury-style companion outputs using 3 dp rounded group-center coordinates"
         )
 
         fields = yaml_extraction("module-point-geometry")
@@ -3735,8 +3568,8 @@ def module_point_geometry(dependencies, files, configure, run):
                 return
 
             results_dir = pathlib.Path(cfg["lst_file_location"]).parent
-            centroid_analysis = Centroids()
-            centroid_analysis.analyse_point_geometry(
+            point_geometry = PointGeometryEngine()
+            point_geometry.analyse_point_geometry(
                 cfg["lst_file_location"],
                 1,
                 results_dir,
@@ -3760,7 +3593,7 @@ def module_point_geometry(dependencies, files, configure, run):
 
 @click.command(
     "pipeline-point-geometry",
-    short_help="calculate point (atom/centroid) distances/angles/torsions/plane distances",
+    short_help="calculate point (atom/group-center) distances/angles/torsions/plane distances",
 )
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -3804,7 +3637,7 @@ def pipeline_point_geometry(dependencies, files, configure, run):
             " - point_geometry_plane_distances: list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry"
         )
         click.echo(
-            " - mercury_output: set to true to also write Mercury-style companion outputs using 3 dp rounded centroid coordinates"
+            " - mercury_output: set to true to also write Mercury-style companion outputs using 3 dp rounded group-center coordinates"
         )
 
         fields = yaml_extraction("pipeline-point-geometry")
@@ -3882,7 +3715,7 @@ def pipeline_point_geometry(dependencies, files, configure, run):
                 output_message()
                 return
 
-            multi_geometry = Centroids_Pipeline()
+            multi_geometry = PointsPipeline()
             results_dir = multi_geometry.create_numbered_results_directory(
                 cfg["experiment_location"], "Geometry_Analysis"
             )
@@ -4109,19 +3942,19 @@ def pipeline_position_analysis(dependencies, files, configure, run):
             " - wedge_angles: enter the wedge angles as a list for XDS processing"
         )
         click.echo(
-            " - calculate_centroid_distance: enter True for centroid analysis between two atom-group centroids from the .lst files, otherwise enter False"
+            " - calculate_point_group_distance: enter True for group-center analysis between two atom groups from the .lst files, otherwise enter False"
         )
         click.echo(
-            " - centroid_1_atoms: list of atom labels for the first centroid group (only needed if calculate_centroid_distance is true)"
+            " - point_group_1_atoms: list of atom labels for the first point group (only needed if calculate_point_group_distance is true)"
         )
         click.echo(
-            " - centroid_2_atoms: list of atom labels for the second centroid group (only needed if calculate_centroid_distance is true)"
+            " - point_group_2_atoms: list of atom labels for the second point group (only needed if calculate_point_group_distance is true)"
         )
         click.echo(
-            " - centroid_1_symmetry: optional symmetry operation for centroid 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
+            " - point_group_1_symmetry: optional symmetry operation for point group 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
         )
         click.echo(
-            " - centroid_2_symmetry: optional symmetry operation for centroid 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
+            " - point_group_2_symmetry: optional symmetry operation for point group 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
         )
 
         fields = yaml_extraction("pipeline-position-analysis")
@@ -4161,15 +3994,15 @@ def pipeline_position_analysis(dependencies, files, configure, run):
                 cfg["structural_analysis_hbonds"],
                 cfg["ADP_analysis"],
             )
-            if cfg.get("calculate_centroid_distance", False):
-                centroid_analysis = Centroids_Pipeline()
-                centroid_analysis.centroid_distance_analysis(
+            if cfg.get("calculate_point_group_distance", False):
+                centroid_analysis = PointsPipeline()
+                centroid_analysis.point_group_distance_analysis(
                     cfg["experiment_location"],
-                    cfg["centroid_1_atoms"],
-                    cfg["centroid_2_atoms"],
+                    cfg["point_group_1_atoms"],
+                    cfg["point_group_2_atoms"],
                     cfg["experiment_location"],
-                    symmetry_1=cfg.get("centroid_1_symmetry") or None,
-                    symmetry_2=cfg.get("centroid_2_symmetry") or None,
+                    symmetry_1=cfg.get("point_group_1_symmetry") or None,
+                    symmetry_2=cfg.get("point_group_2_symmetry") or None,
                 )
 
             copy_logs(cfg["experiment_location"])

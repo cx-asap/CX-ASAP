@@ -18,7 +18,7 @@ from post_refinement_analysis.pipelines.variable_temperature_analysis import (
     VT_Analysis_Pipeline,
 )
 from post_refinement_analysis.pipelines.rotation_pipeline import Rotation_Pipeline
-from post_refinement_analysis.pipelines.centroids_pipeline import Centroids_Pipeline
+from post_refinement_analysis.pipelines.points_pipeline import PointsPipeline
 import yaml
 import os
 import logging
@@ -142,14 +142,14 @@ class VT_Pipeline:
         )
         rotation = Rotation_Pipeline()
         rotation.analysis(location, reference_plane, graph_output_location)
-        centroids = Centroids_Pipeline()
-        centroids.centroid_distance_analysis(
+        centroids = PointsPipeline()
+        centroids.point_group_distance_analysis(
             location,
-            self.cfg["centroid_1_atoms"],
-            self.cfg["centroid_2_atoms"],
+            self.cfg["point_group_1_atoms"],
+            self.cfg["point_group_2_atoms"],
             graph_output_location,
-            symmetry_1=self.cfg.get("centroid_1_symmetry"),
-            symmetry_2=self.cfg.get("centroid_2_symmetry"),
+            symmetry_1=self.cfg.get("point_group_1_symmetry"),
+            symmetry_2=self.cfg.get("point_group_2_symmetry"),
         )
 
     def analyse(
