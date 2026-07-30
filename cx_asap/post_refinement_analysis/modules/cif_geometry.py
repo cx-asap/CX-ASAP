@@ -9,7 +9,8 @@
 ###################################################################################################
 
 from CifFile import ReadCif
-from post_refinement_analysis.modules.centroids import Centroids
+from post_refinement_analysis.modules.cif_read import CIF_Read
+from post_refinement_analysis.modules.points import PointGeometryEngine
 from system_files.crystal_math import (
     fractional_to_cartesian,
     best_fit_plane_normal,
@@ -26,10 +27,10 @@ class CIF_Geometry:
     """Performs symmetry-aware point and plane analysis directly from CIF files."""
 
     def __init__(self, test_mode: bool = False) -> None:
-        """Initialise CIF geometry engine and centroid helper."""
+        """Initialise CIF geometry engine and point-geometry helper."""
 
         self.test_mode = test_mode
-        self.point_engine = Centroids(self.test_mode)
+        self.point_engine = PointGeometryEngine(self.test_mode)
 
     @staticmethod
     def _parse_float(raw) -> float:
@@ -46,72 +47,6 @@ class CIF_Geometry:
             raw_str = raw_str.split("(")[0]
 
         return float(raw_str)
-
-    @staticmethod
-    def _read_cif_files(cif_location: str) -> list:
-        """Discover CIF inputs from a file path or root-first folder layout."""
-
-        base = pathlib.Path(cif_location)
-
-        if base.is_file():
-            if base.suffix.lower() == ".cif":
-                return [base.resolve()]
-            return []
-
-        if not base.exists() or not base.is_dir():
-            return []
-
-        def _is_results_folder(folder_name: str) -> bool:
-            name = folder_name.strip().lower()
-            blocked_exact = {
-                "cif_analysis",
-                "geometry_analysis",
-                "refinement_statistics",
-                "results",
-                "analysis",
-                "ref",
-                "failed_autoprocessing",
-            }
-            if name in blocked_exact:
-                return True
-            if name.startswith("_"):
-                return True
-            return False
-
-        root_files = [item for item in sorted(base.glob("*.cif")) if item.is_file()]
-
-        files = []
-
-        # One folder level down only
-        for child in sorted(base.iterdir()):
-            if not child.is_dir():
-                continue
-            if _is_results_folder(child.name):
-                continue
-            files.extend(
-                [item for item in sorted(child.glob("*.cif")) if item.is_file()]
-            )
-
-        if len(root_files) > 0:
-            if len(files) > 0:
-                logging.warning(
-                    __name__
-                    + " : Mixed CIF layout detected (root-level and nested CIFs). "
-                    + "Using root-level CIFs only; nested CIFs will be ignored."
-                )
-            return [item.resolve() for item in root_files]
-
-        # Deduplicate while preserving deterministic order
-        seen = set()
-        unique_files = []
-        for item in files:
-            key = str(item.resolve())
-            if key in seen:
-                continue
-            seen.add(key)
-            unique_files.append(item)
-
-        return unique_files
 
     def _extract_structure_data(self, block) -> dict:
         """Extract unit-cell and fractional atom coordinates from one CIF block."""
@@ -166,8 +101,10 @@ class CIF_Geometry:
         df.to_csv(output_path, index=None)
 
     @staticmethod
-    def _definition_has_centroid(definition: dict, keys: list, engine: Centroids) -> bool:
-        """Check whether any definition key uses centroid-style atom syntax."""
+    def _definition_uses_mercury_rounding(
+        definition: dict, keys: list, engine: PointGeometryEngine
+    ) -> bool:
+        """Check whether any definition key should also be written in Mercury-rounded form."""
 
         for key in keys:
             if engine._point_uses_centroid(definition.get(key, [])):
@@ -243,8 +180,8 @@ class CIF_Geometry:
 
         For each CIF block, this writes CSV outputs for any configured distance,
         angle, torsion, point-plane, rotation-plane, and optional interplane
-        calculations. Mercury-style rounded-centroid outputs are generated when
-        ``mercury_output`` is enabled and centroid definitions are present.
+        calculations. Mercury-style rounded outputs are generated when
+        ``mercury_output`` is enabled and definitions require companion rounded values.
         """
 
         point_geometry_distances = point_geometry_distances or []
@@ -254,7 +191,7 @@ class CIF_Geometry:
         rotation_plane_definitions = rotation_plane_definitions or []
         mean_plane_definitions = mean_plane_definitions or []
 
-        files = self._read_cif_files(cif_location)
+        files = CIF_Read._read_cif_files(cif_location)
         if len(files) == 0:
             logging.warning(__name__ + " : No .cif files found for CIF geometry analysis")
             return
@@ -325,7 +262,7 @@ class CIF_Geometry:
                         definition.get("point_1_symmetry") or None,
                         definition.get("point_2_symmetry") or None,
                     )
-                    if mercury_output and self._definition_has_centroid(
+                    if mercury_output and self._definition_uses_mercury_rounding(
                         definition,
                         ["point_1_atoms", "point_2_atoms"],
                         self.point_engine,
@@ -352,7 +289,7 @@ class CIF_Geometry:
                         definition.get("point_2_symmetry") or None,
                         definition.get("point_3_symmetry") or None,
                     )
-                    if mercury_output and self._definition_has_centroid(
+                    if mercury_output and self._definition_uses_mercury_rounding(
                         definition,
                         ["point_1_atoms", "point_2_atoms", "point_3_atoms"],
                         self.point_engine,
@@ -383,7 +320,7 @@ class CIF_Geometry:
                         definition.get("point_3_symmetry") or None,
                         definition.get("point_4_symmetry") or None,
                     )
-                    if mercury_output and self._definition_has_centroid(
+                    if mercury_output and self._definition_uses_mercury_rounding(
                         definition,
                         [
                             "point_1_atoms",
@@ -417,7 +354,7 @@ class CIF_Geometry:
                         definition.get("point_symmetry") or None,
                         definition.get("plane_symmetry") or None,
                     )
-                    if mercury_output and self._definition_has_centroid(
+                    if mercury_output and self._definition_uses_mercury_rounding(
                         definition,
                         ["point_atoms"],
                         self.point_engine,
