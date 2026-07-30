@@ -134,9 +134,9 @@ from post_refinement_analysis.modules.rotation_planes import Rotation
 from post_refinement_analysis.modules.structural_analysis import Structural_Analysis
 from post_refinement_analysis.modules.ADP_analysis import ADP_analysis
 from post_refinement_analysis.modules.points import PointGeometryEngine
-from post_refinement_analysis.modules.cif_analysis import CIF_Analysis
 from post_refinement_analysis.pipelines.rotation_pipeline import Rotation_Pipeline
 from post_refinement_analysis.pipelines.points_pipeline import PointsPipeline
+from post_refinement_analysis.modules.cif_analysis import CIF_Analysis
 from post_refinement_analysis.pipelines.cif_analysis_pipeline import CIF_Analysis_Pipeline
 from post_refinement_analysis.pipelines.variable_cif_parameter import (
     Variable_Analysis_Pipeline,
