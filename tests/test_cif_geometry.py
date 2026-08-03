@@ -20,6 +20,7 @@ SYM = "1-x, -y, 1-z"
 RING_ATOMS = ["CU1", "O1", "O2", "C2", "C3", "C4"]
 
 
+@unittest.skipIf(not CIF.exists(), "test data not available")
 class TestCIFGeometryEngine(unittest.TestCase):
     def setUp(self):
         cif = ReadCif(str(CIF))

@@ -13,6 +13,8 @@ from post_refinement_analysis.pipelines.cif_analysis_pipeline import CIF_Analysi
 DATA_DIR = pathlib.Path(__file__).parent.parent / "cx_asap" / "test_data" / "data"
 GOLDEN = DATA_DIR / "CIF_Analysis" / "1"
 
+_DATA_AVAILABLE = (DATA_DIR / "210K" / "210.cif").exists() and GOLDEN.exists()
+
 CIF_PARAMS = [
     "_cell_length_a",
     "_cell_length_b",
@@ -28,6 +30,7 @@ CIF_PARAMS = [
 ]
 
 
+@unittest.skipIf(not _DATA_AVAILABLE, "test data not available")
 class TestCIFAnalysisPipeline(unittest.TestCase):
     def setUp(self):
         self._orig_cwd = os.getcwd()

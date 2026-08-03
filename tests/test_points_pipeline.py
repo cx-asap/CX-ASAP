@@ -14,6 +14,8 @@ DATA_DIR = (
     pathlib.Path(__file__).parent.parent / "cx_asap" / "test_data" / "data"
 )
 
+_LST_AVAILABLE = (DATA_DIR / "210K" / "210.lst").exists()
+
 DIST_DEFS = [
     {
         "label": "Ring_Center_To_C1",
@@ -31,6 +33,7 @@ ANGLE_DEFS = [
 ]
 
 
+@unittest.skipIf(not _LST_AVAILABLE, "test data not available")
 class TestPointsPipeline(unittest.TestCase):
     def setUp(self):
         self._orig_cwd = os.getcwd()

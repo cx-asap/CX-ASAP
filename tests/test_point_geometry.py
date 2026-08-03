@@ -18,6 +18,7 @@ SYM = "1-x, -y, 1-z"
 RING_ATOMS = ["Cu1", "O1", "O2", "C2", "C3", "C4"]
 
 
+@unittest.skipIf(not LST.exists(), "test data not available")
 class TestPointGeometryEngine(unittest.TestCase):
     def setUp(self):
         self.engine = PointGeometryEngine(test_mode=True)
