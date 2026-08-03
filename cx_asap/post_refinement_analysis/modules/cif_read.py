@@ -142,7 +142,10 @@ class CIF_Read:
                 return True
             return False
 
-        root_files = [item for item in sorted(base.glob("*.cif")) if item.is_file()]
+        root_files = [
+            item for item in sorted(base.glob("*.cif"))
+            if item.is_file() and item.name.lower() != "instrument.cif"
+        ]
 
         files = []
         for child in sorted(base.iterdir()):
@@ -151,7 +154,10 @@ class CIF_Read:
             if _is_results_folder(child.name):
                 continue
             files.extend(
-                [item for item in sorted(child.glob("*.cif")) if item.is_file()]
+                [
+                    item for item in sorted(child.glob("*.cif"))
+                    if item.is_file() and item.name.lower() != "instrument.cif"
+                ]
             )
 
         if len(root_files) > 0:

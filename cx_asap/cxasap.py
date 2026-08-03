@@ -1223,8 +1223,8 @@ def pipeline_vp(dependencies, files, configure, run):
                 cfg["reference_plane"],
             )
             if cfg.get("calculate_point_group_distance", False):
-                centroid_analysis = PointsPipeline()
-                centroid_analysis.point_group_distance_analysis(
+                points_pipeline = PointsPipeline()
+                points_pipeline.point_group_distance_analysis(
                     full_vp_analysis.sys["current_results_path"],
                     cfg["point_group_1_atoms"],
                     cfg["point_group_2_atoms"],
@@ -3596,7 +3596,7 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
 
 @click.command(
     "module-point-geometry",
-    short_help="calculate point (atom/centroid) distances/angles/torsions/plane distances",
+    short_help="calculate point/atom-group distances/angles/torsions/plane distances",
 )
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -3711,8 +3711,8 @@ def module_point_geometry(dependencies, files, configure, run):
                 return
 
             results_dir = pathlib.Path(cfg["lst_file_location"]).parent
-            centroid_analysis = PointGeometryEngine()
-            centroid_analysis.analyse_point_geometry(
+            point_engine = PointGeometryEngine()
+            point_engine.analyse_point_geometry(
                 cfg["lst_file_location"],
                 1,
                 results_dir,
@@ -3736,7 +3736,7 @@ def module_point_geometry(dependencies, files, configure, run):
 
 @click.command(
     "pipeline-point-geometry",
-    short_help="calculate point (atom/centroid) distances/angles/torsions/plane distances",
+    short_help="calculate point/atom-group distances/angles/torsions/plane distances",
 )
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -4551,8 +4551,8 @@ def pipeline_position_analysis(dependencies, files, configure, run):
                 cfg["ADP_analysis"],
             )
             if cfg.get("calculate_point_group_distance", False):
-                centroid_analysis = PointsPipeline()
-                centroid_analysis.point_group_distance_analysis(
+                points_pipeline = PointsPipeline()
+                points_pipeline.point_group_distance_analysis(
                     cfg["experiment_location"],
                     cfg["point_group_1_atoms"],
                     cfg["point_group_2_atoms"],
