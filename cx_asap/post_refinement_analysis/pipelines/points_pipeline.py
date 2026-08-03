@@ -68,14 +68,14 @@ class PointsPipeline:
         atom_list_1: list,
         atom_list_2: list,
         results_directory: str,
-        label: str = "Centroid Distance",
+        label: str = "Point Group Distance",
         symmetry_1: str = None,
         symmetry_2: str = None,
     ) -> None:
-        """Calculates centroid-to-centroid distances for a series of .lst files
+        """Calculates point-group-to-point-group distances for a series of .lst files
         in separate folders within a common parent folder.
 
-        Produces a scatter graph of centroid distance vs structure number.
+        Produces a scatter graph of point group distance vs structure number.
 
         Args:
             working_directory (str): full path to the parent folder containing
@@ -84,12 +84,12 @@ class PointsPipeline:
             atom_list_2 (list): atom labels for the second point group
             results_directory (str): full path to the output directory
             label (str): column header for the output csv and graph y-axis
-            symmetry_1 (str): optional symmetry operation string for centroid 1
-            symmetry_2 (str): optional symmetry operation string for centroid 2
+            symmetry_1 (str): optional symmetry operation string for point group 1
+            symmetry_2 (str): optional symmetry operation string for point group 2
         """
 
         logging.info(
-            "Running centroid distance analysis with "
+            "Running point group distance analysis with "
             f"working_directory={working_directory}, "
             f"results_directory={results_directory}, "
             f"atom_list_1={atom_list_1}, "
@@ -98,12 +98,12 @@ class PointsPipeline:
             f"symmetry_2={symmetry_2}"
         )
 
-        centroid = PointGeometryEngine()
+        point_engine = PointGeometryEngine()
         tree = Directory_Browse(working_directory)
 
         for index, item in enumerate(tree.directories):
             tree.enter_directory(item, ".lst")
-            centroid.analyse_point_group_distance(
+            point_engine.analyse_point_group_distance(
                 tree.item_file,
                 index + 1,
                 results_directory,
@@ -163,13 +163,13 @@ class PointsPipeline:
             f"plane_distance_definitions={len(plane_distance_definitions or [])}"
         )
 
-        centroid = PointGeometryEngine()
+        point_engine = PointGeometryEngine()
         tree = Directory_Browse(working_directory)
         processed_structures = 0
 
         for index, item in enumerate(tree.directories):
             tree.enter_directory(item, ".lst")
-            centroid.analyse_point_geometry(
+            point_engine.analyse_point_geometry(
                 tree.item_file,
                 index + 1,
                 results_directory,
