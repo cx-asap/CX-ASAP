@@ -11,6 +11,10 @@
 # ----------Required Modules----------#
 
 from system_files.utils import Nice_YAML_Dumper, Config
+from system_files.crystal_math import (
+    fractional_to_cartesian,
+    reciprocal_orthonorm_matrix,
+)
 import logging
 import numpy as np
 import pathlib
@@ -311,22 +315,14 @@ class Molecule_Reconstruction:
 
         neutral_coordinates = {}
 
-        # The neutral coordinates need to be converted into real space first
-
-        # This is done by multiplying the fractional coordinates by the cell parameters
-
+        # Convert fractional coordinates into Cartesian coordinates using
+        # full unit-cell orthonormalisation (including non-orthogonal angles).
         for item in self.neutral_fractional_coordinates:
             neutral_coordinates[item] = np.array(
-                [
-                    [
-                        self.neutral_fractional_coordinates[item][0]
-                        * self.neutral_cell[0],
-                        self.neutral_fractional_coordinates[item][1]
-                        * self.neutral_cell[1],
-                        self.neutral_fractional_coordinates[item][2]
-                        * self.neutral_cell[2],
-                    ]
-                ]
+                fractional_to_cartesian(
+                    self.neutral_fractional_coordinates[item], self.neutral_cell
+                ),
+                dtype=float,
             )
 
         # Vector subtraction to define the bonds based on the construction order
@@ -408,18 +404,15 @@ class Molecule_Reconstruction:
         self.new_fractional_coordinates = {}
         self.new_fractional_coordinates[self.starting_atom] = self.starting_coordinates
 
-        # First, the internal vectors are converted into fractional coordinates in the new cell
+        # First, convert internal Cartesian vectors into fractional coordinates
+        # in the new cell using the reciprocal orthonormal transform.
+
+        M_star = reciprocal_orthonorm_matrix(self.new_cell)
 
         for item in self.internal_structure:
-            new_molecule[item] = []
-            new_molecule[item].append(
-                self.internal_structure[item][0][0] / self.new_cell[0]
-            )
-            new_molecule[item].append(
-                self.internal_structure[item][0][1] / self.new_cell[1]
-            )
-            new_molecule[item].append(
-                self.internal_structure[item][0][2] / self.new_cell[2]
+            new_molecule[item] = np.dot(
+                np.array(self.internal_structure[item], dtype=float),
+                M_star.T,
             )
 
         # This series of loops reconstructs the molecule based on the order previously determined using vector addition
@@ -436,9 +429,12 @@ class Molecule_Reconstruction:
                             for k in self.atomic_order[str(int(i) + 1)]:
                                 if k in item.split("-"):
                                     self.new_fractional_coordinates[k] = np.add(
-                                        self.new_fractional_coordinates[j],
+                                        np.array(
+                                            self.new_fractional_coordinates[j],
+                                            dtype=float,
+                                        ),
                                         new_molecule[item],
-                                    )
+                                    ).tolist()
 
     def write_res(self, item: int) -> None:
 

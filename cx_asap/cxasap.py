@@ -113,7 +113,7 @@ import time
 import shutil
 from typing import Union, Tuple
 
-from system_files.utils import Generate, File_Sorter
+from system_files.utils import Generate, File_Sorter, format_yaml_error_message
 from system_files.test_installation import Test
 from data_reduction.modules.xprep_intensity_compare import Intensity_Compare
 from data_reduction.modules.XDS_cell_transformation import XDS_Cell_Transformation
@@ -136,6 +136,8 @@ from post_refinement_analysis.modules.ADP_analysis import ADP_analysis
 from post_refinement_analysis.modules.points import PointGeometryEngine
 from post_refinement_analysis.pipelines.rotation_pipeline import Rotation_Pipeline
 from post_refinement_analysis.pipelines.points_pipeline import PointsPipeline
+from post_refinement_analysis.modules.cif_analysis import CIF_Analysis
+from post_refinement_analysis.pipelines.cif_analysis_pipeline import CIF_Analysis_Pipeline
 from post_refinement_analysis.pipelines.variable_cif_parameter import (
     Variable_Analysis_Pipeline,
 )
@@ -289,6 +291,9 @@ def yaml_extraction(heading: str) -> dict:
         "point_geometry_angles",
         "point_geometry_torsions",
         "point_geometry_plane_distances",
+        "rotation_reference_plane",
+        "rotation_plane_definitions",
+        "mean_plane_definitions",
     ]
 
     structure_params = [
@@ -365,6 +370,30 @@ def yaml_extraction(heading: str) -> dict:
                     "plane_symmetry": 0,
                 }
             ]
+        elif item == "rotation_reference_plane":
+            yaml_dict[item] = [0, 0, 0]
+        elif item == "rotation_plane_definitions":
+            yaml_dict[item] = [
+                {
+                    "label": 0,
+                    "plane_atoms": 0,
+                    "plane_symmetry": 0,
+                }
+            ]
+        elif item == "mean_plane_definitions":
+            yaml_dict[item] = [
+                {
+                    "label": 0,
+                    "plane_atoms": 0,
+                    "plane_symmetry": 0,
+                }
+            ]
+        elif item == "cif_input_mode":
+            yaml_dict[item] = "nested"
+        elif item == "precombine_cifs":
+            yaml_dict[item] = False
+        elif item == "varying_cif_parameter":
+            yaml_dict[item] = "_diffrn_ambient_temperature"
         elif item == "reference_plane" or item == "starting_coordinates":
             yaml_dict[item] = [0, 0, 0]
         elif item in list_params:
@@ -373,6 +402,8 @@ def yaml_extraction(heading: str) -> dict:
             yaml_dict[item] = 8
         elif item == "tolerance":
             yaml_dict[item] = 0.002
+        elif item == "minimum_fraction_of_indexed_spots":
+            yaml_dict[item] = 0.2
         elif item == "transformation_matrix":
             yaml_dict[item] = "1 0 0 0 1 0 0 0 1"
         elif item == "maximum_cycles":
@@ -438,9 +469,17 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
         with open(yaml_path, "r") as f:
             try:
                 cfg = yaml.load(f, yaml.FullLoader)
-            except:
-                click.echo("Failed to set up config file. Try reconfiguring")
+            except yaml.YAMLError as error:
+                click.echo(format_yaml_error_message(yaml_path, error))
                 exit()
+
+        # If varying parameter is left blank/zero, fall back to Data_Block.
+        if "varying_cif_parameter" in cfg:
+            varying_value = cfg.get("varying_cif_parameter")
+            if varying_value in [0, None]:
+                cfg["varying_cif_parameter"] = "Data_Block"
+            elif isinstance(varying_value, str) and varying_value.strip() in ["", "0"]:
+                cfg["varying_cif_parameter"] = "Data_Block"
 
         flag = True
 
@@ -965,6 +1004,9 @@ def pipeline_vp(dependencies, files, configure, run):
             " - signal_pixel: enter the values for signal_pixel as a list for XDS processing"
         )
         click.echo(
+            " - minimum_fraction_of_indexed_spots: enter the minimum fraction of indexed spots threshold for XDS processing"
+        )
+        click.echo(
             " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
         )
         click.echo(
@@ -983,7 +1025,7 @@ def pipeline_vp(dependencies, files, configure, run):
             " - wedge_angles: enter the wedge angles as a list for XDS processing"
         )
         click.echo(
-            " - calculate_point_group_distance: enter True for group-center analysis between two atom groups from the .lst files, otherwise enter False"
+            " - calculate_point_group_distance: enter True for point-group analysis between two atom groups from the .lst files, otherwise enter False"
         )
         click.echo(
             " - point_group_1_atoms: list of atom labels for the first point group (only needed if calculate_point_group_distance is true)"
@@ -1030,6 +1072,7 @@ def pipeline_vp(dependencies, files, configure, run):
                 cfg["atoms_for_rotation_analysis"],
                 cfg["instrument_cif_path"],
                 cfg["total_angle"],
+                cfg["minimum_fraction_of_indexed_spots"],
             )
 
             full_vp_analysis.flexible_parameter_loops(
@@ -3453,7 +3496,7 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
 
 @click.command(
     "module-point-geometry",
-    short_help="calculate point (atom/group-center) distances/angles/torsions/plane distances",
+    short_help="calculate point (atom/centroid) distances/angles/torsions/plane distances",
 )
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -3489,7 +3532,7 @@ def module_point_geometry(dependencies, files, configure, run):
             " - point_geometry_plane_distances: list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry"
         )
         click.echo(
-            " - mercury_output: set to true to also write Mercury-style companion outputs using 3 dp rounded group-center coordinates"
+            " - mercury_output: set to true to also write Mercury-style companion outputs using 3 dp rounded centroid coordinates"
         )
 
         fields = yaml_extraction("module-point-geometry")
@@ -3568,8 +3611,8 @@ def module_point_geometry(dependencies, files, configure, run):
                 return
 
             results_dir = pathlib.Path(cfg["lst_file_location"]).parent
-            point_geometry = PointGeometryEngine()
-            point_geometry.analyse_point_geometry(
+            centroid_analysis = PointGeometryEngine()
+            centroid_analysis.analyse_point_geometry(
                 cfg["lst_file_location"],
                 1,
                 results_dir,
@@ -3593,7 +3636,7 @@ def module_point_geometry(dependencies, files, configure, run):
 
 @click.command(
     "pipeline-point-geometry",
-    short_help="calculate point (atom/group-center) distances/angles/torsions/plane distances",
+    short_help="calculate point (atom/centroid) distances/angles/torsions/plane distances",
 )
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
@@ -3637,7 +3680,7 @@ def pipeline_point_geometry(dependencies, files, configure, run):
             " - point_geometry_plane_distances: list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry"
         )
         click.echo(
-            " - mercury_output: set to true to also write Mercury-style companion outputs using 3 dp rounded group-center coordinates"
+            " - mercury_output: set to true to also write Mercury-style companion outputs using 3 dp rounded centroid coordinates"
         )
 
         fields = yaml_extraction("pipeline-point-geometry")
@@ -3730,6 +3773,419 @@ def pipeline_point_geometry(dependencies, files, configure, run):
             )
 
             copy_logs(results_dir)
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+#####------ Module CIF Analysis -----#######
+
+
+@click.command(
+    "module-cif-analysis",
+    short_help="analyse CIF folder with optional point/rotation/ADP/structural outputs",
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def module_cif_analysis(dependencies, files, configure, run):
+    """Runs CIF-based analysis for one folder, with optional point-geometry
+    and rotation-plane calculations directly from CIF atom coordinates.
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - one folder containing one or more .cif files")
+        click.echo(
+            " - optional: one .lst file only if you want legacy MPLA fallback rotation analysis"
+        )
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(
+            " - folder_containing_cifs: full path to the folder containing your .cif files"
+        )
+        click.echo(
+            " - cif_parameters: cif parameters to extract (defaults are usually enough)"
+        )
+        click.echo(
+            " - atoms_for_analysis: atom labels for structural-analysis filtering"
+        )
+        click.echo(
+            " - varying_cif_parameter: cif heading used as x-axis, e.g. _diffrn_ambient_temperature"
+        )
+        click.echo(
+            "   if left blank or set to 0, CX-ASAP falls back to Data_Block"
+        )
+        click.echo(
+            "   examples: _diffrn_ambient_temperature, _diffrn_ambient_pressure"
+        )
+        click.echo(
+            " - reference_unit_cell: optional path to reference .ins for cell-deformation analysis"
+        )
+        click.echo(
+            " - structural_analysis_bonds/angles/torsions/hbonds: true or false"
+        )
+        click.echo(" - ADP_analysis: true or false")
+        click.echo(
+            " - point_geometry_distances: list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry"
+        )
+        click.echo(
+            " - point_geometry_angles: list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry"
+        )
+        click.echo(
+            " - point_geometry_torsions: list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry"
+        )
+        click.echo(
+            " - point_geometry_plane_distances: list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry"
+        )
+        click.echo(
+            " - rotation_reference_plane: optional [h,k,l] reference plane for CIF-native rotation angles"
+        )
+        click.echo(
+            " - rotation_plane_definitions: optional list of planes defined by plane_atoms and optional plane_symmetry"
+        )
+        click.echo(
+            " - mean_plane_definitions: optional list of planes used for mean-plane/interplane analysis (plane_atoms and optional plane_symmetry)"
+        )
+        click.echo(
+            " - calculate_interplane_angle: set true to calculate angle between first two mean_plane_definitions planes"
+        )
+        click.echo(
+            " - mercury_output: set true for 3 dp rounded-centroid companion outputs for point geometry"
+        )
+        click.echo(
+            " - lst_file_location: optional explicit .lst path (otherwise first .lst in folder is used)"
+        )
+
+        fields = yaml_extraction("module-cif-analysis")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("module-cif-analysis")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+
+            distance_defs = cfg.get("point_geometry_distances") or []
+            angle_defs = cfg.get("point_geometry_angles") or []
+            torsion_defs = cfg.get("point_geometry_torsions") or []
+            plane_defs = cfg.get("point_geometry_plane_distances") or []
+
+            valid_distance_defs = [
+                item
+                for item in distance_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms"]
+                )
+            ]
+            valid_angle_defs = [
+                item
+                for item in angle_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms", "point_3_atoms"]
+                )
+            ]
+            valid_torsion_defs = [
+                item
+                for item in torsion_defs
+                if _point_geometry_definition_complete(
+                    item,
+                    [
+                        "point_1_atoms",
+                        "point_2_atoms",
+                        "point_3_atoms",
+                        "point_4_atoms",
+                    ],
+                )
+            ]
+            valid_plane_defs = [
+                item
+                for item in plane_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_atoms", "plane_atoms"]
+                )
+            ]
+            rotation_plane_defs = cfg.get("rotation_plane_definitions") or []
+            valid_rotation_plane_defs = [
+                item
+                for item in rotation_plane_defs
+                if _point_geometry_definition_complete(item, ["plane_atoms"])
+            ]
+            mean_plane_defs = cfg.get("mean_plane_definitions") or []
+            valid_mean_plane_defs = [
+                item
+                for item in mean_plane_defs
+                if _point_geometry_definition_complete(item, ["plane_atoms"])
+            ]
+
+            if (
+                cfg.get("calculate_interplane_angle", False)
+                and len(valid_mean_plane_defs) == 0
+                and len(valid_rotation_plane_defs) > 0
+            ):
+                click.echo(
+                    "No valid mean_plane_definitions found; reusing rotation_plane_definitions for interplane calculation."
+                )
+                valid_mean_plane_defs = valid_rotation_plane_defs
+
+            results_dir = pathlib.Path(cfg["folder_containing_cifs"])
+            analysis = CIF_Analysis()
+            analysis.run(
+                cfg["folder_containing_cifs"],
+                str(results_dir),
+                cfg["cif_parameters"],
+                cfg["atoms_for_analysis"],
+                cfg["varying_cif_parameter"],
+                reference_unit_cell=cfg.get("reference_unit_cell", ""),
+                structural_analysis_bonds=cfg["structural_analysis_bonds"],
+                structural_analysis_angles=cfg["structural_analysis_angles"],
+                structural_analysis_torsions=cfg["structural_analysis_torsions"],
+                structural_analysis_hbonds=cfg["structural_analysis_hbonds"],
+                ADP_analysis_enabled=cfg["ADP_analysis"],
+                point_geometry_distances=valid_distance_defs,
+                point_geometry_angles=valid_angle_defs,
+                point_geometry_torsions=valid_torsion_defs,
+                point_geometry_plane_distances=valid_plane_defs,
+                mercury_output=cfg.get("mercury_output", False),
+                reference_plane=cfg.get("rotation_reference_plane", None),
+                rotation_plane_definitions=valid_rotation_plane_defs,
+                mean_plane_definitions=valid_mean_plane_defs,
+                calculate_interplane_angle=cfg.get("calculate_interplane_angle", False),
+                lst_file_location=cfg.get("lst_file_location", ""),
+            )
+
+            copy_logs(str(results_dir))
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+#####------ Pipeline CIF Analysis -----#######
+
+
+@click.command(
+    "pipeline-cif-analysis",
+    short_help="batch CIF analysis with optional point/rotation/ADP/structural outputs",
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_cif_analysis(dependencies, files, configure, run):
+    """Runs CIF-based analysis over either nested dataset folders or one flat CIF folder.
+    Optional point-geometry and rotation-plane calculations run directly from CIF data.
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - experiment_location containing either:")
+        click.echo("   a) nested dataset folders with .cif files, or")
+        click.echo("   b) a single flat folder of .cif files")
+        click.echo(
+            " - optional: .lst files only if you want legacy MPLA fallback rotation analysis"
+        )
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        click.echo("Descriptions are listed below:")
+        click.echo(" - experiment_location: parent folder for CIF analysis")
+        click.echo(
+            " - cif_input_mode: 'nested' for subfolders or 'flat' for one CIF folder"
+        )
+        click.echo(
+            "   root-level CIFs are preferred; if both root and nested CIFs exist, root CIFs are used"
+        )
+        click.echo(
+            " - precombine_cifs: set true to merge discovered CIFs into one combined input file before analysis"
+        )
+        click.echo("   default: false")
+        click.echo(
+            "   set true when you want one merged input before extraction/analysis"
+        )
+        click.echo(
+            "   precombine outputs are written per run as combined_input.cif and combined_input_sources.txt in the CIF_Analysis/<run_number> folder"
+        )
+        click.echo(
+            " - cif_parameters: cif parameters to extract (defaults are usually enough)"
+        )
+        click.echo(
+            " - atoms_for_analysis: atom labels for structural-analysis filtering"
+        )
+        click.echo(
+            " - varying_cif_parameter: cif heading used as x-axis, e.g. _diffrn_ambient_temperature"
+        )
+        click.echo(
+            "   if left blank or set to 0, CX-ASAP falls back to Data_Block"
+        )
+        click.echo(
+            "   examples: _diffrn_ambient_temperature, _diffrn_ambient_pressure"
+        )
+        click.echo(
+            " - reference_unit_cell: optional path to reference .ins for cell-deformation analysis"
+        )
+        click.echo(
+            " - structural_analysis_bonds/angles/torsions/hbonds: true or false"
+        )
+        click.echo(" - ADP_analysis: true or false")
+        click.echo(
+            " - point_geometry_distances: list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry"
+        )
+        click.echo(
+            " - point_geometry_angles: list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry"
+        )
+        click.echo(
+            " - point_geometry_torsions: list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry"
+        )
+        click.echo(
+            " - point_geometry_plane_distances: list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry"
+        )
+        click.echo(
+            " - rotation_reference_plane: optional [h,k,l] reference plane for CIF-native rotation angles"
+        )
+        click.echo(
+            " - rotation_plane_definitions: optional list of planes defined by plane_atoms and optional plane_symmetry"
+        )
+        click.echo(
+            " - mean_plane_definitions: optional list of planes used for mean-plane/interplane analysis (plane_atoms and optional plane_symmetry)"
+        )
+        click.echo(
+            " - calculate_interplane_angle: set true to calculate angle between first two mean_plane_definitions planes"
+        )
+        click.echo(
+            " - mercury_output: set true for 3 dp rounded-centroid companion outputs for point geometry"
+        )
+
+        fields = yaml_extraction("pipeline-cif-analysis")
+        yaml_creation(fields)
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-cif-analysis")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+
+            distance_defs = cfg.get("point_geometry_distances") or []
+            angle_defs = cfg.get("point_geometry_angles") or []
+            torsion_defs = cfg.get("point_geometry_torsions") or []
+            plane_defs = cfg.get("point_geometry_plane_distances") or []
+
+            valid_distance_defs = [
+                item
+                for item in distance_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms"]
+                )
+            ]
+            valid_angle_defs = [
+                item
+                for item in angle_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms", "point_3_atoms"]
+                )
+            ]
+            valid_torsion_defs = [
+                item
+                for item in torsion_defs
+                if _point_geometry_definition_complete(
+                    item,
+                    [
+                        "point_1_atoms",
+                        "point_2_atoms",
+                        "point_3_atoms",
+                        "point_4_atoms",
+                    ],
+                )
+            ]
+            valid_plane_defs = [
+                item
+                for item in plane_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_atoms", "plane_atoms"]
+                )
+            ]
+            rotation_plane_defs = cfg.get("rotation_plane_definitions") or []
+            valid_rotation_plane_defs = [
+                item
+                for item in rotation_plane_defs
+                if _point_geometry_definition_complete(item, ["plane_atoms"])
+            ]
+            mean_plane_defs = cfg.get("mean_plane_definitions") or []
+            valid_mean_plane_defs = [
+                item
+                for item in mean_plane_defs
+                if _point_geometry_definition_complete(item, ["plane_atoms"])
+            ]
+
+            if (
+                cfg.get("calculate_interplane_angle", False)
+                and len(valid_mean_plane_defs) == 0
+                and len(valid_rotation_plane_defs) > 0
+            ):
+                click.echo(
+                    "No valid mean_plane_definitions found; reusing rotation_plane_definitions for interplane calculation."
+                )
+                valid_mean_plane_defs = valid_rotation_plane_defs
+
+            pipe = CIF_Analysis_Pipeline()
+            results_dir = pipe.create_numbered_results_directory(
+                cfg["experiment_location"], "CIF_Analysis"
+            )
+
+            pipe.run(
+                cfg["experiment_location"],
+                str(results_dir),
+                cfg["cif_input_mode"],
+                cfg["cif_parameters"],
+                cfg["atoms_for_analysis"],
+                cfg["varying_cif_parameter"],
+                reference_unit_cell=cfg.get("reference_unit_cell", ""),
+                structural_analysis_bonds=cfg["structural_analysis_bonds"],
+                structural_analysis_angles=cfg["structural_analysis_angles"],
+                structural_analysis_torsions=cfg["structural_analysis_torsions"],
+                structural_analysis_hbonds=cfg["structural_analysis_hbonds"],
+                ADP_analysis_enabled=cfg["ADP_analysis"],
+                point_geometry_distances=valid_distance_defs,
+                point_geometry_angles=valid_angle_defs,
+                point_geometry_torsions=valid_torsion_defs,
+                point_geometry_plane_distances=valid_plane_defs,
+                mercury_output=cfg.get("mercury_output", False),
+                reference_plane=cfg.get("rotation_reference_plane", None),
+                rotation_plane_definitions=valid_rotation_plane_defs,
+                mean_plane_definitions=valid_mean_plane_defs,
+                calculate_interplane_angle=cfg.get("calculate_interplane_angle", False),
+                precombine_cifs=cfg.get("precombine_cifs", False),
+            )
+
+            copy_logs(str(results_dir))
 
         output_message()
 
@@ -3942,7 +4398,7 @@ def pipeline_position_analysis(dependencies, files, configure, run):
             " - wedge_angles: enter the wedge angles as a list for XDS processing"
         )
         click.echo(
-            " - calculate_point_group_distance: enter True for group-center analysis between two atom groups from the .lst files, otherwise enter False"
+            " - calculate_point_group_distance: enter True for point-group analysis between two atom groups from the .lst files, otherwise enter False"
         )
         click.echo(
             " - point_group_1_atoms: list of atom labels for the first point group (only needed if calculate_point_group_distance is true)"
@@ -4890,6 +5346,8 @@ windows_modules_dev = [
     pipeline_shelxt_auto,
     module_point_geometry,
     pipeline_point_geometry,
+    module_cif_analysis,
+    pipeline_cif_analysis,
 ]
 
 if BadOS == True:
@@ -4940,6 +5398,8 @@ else:
     cli.add_command(pipeline_rotation_planes)
     cli.add_command(module_point_geometry)
     cli.add_command(pipeline_point_geometry)
+    cli.add_command(module_cif_analysis)
+    cli.add_command(pipeline_cif_analysis)
     cli.add_command(pipeline_position_analysis)
     cli.add_command(pipeline_AS_Brute)
     cli.add_command(module_molecule_reconstruction)

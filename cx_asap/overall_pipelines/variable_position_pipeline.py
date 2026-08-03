@@ -102,6 +102,7 @@ class VP_Pipeline:
         MPLA_atoms: str,
         instrument_cif_path: str,
         total_angle: int,
+        minimum_fraction_of_indexed_spots: float,
     ) -> None:
         """Organises the directory tree for this experiment
 
@@ -128,6 +129,7 @@ class VP_Pipeline:
             MPLA_atoms (str): Atoms for mean plane analysis
             instrument_cif_path (str): full path to the instrument CIF
             total_angle (int): total wedge angle per experiment
+            minimum_fraction_of_indexed_spots (float): minimum fraction of indexed spots threshold for XDS indexing
 
         """
 
@@ -139,7 +141,12 @@ class VP_Pipeline:
             background_reference, instrument_parameters_path, instrument_cif_path
         )
         configure.flexible_setup(
-            max_processors, neggia_library, space_group_number, MPLA_atoms, total_angle
+            max_processors,
+            neggia_library,
+            space_group_number,
+            MPLA_atoms,
+            total_angle,
+            minimum_fraction_of_indexed_spots,
         )
         self.cfg, self.sys = self.config.yaml_reload()
 

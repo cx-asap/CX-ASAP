@@ -245,3 +245,94 @@ def point_to_plane_distance(
 
     normal_unit = normal / normal_norm
     return float(abs(np.dot(p - centroid, normal_unit)))
+
+
+def reciprocal_orthonorm_matrix(cell_params: list) -> np.ndarray:
+    """Returns the reciprocal-space transform matrix M* = inv(M).
+
+    This is useful for converting vectors between Cartesian and fractional
+    representations in reciprocal space.
+    """
+
+    M = orthonorm_matrix(cell_params)
+    return np.linalg.inv(M)
+
+
+def cartesian_plane_normal_to_fractional(
+    normal_cart: "np.ndarray | list", cell_params: list
+) -> np.ndarray:
+    """Converts a Cartesian plane normal into fractional representation.
+
+    Args:
+        normal_cart: plane normal components in Cartesian basis
+        cell_params: [a, b, c, alpha, beta, gamma]
+
+    Returns:
+        np.ndarray: length-3 fractional vector
+    """
+
+    n_cart = np.array(normal_cart, dtype=float)
+    M_star = reciprocal_orthonorm_matrix(cell_params)
+    return np.dot(n_cart, M_star)
+
+
+def angle_between_vectors(
+    vector_1: "np.ndarray | list",
+    vector_2: "np.ndarray | list",
+    fold_to_acute: bool = False,
+) -> float:
+    """Calculates the angle in degrees between two vectors.
+
+    Args:
+        vector_1: first vector
+        vector_2: second vector
+        fold_to_acute: if True, folds obtuse results into [0, 90]
+
+    Returns:
+        float: angle in degrees
+    """
+
+    v1 = np.array(vector_1, dtype=float)
+    v2 = np.array(vector_2, dtype=float)
+
+    n1 = np.linalg.norm(v1)
+    n2 = np.linalg.norm(v2)
+    if n1 == 0.0 or n2 == 0.0:
+        raise ValueError("Zero-length vector in angle calculation")
+
+    cos_theta = np.dot(v1, v2) / (n1 * n2)
+    cos_theta = np.clip(cos_theta, -1.0, 1.0)
+    angle = float(np.degrees(np.arccos(cos_theta)))
+
+    if fold_to_acute and angle > 90.0:
+        angle = 180.0 - angle
+
+    return angle
+
+
+def best_fit_plane_normal(
+    plane_points: "list[np.ndarray] | np.ndarray | list",
+) -> np.ndarray:
+    """Returns a unit normal vector for a best-fit Cartesian plane.
+
+    Args:
+        plane_points: array-like collection of 3D Cartesian points
+
+    Returns:
+        np.ndarray: length-3 unit normal vector
+    """
+
+    plane = np.array(plane_points, dtype=float)
+    if len(plane) < 3:
+        raise ValueError("Need at least 3 points to define a plane")
+
+    centroid = np.mean(plane, axis=0)
+    centered = plane - centroid
+    _, _, vh = np.linalg.svd(centered)
+    normal = vh[-1]
+
+    normal_norm = np.linalg.norm(normal)
+    if normal_norm == 0.0:
+        raise ValueError("Could not resolve plane normal")
+
+    return normal / normal_norm

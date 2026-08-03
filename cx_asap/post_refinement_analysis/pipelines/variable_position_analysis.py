@@ -189,7 +189,7 @@ class VP_Analysis_Pipeline:
                     "Rint": item["_diffrn_reflns_av_R_equivalents"],
                     "Completeness": item["_diffrn_measured_fraction_theta_full"],
                 },
-                "Distance($\mu$m)",
+                "Distance($\\mu$m)",
                 df=item,
             )
 
@@ -197,7 +197,7 @@ class VP_Analysis_Pipeline:
 
             cell.graphical_analysis(
                 "Distance",
-                "Distance($\mu$m)",
+                "Distance($\\mu$m)",
                 "Cell Deformation - " + discrete_cif_names[index],
                 "cell_parameters_" + discrete_cif_names[index] + ".png",
                 "axis_deformation_" + discrete_cif_names[index] + ".png",
@@ -209,19 +209,14 @@ class VP_Analysis_Pipeline:
 
         if adps != False:
             adp_df = pd.read_csv("ADPs.csv")
-            discrete_cif_names_bond = list(dict.fromkeys(bond_df["CIF_File"]))
-            separated_by_cif_bond = []
-
-            for item in discrete_cif_names_bond:
-                condition = bond_df["CIF_File"] == item
-                separated_by_cif_bond.append(bond_df[condition])
-
-            for index, item in enumerate(separated_by_cif_bond):
-                item.to_csv("ADPs_" + discrete_cif_names_bond[index] + ".csv")
+            for index, (cif_name, item) in enumerate(
+                adp_df.groupby("CIF_File", sort=False)
+            ):
+                item.to_csv("ADPs_" + cif_name + ".csv", index=None)
 
                 adp_object = ADP_analysis(self.test_mode)
                 adp_object.analyse_data(
-                    "ADPs_" + discrete_cif_names_bond[index] + ".csv",
+                    "ADPs_" + cif_name + ".csv",
                     discrete_cif_names[index] + "_parameters.csv",
                 )
 
@@ -231,18 +226,13 @@ class VP_Analysis_Pipeline:
 
         if bonds != False:
             bond_df = pd.read_csv("Bond_Lengths.csv")
-            discrete_cif_names_bond = list(dict.fromkeys(bond_df["CIF_File"]))
-            separated_by_cif_bond = []
-
-            for item in discrete_cif_names_bond:
-                condition = bond_df["CIF_File"] == item
-                separated_by_cif_bond.append(bond_df[condition])
-
-            for index, item in enumerate(separated_by_cif_bond):
-                item.to_csv("Bond_Lengths_" + discrete_cif_names_bond[index] + ".csv", index=None)
+            for index, (cif_name, item) in enumerate(
+                bond_df.groupby("CIF_File", sort=False)
+            ):
+                item.to_csv("Bond_Lengths_" + cif_name + ".csv", index=None)
 
                 geometry.import_and_analyse(
-                    "Bond_Lengths_" + discrete_cif_names_bond[index] + ".csv",
+                    "Bond_Lengths_" + cif_name + ".csv",
                     False,
                     False,
                     False,
@@ -254,19 +244,14 @@ class VP_Analysis_Pipeline:
 
         if angles != False:
             angle_df = pd.read_csv("Bond_Angles.csv")
-            discrete_cif_names_angle = list(dict.fromkeys(angle_df["CIF_File"]))
-            separated_by_cif_angle = []
-
-            for item in discrete_cif_names_angle:
-                condition = angle_df["CIF_File"] == item
-                separated_by_cif_angle.append(angle_df[condition])
-
-            for index, item in enumerate(separated_by_cif_angle):
-                item.to_csv("Bond_Angles_" + discrete_cif_names_angle[index] + ".csv", index=None)
+            for index, (cif_name, item) in enumerate(
+                angle_df.groupby("CIF_File", sort=False)
+            ):
+                item.to_csv("Bond_Angles_" + cif_name + ".csv", index=None)
 
                 geometry.import_and_analyse(
                     False,
-                    "Bond_Angles_" + discrete_cif_names_angle[index] + ".csv",
+                    "Bond_Angles_" + cif_name + ".csv",
                     False,
                     False,
                     atoms_for_analysis,
@@ -277,23 +262,15 @@ class VP_Analysis_Pipeline:
 
         if torsions != False:
             torsion_df = pd.read_csv("Bond_Torsions.csv")
-            discrete_cif_names_torsion = list(dict.fromkeys(torsion_df["CIF_File"]))
-            separated_by_cif_torsion = []
-
-            for item in discrete_cif_names_torsion:
-                condition = torsion_df["CIF_File"] == item
-                separated_by_cif_torsion.append(torsion_df[condition])
-
-            for index, item in enumerate(separated_by_cif_torsion):
-                item.to_csv(
-                    "Bond_Torsions_" + discrete_cif_names_torsion[index] + ".csv",
-                    index=None,
-                )
+            for index, (cif_name, item) in enumerate(
+                torsion_df.groupby("CIF_File", sort=False)
+            ):
+                item.to_csv("Bond_Torsions_" + cif_name + ".csv", index=None)
 
                 geometry.import_and_analyse(
                     False,
                     False,
-                    "Bond_Torsions_" + discrete_cif_names_torsion[index] + ".csv",
+                    "Bond_Torsions_" + cif_name + ".csv",
                     False,
                     atoms_for_analysis,
                     location,
@@ -302,21 +279,16 @@ class VP_Analysis_Pipeline:
                 )
         if hbonds != False:
             hbond_df = pd.read_csv("HBond_details.csv")
-            discrete_cif_names_hbond = list(dict.fromkeys(hbond_df["CIF_File"]))
-            separated_by_cif_hbond = []
-
-            for item in discrete_cif_names_hbond:
-                condition = hbond_df["CIF_File"] == item
-                separated_by_cif_hbond.append(hbond_df[condition])
-
-            for index, item in enumerate(separated_by_cif_hbond):
-                item.to_csv("HBond_details_" + discrete_cif_names_hbond[index] + ".csv", index=None)
+            for index, (cif_name, item) in enumerate(
+                hbond_df.groupby("CIF_File", sort=False)
+            ):
+                item.to_csv("HBond_details_" + cif_name + ".csv", index=None)
 
                 geometry.import_and_analyse(
                     False,
                     False,
                     False,
-                    "HBond_details_" + discrete_cif_names_hbond[index] + ".csv",
+                    "HBond_details_" + cif_name + ".csv",
                     atoms_for_analysis,
                     location,
                     str(index + 1),

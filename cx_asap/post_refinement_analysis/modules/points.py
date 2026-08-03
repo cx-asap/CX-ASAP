@@ -396,6 +396,7 @@ class PointGeometryEngine:
             return
 
         self.grab_cell(pathlib.Path(lst_name))
+
         if self.bad_flag:
             return
 
@@ -529,6 +530,25 @@ class PointGeometryEngine:
             distance_values,
             results_path,
         )
+        self._append_measurements_csv(
+            "point_geometry_angles.csv",
+            structure_number,
+            angle_values,
+            results_path,
+        )
+        self._append_measurements_csv(
+            "point_geometry_torsions.csv",
+            structure_number,
+            torsion_values,
+            results_path,
+        )
+        self._append_measurements_csv(
+            "point_geometry_plane_distances.csv",
+            structure_number,
+            plane_distance_values,
+            results_path,
+        )
+
         if mercury_output:
             self._append_measurements_csv(
                 "point_geometry_distances_mercury.csv",
@@ -536,36 +556,18 @@ class PointGeometryEngine:
                 mercury_distance_values,
                 results_path,
             )
-        self._append_measurements_csv(
-            "point_geometry_angles.csv", structure_number, angle_values, results_path
-        )
-        if mercury_output:
             self._append_measurements_csv(
                 "point_geometry_angles_mercury.csv",
                 structure_number,
                 mercury_angle_values,
                 results_path,
             )
-        self._append_measurements_csv(
-            "point_geometry_torsions.csv",
-            structure_number,
-            torsion_values,
-            results_path,
-        )
-        if mercury_output:
             self._append_measurements_csv(
                 "point_geometry_torsions_mercury.csv",
                 structure_number,
                 mercury_torsion_values,
                 results_path,
             )
-        self._append_measurements_csv(
-            "point_geometry_plane_distances.csv",
-            structure_number,
-            plane_distance_values,
-            results_path,
-        )
-        if mercury_output:
             self._append_measurements_csv(
                 "point_geometry_plane_distances_mercury.csv",
                 structure_number,
@@ -681,5 +683,3 @@ class PointGeometryEngine:
         else:
             new_df = pd.concat([old_data, df])
             new_df.to_csv(csv_name, index=None)
-
-

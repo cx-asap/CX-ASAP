@@ -143,6 +143,7 @@ class Configure_Flexible:
         space_group_number: int,
         MPLA_atoms: str,
         total_angle: int,
+        minimum_fraction_of_indexed_spots: float = 0.2,
     ) -> None:
         """Primarily sets up the XDS.INP file for a flexible crystal experiment
 
@@ -155,6 +156,7 @@ class Configure_Flexible:
             MPLA_atoms (str): atoms for MPLA command to be written into reference
                                 .ins/.res file
             total_angle (int): total wedge angle measured in the experiment
+            minimum_fraction_of_indexed_spots (float): minimum fraction of indexed spots threshold for XDS indexing
 
         """
 
@@ -236,7 +238,7 @@ class Configure_Flexible:
                     self.XDS.change(
                         self.sys["XDS_inp_organised"],
                         "MINIMUM_FRACTION_OF_INDEXED_SPOTS",
-                        0.2,
+                        minimum_fraction_of_indexed_spots,
                     )
                     flag1 += 1
                 elif "SEPMIN" in line:
@@ -271,7 +273,11 @@ class Configure_Flexible:
 
         with open(self.sys["XDS_inp_organised"], "a") as in_file:
             if flag1 == 0:
-                in_file.write(" MINIMUM_FRACTION_OF_INDEXED_SPOTS= 0.2\n")
+                in_file.write(
+                    " MINIMUM_FRACTION_OF_INDEXED_SPOTS= "
+                    + str(minimum_fraction_of_indexed_spots)
+                    + "\n"
+                )
             if flag2 == 0:
                 in_file.write(" SEPMIN= 7\n")
             if flag3 == 0:
@@ -1157,9 +1163,18 @@ class Grapher:
             s (list): marker sizes for multiple series
         """
 
+        x_is_per_series = (
+            isinstance(x, list)
+            and len(x) == len(y)
+            and len(x) > 0
+            and isinstance(x[0], list)
+        )
+
         for index, item in enumerate(y):
+            x_series = x[index] if x_is_per_series else x
+
             if type(item) != float and type(item) != int:
-                if len(x) != len(item):
+                if len(x_series) != len(item):
                     logging.info(
                         __name__
                         + " : Possible error with plotting structural changes. Check the structures in the output CIF for unreasonable structures."
@@ -1175,17 +1190,17 @@ class Grapher:
 
                     # all the temperatures hadn't been edited yet
 
-                    to_repeat = x[0]
+                    to_repeat = x_series[0]
 
-                    x = [to_repeat] * len(item)
+                    x_series = [to_repeat] * len(item)
 
                 if colour == None and y_series_title != None:
-                    plt.scatter(x, item, label=y_series_title[index])
+                    plt.scatter(x_series, item, label=y_series_title[index])
                 elif y_series_title == None:
-                    plt.scatter(x, y)
+                    plt.scatter(x_series, item)
                 else:
                     plt.scatter(
-                        x,
+                        x_series,
                         item,
                         c=colour[index],
                         marker=marker[index],
@@ -1195,7 +1210,7 @@ class Grapher:
                     )
 
             else:
-                plt.scatter(x, y)
+                plt.scatter(x_series, item)
 
         plt.xlabel(x_title, fontsize=12)
         plt.ylabel(y_title, fontsize=12)
@@ -1847,6 +1862,40 @@ class Nice_YAML_Dumper(yaml.SafeDumper):
             super().write_line_break()
 
 
+def format_yaml_error_message(file_path: pathlib.Path, error: Exception) -> str:
+    """Formats YAML parsing errors with location and actionable hints."""
+
+    file_text = str(file_path)
+    message = [f"Failed to parse YAML file: {file_text}"]
+
+    problem = getattr(error, "problem", None)
+    if problem:
+        message.append(f"Problem: {problem}")
+
+    mark = getattr(error, "problem_mark", None)
+    if mark is not None:
+        message.append(f"Location: line {mark.line + 1}, column {mark.column + 1}")
+
+    hint = (
+        "Hint: check indentation and list formatting, and ensure key/value pairs "
+        "use a space after ':'."
+    )
+
+    problem_text = str(problem).lower() if problem else ""
+    if "mapping values are not allowed here" in problem_text:
+        hint = (
+            "Hint: this often means a missing space after ':' or inconsistent "
+            "indentation on this line."
+        )
+    elif "could not find expected ':'" in problem_text:
+        hint = "Hint: a key is likely missing ':' or is mis-indented."
+    elif "expected <block end>" in problem_text:
+        hint = "Hint: check list/item indentation and unmatched nesting near this line."
+
+    message.append(hint)
+    return "\n".join(message)
+
+
 # ----------Class Definition----------#
 
 
@@ -1871,8 +1920,9 @@ class Config:
             with open(self.conf_path, "r") as f:
                 try:
                     self.cfg = yaml.load(f, yaml.FullLoader)
-                except:
-                    logging.critical(__name__ + " : Failed to open config file")
+                except yaml.YAMLError as error:
+                    formatted = format_yaml_error_message(self.conf_path, error)
+                    logging.critical(__name__ + " : " + formatted)
                     print("Error - See Log")
                     exit()
 
@@ -1882,8 +1932,9 @@ class Config:
         with open(self.sys_path, "r") as f:
             try:
                 self.sys = yaml.load(f, yaml.FullLoader)
-            except:
-                logging.critical(__name__ + " : Failed to open system file")
+            except yaml.YAMLError as error:
+                formatted = format_yaml_error_message(self.sys_path, error)
+                logging.critical(__name__ + " : " + formatted)
                 print("Error - See Log")
                 exit()
 
@@ -1902,10 +1953,22 @@ class Config:
 
         if test_mode == False:
             with open(self.conf_path, "r") as f:
-                self.cfg = yaml.load(f, yaml.FullLoader)
+                try:
+                    self.cfg = yaml.load(f, yaml.FullLoader)
+                except yaml.YAMLError as error:
+                    formatted = format_yaml_error_message(self.conf_path, error)
+                    logging.critical(__name__ + " : " + formatted)
+                    print("Error - See Log")
+                    exit()
 
         with open(self.sys_path, "r") as f:
-            self.sys = yaml.load(f, yaml.FullLoader)
+            try:
+                self.sys = yaml.load(f, yaml.FullLoader)
+            except yaml.YAMLError as error:
+                formatted = format_yaml_error_message(self.sys_path, error)
+                logging.critical(__name__ + " : " + formatted)
+                print("Error - See Log")
+                exit()
 
         return self.cfg, self.sys
 
@@ -1936,8 +1999,9 @@ class Generate:
         with open(self.parameter_conf, "r") as f:
             try:
                 self.param = yaml.load(f, yaml.FullLoader)
-            except:
-                logging.critical(__name__ + " : Failed to open parameter dictionary")
+            except yaml.YAMLError as error:
+                formatted = format_yaml_error_message(self.parameter_conf, error)
+                logging.critical(__name__ + " : " + formatted)
                 print("Error - See Log")
                 exit()
 
