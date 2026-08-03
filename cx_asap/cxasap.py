@@ -416,17 +416,117 @@ def yaml_extraction(heading: str) -> dict:
     return yaml_dict
 
 
-def yaml_creation(yaml_dict: dict) -> None:
+_HEADING = (
+    "# ==========================================================\n"
+    "# {name}\n"
+    "# ==========================================================\n"
+)
+
+# Maps first param of each section to its label, per pipeline/module.
+_CONF_SECTIONS: dict = {
+    "pipeline-variable-position": {
+        "location_of_frames":             "INPUT",
+        "chemical_formula":               "CRYSTAL INFO",
+        "space_group_number":             "XDS SETTINGS",
+        "refinements_to_check":           "REFINEMENT",
+        "cif_parameters":                 "ANALYSIS",
+        "calculate_point_group_distance": "GEOMETRY",
+    },
+    "pipeline-general": {
+        "experiment_location": "INPUT",
+        "cif_parameters":      "ANALYSIS",
+        "refinements_to_check":"REFINEMENT",
+    },
+    "pipeline-general-extra": {
+        "experiment_location":     "INPUT",
+        "_chemical_formula_moiety":"CIF FIELDS",
+        "cif_parameters":          "ANALYSIS",
+        "refinements_to_check":    "REFINEMENT",
+    },
+    "module-intensity-compare": {
+        "xprep_file_name": "INPUT",
+        "a_axis":          "UNIT CELL",
+        "h_condition_1":   "CONDITIONS",
+    },
+    "pipeline-intensity-compare": {
+        "data_location": "INPUT",
+        "a_axis":        "UNIT CELL",
+        "h_condition_1": "CONDITIONS",
+    },
+    "pipeline-cif": {
+        "experiment_location": "INPUT",
+        "chemical_formula":    "CRYSTAL INFO",
+        "instrument_ending":   "INSTRUMENT",
+    },
+    "pipeline-rigaku-vt": {
+        "experiment_location":  "INPUT",
+        "chemical_formula":     "CRYSTAL INFO",
+        "refinements_to_check": "REFINEMENT",
+        "cif_parameters":       "ANALYSIS",
+    },
+    "pipeline-aus-synch-vt": {
+        "location_of_autoprocess_folders": "INPUT",
+        "chemical_formula":                "CRYSTAL INFO",
+        "refinements_to_check":            "REFINEMENT",
+        "cif_parameters":                  "ANALYSIS",
+    },
+    "module-cif-read": {
+        "folder_containing_cifs": "INPUT",
+        "cif_parameters":         "ANALYSIS",
+    },
+    "module-cif-analysis": {
+        "folder_containing_cifs":   "INPUT",
+        "cif_parameters":           "ANALYSIS",
+        "point_geometry_distances": "GEOMETRY",
+    },
+    "pipeline-cif-analysis": {
+        "experiment_location":      "INPUT",
+        "cif_parameters":           "ANALYSIS",
+        "point_geometry_distances": "GEOMETRY",
+    },
+    "pipeline-variable-analysis": {
+        "experiment_location": "INPUT",
+        "cif_parameters":      "ANALYSIS",
+    },
+    "pipeline-position-analysis": {
+        "experiment_location": "INPUT",
+        "cif_parameters":      "ANALYSIS",
+        "wedge_angles":        "XDS SETTINGS",
+        "atoms_for_plane":     "GEOMETRY",
+    },
+    "pipeline-temperature-analysis": {
+        "experiment_location": "INPUT",
+        "cif_parameters":      "ANALYSIS",
+    },
+    "module-molecule-reconstruction": {
+        "reference_path": "INPUT",
+        "a_gradient":     "GRADIENTS",
+        "max_position":   "RANGE",
+    },
+}
+
+
+def yaml_creation(yaml_dict: dict, heading: str = "") -> None:
     """Converts the yaml_dict made from the yaml_extraction function into a yaml file
     This is the conf.yaml that the user will edit to configure the code
     Args:
         yaml_dict (dict): Dictionary of yaml parameters specific to the chosen module/pipeline
+        heading (str): Pipeline/module name used to look up section headings
     """
     yaml_path = pathlib.Path(os.path.abspath(__file__)).parent / "conf.yaml"
     # yaml_path = pathlib.Path(os.path.join(os.getcwd()), "conf.yaml")
 
+    # YAML comments are ignored by yaml.load, so headings don't affect parsing.
+    sections = _CONF_SECTIONS.get(heading, {})
+    parts = []
+    for key, value in yaml_dict.items():
+        if key in sections:
+            if parts:
+                parts.append("\n")
+            parts.append(_HEADING.format(name=sections[key]))
+        parts.append(yaml.dump({key: value}, sort_keys=False))
     with open(yaml_path, "w") as f:
-        new_yaml = yaml.dump(yaml_dict, f)
+        f.write("".join(parts))
 
 
 def configuration_check(heading: str) -> Tuple[bool, dict]:
@@ -739,7 +839,7 @@ def module_refinement(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("module-refinement")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-refinement")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -837,7 +937,7 @@ def pipeline_refinement(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-refinement")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-refinement")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1041,7 +1141,7 @@ def pipeline_vp(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-variable-position")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-variable-position")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1241,7 +1341,7 @@ def pipeline_general(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-general")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-general")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1410,7 +1510,7 @@ def pipeline_general_extra(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-general-extra")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-general-extra")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1593,7 +1693,7 @@ def module_intensity_compare(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("module-intensity-compare")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-intensity-compare")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1767,7 +1867,7 @@ def pipeline_intensity_compare(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-intensity-compare")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-intensity-compare")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1874,7 +1974,7 @@ def module_cif_merge(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("module-cif-merge")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-cif-merge")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1953,7 +2053,7 @@ def module_instrument_cif_generation(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("module-make-instrument-cif")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-make-instrument-cif")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2024,7 +2124,7 @@ def pipeline_cif_combine(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-cif-combine")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-cif-combine")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2117,7 +2217,7 @@ def pipeline_cif(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-cif")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-cif")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2255,7 +2355,7 @@ def pipeline_rigaku_vt(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-rigaku-vt")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-rigaku-vt")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2427,7 +2527,7 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-aus-synch-vt")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-aus-synch-vt")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2551,7 +2651,7 @@ def module_xds_cell_transformation(dependencies, files, configure, run):
         click.echo(" - XDS_ASCII_File_2: full path to the second XDS_ASCII file")
 
         fields = yaml_extraction("module-xds-cell-transform")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-xds-cell-transform")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2635,7 +2735,7 @@ def module_xds_reprocess(dependencies, files, configure, run):
         click.echo(" - xds_template_name: name of your dataset")
 
         fields = yaml_extraction("module-xds-reprocess")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-xds-reprocess")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2718,7 +2818,7 @@ def module_xprep(dependencies, files, configure, run):
         click.echo(" - xprep_file_name: name of your XDS_ASCII file")
 
         fields = yaml_extraction("module-xprep")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-xprep")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2805,7 +2905,7 @@ def pipeline_xds_reprocess(dependencies, files, configure, run):
         click.echo(" - XDS_INP_path: full path to your XDS.INP file")
 
         fields = yaml_extraction("pipeline-xds-reprocess")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-xds-reprocess")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2885,7 +2985,7 @@ def pipeline_xprep(dependencies, files, configure, run):
         click.echo(" - xprep_file_name: name of your XDS_ASCII file")
 
         fields = yaml_extraction("pipeline-xprep")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-xprep")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2977,7 +3077,7 @@ def pipeline_xprep_transform(dependencies, files, configure, run):
         click.echo(" - output file name: name of your transformed ins and hkl file")
 
         fields = yaml_extraction("pipeline-xprep-transform")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-xprep-transform")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3064,7 +3164,7 @@ def module_cell_analysis(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("module-cell-analysis")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-cell-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3178,7 +3278,7 @@ def module_cif_read(dependencies, files, configure, run):
             " - structural_analysis_hbonds: enter 'true' if you want to extract Hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command"
         )
         fields = yaml_extraction("module-cif-read")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-cif-read")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3266,7 +3366,7 @@ def module_rotation_planes(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("module-rotation-planes")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-rotation-planes")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3370,7 +3470,7 @@ def module_structural_analysis(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("module-structural-analysis")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-structural-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3455,7 +3555,7 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-rotation-planes")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-rotation-planes")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3536,7 +3636,7 @@ def module_point_geometry(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("module-point-geometry")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-point-geometry")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3684,7 +3784,7 @@ def pipeline_point_geometry(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-point-geometry")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-point-geometry")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3865,7 +3965,7 @@ def module_cif_analysis(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("module-cif-analysis")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-cif-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4076,7 +4176,7 @@ def pipeline_cif_analysis(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-cif-analysis")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-cif-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4264,7 +4364,7 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-variable-analysis")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-variable-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4414,7 +4514,7 @@ def pipeline_position_analysis(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-position-analysis")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-position-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4541,7 +4641,7 @@ def pipeline_temperature_analysis(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-temperature-analysis")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-temperature-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4616,7 +4716,7 @@ def module_platon_squeeze(dependencies, files, configure, run):
         click.echo(" - file_name: full path to your .ins file")
 
         fields = yaml_extraction("module-platon-squeeze")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-platon-squeeze")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4702,7 +4802,7 @@ def pipeline_platon_squeeze(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-platon-squeeze")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-platon-squeeze")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4789,7 +4889,7 @@ def pipeline_platon_twinrotmat(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-platon-twinrotmat")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-platon-twinrotmat")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4870,7 +4970,7 @@ def module_adp_analysis(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("module-adp-analysis")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-adp-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4953,7 +5053,7 @@ def pipeline_AS_Brute(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-AS-Brute")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-AS-Brute")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -5065,7 +5165,7 @@ def module_molecule_reconstruction(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("module-molecule-reconstruction")
-        yaml_creation(fields)
+        yaml_creation(fields, "module-molecule-reconstruction")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -5171,7 +5271,7 @@ def pipeline_shelxt_auto(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-shelxt-auto")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-shelxt-auto")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -5245,7 +5345,7 @@ def pipeline_AS_Brute_individual(dependencies, files, configure, run):
         )
 
         fields = yaml_extraction("pipeline-AS-Brute-individual")
-        yaml_creation(fields)
+        yaml_creation(fields, "pipeline-AS-Brute-individual")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")

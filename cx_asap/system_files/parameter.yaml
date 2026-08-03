@@ -37,18 +37,24 @@ pipeline-variable-position:
   - reference_background_files_location
   - instrument_parameters_path
   - instrument_cif_path
-  - maximum_processors
-  - neggia_library
-  - space_group_number
-  - space_group
-  - atoms_for_rotation_analysis
-  - reference_plane
   - chemical_formula
   - crystal_habit
   - crystal_colour
   - max_crystal_dimension
   - middle_crystal_dimension
   - min_crystal_dimension
+  - mapping_step_size
+  - space_group_number
+  - space_group
+  - maximum_processors
+  - neggia_library
+  - total_angle
+  - wedge_angles
+  - min_pixels
+  - spot_maximum_centroid
+  - signal_pixel
+  - sepmin
+  - minimum_fraction_of_indexed_spots
   - refinements_to_check
   - tolerance
   - maximum_cycles
@@ -59,14 +65,8 @@ pipeline-variable-position:
   - structural_analysis_hbonds
   - ADP_analysis
   - atoms_for_analysis
-  - wedge_angles
-  - min_pixels
-  - spot_maximum_centroid
-  - signal_pixel
-  - sepmin
-  - minimum_fraction_of_indexed_spots
-  - mapping_step_size
-  - total_angle
+  - atoms_for_rotation_analysis
+  - reference_plane
   - calculate_point_group_distance
   - point_group_1_atoms
   - point_group_2_atoms
@@ -76,9 +76,8 @@ pipeline-variable-position:
 pipeline-general:
   - experiment_location
   - reference_cif_location
-  - refinements_to_check
-  - tolerance
-  - maximum_cycles
+  - varying_cif_parameter
+  - varying_parameter_values
   - cif_parameters
   - structural_analysis_bonds
   - structural_analysis_angles
@@ -86,12 +85,15 @@ pipeline-general:
   - structural_analysis_hbonds
   - ADP_analysis
   - atoms_for_analysis
-  - varying_cif_parameter
-  - varying_parameter_values
+  - refinements_to_check
+  - tolerance
+  - maximum_cycles
 
 pipeline-general-extra:
-  - reference_location
   - experiment_location
+  - reference_location
+  - varying_cif_parameter
+  - varying_parameter_values
   - _chemical_formula_moiety
   - _chemical_absolute_configuration
   - _exptl_absorpt_correction_T_max
@@ -121,9 +123,6 @@ pipeline-general-extra:
   - _computing_publication_material
   - _computing_structure_refinement
   - _computing_structure_solution
-  - refinements_to_check
-  - tolerance
-  - maximum_cycles
   - cif_parameters
   - structural_analysis_bonds
   - structural_analysis_angles
@@ -131,23 +130,24 @@ pipeline-general-extra:
   - structural_analysis_hbonds
   - ADP_analysis
   - atoms_for_analysis
-  - varying_cif_parameter
-  - varying_parameter_values
+  - refinements_to_check
+  - tolerance
+  - maximum_cycles
 
 module-intensity-compare:
   - xprep_file_name
-  - h_condition_1
-  - h_condition_2
-  - k_condition_1
-  - k_condition_2
-  - l_condition_1
-  - l_condition_2
   - a_axis
   - b_axis
   - c_axis
   - alpha
   - beta
   - gamma
+  - h_condition_1
+  - h_condition_2
+  - k_condition_1
+  - k_condition_2
+  - l_condition_1
+  - l_condition_2
   - h+k_condition_1
   - h+k_condition_2
   - h+l_condition_1
@@ -165,6 +165,12 @@ module-intensity-compare:
 
 pipeline-intensity-compare:
   - data_location
+  - a_axis
+  - b_axis
+  - c_axis
+  - alpha
+  - beta
+  - gamma
   - h_condition_1
   - h_condition_2
   - k_condition_1
@@ -179,12 +185,6 @@ pipeline-intensity-compare:
   - k+l_condition_2
   - h+k+l_condition_1
   - h+k+l_condition_2
-  - a_axis
-  - b_axis
-  - c_axis
-  - alpha
-  - beta
-  - gamma
   - include_h_0_condition_1
   - include_h_0_condition_2
   - include_k_0_condition_1
@@ -204,15 +204,15 @@ pipeline-cif-combine:
 
 pipeline-cif:
   - experiment_location
-  - instrument_ending
-  - instrument_file
-  - structure_solution
   - chemical_formula
   - crystal_habit
   - crystal_colour
   - max_crystal_dimension
   - middle_crystal_dimension
   - min_crystal_dimension
+  - instrument_ending
+  - instrument_file
+  - structure_solution
 
 pipeline-rigaku-vt:
   - experiment_location
@@ -238,8 +238,7 @@ pipeline-aus-synch-vt:
   - location_of_autoprocess_folders
   - experiment_name
   - reference_location
-  - atoms_for_rotation_analysis
-  - reference_plane
+  - transformation_matrix
   - chemical_formula
   - crystal_habit
   - crystal_colour
@@ -256,42 +255,43 @@ pipeline-aus-synch-vt:
   - structural_analysis_hbonds
   - ADP_analysis
   - atoms_for_analysis
-  - transformation_matrix
+  - atoms_for_rotation_analysis
+  - reference_plane
 
 module-xds-cell-transform:
   - XDS_ASCII_File_1
   - XDS_ASCII_File_2
 
 module-xds-reprocess:
-  - xds_template_name
-  - XDS_INP_path
   - experiment_location
+  - XDS_INP_path
+  - xds_template_name
 
 module-xprep:
+  - experiment_location
   - xprep_file_name
-  - transformation_matrix
   - space_group
   - chemical_formula
-  - experiment_location
+  - transformation_matrix
 
 pipeline-xds-reprocess:
   - XDS_INP_path
   - experiment_location
 
 pipeline-xprep:
+  - experiment_location
   - xprep_file_name
-  - transformation_matrix
   - space_group
   - chemical_formula
-  - experiment_location
+  - transformation_matrix
 
 pipeline-xprep-transform:
   - experiment_location
   - data_type
   - lattice_type
-  - transformation_matrix
   - space_group
   - chemical_formula
+  - transformation_matrix
   - output_name
 
 module-cell-analysis:
@@ -300,17 +300,17 @@ module-cell-analysis:
   - x_axis_header
 
 module-cif-read:
+  - folder_containing_cifs
   - cif_parameters
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
   - structural_analysis_hbonds
   - ADP_analysis
-  - folder_containing_cifs
 
 module-rotation-planes:
-  - reference_plane
   - lst_file_location
+  - reference_plane
   - calculate_interplane_angle
 
 module-point-geometry:
@@ -323,15 +323,16 @@ module-point-geometry:
 
 module-cif-analysis:
   - folder_containing_cifs
-  - cif_parameters
-  - atoms_for_analysis
   - varying_cif_parameter
   - reference_unit_cell
+  - lst_file_location
+  - cif_parameters
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
   - structural_analysis_hbonds
   - ADP_analysis
+  - atoms_for_analysis
   - point_geometry_distances
   - point_geometry_angles
   - point_geometry_torsions
@@ -341,7 +342,6 @@ module-cif-analysis:
   - rotation_plane_definitions
   - mean_plane_definitions
   - calculate_interplane_angle
-  - lst_file_location
 
 pipeline-point-geometry:
   - experiment_location
@@ -355,15 +355,15 @@ pipeline-cif-analysis:
   - experiment_location
   - cif_input_mode
   - precombine_cifs
-  - cif_parameters
-  - atoms_for_analysis
   - varying_cif_parameter
   - reference_unit_cell
+  - cif_parameters
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
   - structural_analysis_hbonds
   - ADP_analysis
+  - atoms_for_analysis
   - point_geometry_distances
   - point_geometry_angles
   - point_geometry_torsions
@@ -375,47 +375,47 @@ pipeline-cif-analysis:
   - calculate_interplane_angle
 
 module-structural-analysis:
-  - atoms_for_analysis
   - bond_data
   - angle_data
   - torsion_data
   - hbond_data
+  - atoms_for_analysis
 
 pipeline-rotation-planes:
-  - reference_plane
   - experiment_location
+  - reference_plane
   - calculate_interplane_angle
 
 pipeline-variable-analysis:
+  - experiment_location
+  - reference_unit_cell
+  - varying_cif_parameter
   - cif_parameters
-  - atoms_for_analysis
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
   - structural_analysis_hbonds
   - ADP_analysis
-  - varying_cif_parameter
-  - experiment_location
-  - reference_unit_cell
+  - atoms_for_analysis
 
 pipeline-position-analysis:
+  - experiment_location
+  - reference_unit_cell
   - cif_parameters
-  - atoms_for_analysis
-  - reference_plane
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
   - structural_analysis_hbonds
   - ADP_analysis
-  - experiment_location
-  - reference_unit_cell
-  - atoms_for_plane
+  - atoms_for_analysis
   - wedge_angles
   - min_pixels
   - spot_maximum_centroid
   - signal_pixel
   - sepmin
   - mapping_step_size
+  - atoms_for_plane
+  - reference_plane
   - calculate_point_group_distance
   - point_group_1_atoms
   - point_group_2_atoms
@@ -423,15 +423,15 @@ pipeline-position-analysis:
   - point_group_2_symmetry
 
 pipeline-temperature-analysis:
+  - experiment_location
+  - reference_unit_cell
   - cif_parameters
-  - atoms_for_analysis
   - structural_analysis_bonds
   - structural_analysis_angles
   - structural_analysis_torsions
   - structural_analysis_hbonds
   - ADP_analysis
-  - experiment_location
-  - reference_unit_cell
+  - atoms_for_analysis
 
 pipeline-AS-Brute:
   - experiment_location
