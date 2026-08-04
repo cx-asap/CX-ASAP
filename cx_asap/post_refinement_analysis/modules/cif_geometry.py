@@ -107,7 +107,7 @@ class CIF_Geometry:
         """Check whether any definition key should also be written in Mercury-rounded form."""
 
         for key in keys:
-            if engine._point_uses_centroid(definition.get(key, [])):
+            if engine._point_uses_group_center(definition.get(key, [])):
                 return True
         return False
 
@@ -273,7 +273,7 @@ class CIF_Geometry:
                             definition.get("point_2_atoms", []),
                             definition.get("point_1_symmetry") or None,
                             definition.get("point_2_symmetry") or None,
-                            centroid_round_dp=3,
+                            group_center_round_dp=3,
                         )
 
                 for index, definition in enumerate(point_geometry_angles):
@@ -302,7 +302,7 @@ class CIF_Geometry:
                             definition.get("point_1_symmetry") or None,
                             definition.get("point_2_symmetry") or None,
                             definition.get("point_3_symmetry") or None,
-                            centroid_round_dp=3,
+                            group_center_round_dp=3,
                         )
 
                 for index, definition in enumerate(point_geometry_torsions):
@@ -340,7 +340,7 @@ class CIF_Geometry:
                             definition.get("point_2_symmetry") or None,
                             definition.get("point_3_symmetry") or None,
                             definition.get("point_4_symmetry") or None,
-                            centroid_round_dp=3,
+                            group_center_round_dp=3,
                         )
 
                 for index, definition in enumerate(point_geometry_plane_distances):
@@ -365,7 +365,7 @@ class CIF_Geometry:
                             definition.get("plane_atoms", []),
                             definition.get("point_symmetry") or None,
                             definition.get("plane_symmetry") or None,
-                            centroid_round_dp=3,
+                            group_center_round_dp=3,
                         )
 
                 if len(distance_row.keys()) > len(base_row.keys()):

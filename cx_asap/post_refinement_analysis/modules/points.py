@@ -30,7 +30,7 @@ import pandas as pd
 
 
 class PointGeometryEngine:
-    """Calculates centroid positions and inter-centroid distances from .lst files.
+    """Calculates point positions and inter-point-group distances from .lst files.
 
     Atom fractional coordinates are parsed from the embedded .res block of the
     SHELXL .lst file. Distances are computed in Cartesian coordinates using the
@@ -132,27 +132,27 @@ class PointGeometryEngine:
         atom_names: "str | list[str] | tuple | set | np.ndarray",
         symmetry: str = None,
     ) -> "np.ndarray | None":
-        """Calculates the centroid (mean fractional position) of a group of atoms.
+        """Calculates the mean fractional position of a group of atoms.
 
         If a symmetry operation string is provided, each atom's fractional
         coordinates are transformed by that operation before averaging.
 
         Args:
             coords (dict): fractional coordinates from LST_Read.extract_atom_coordinates()
-            atom_names (list): atom labels to include in the centroid calculation
+            atom_names (list): atom labels to include in the calculation
             symmetry (str): optional SHELXL/CIF symmetry operation string,
                             e.g. "-x+1/2, y+1/2, -z+1/2"
 
         Returns:
-            centroid (np.ndarray): 1D array [x, y, z] in fractional coordinates,
-                                   or None if no atoms were found
+            center (np.ndarray): 1D array [x, y, z] in fractional coordinates,
+                                  or None if no atoms were found
         """
 
         positions = self._extract_positions(coords, atom_names, symmetry)
 
         if not positions:
             logging.critical(
-                __name__ + " : No valid atoms found for centroid calculation"
+                __name__ + " : No valid atoms found for point group center calculation"
             )
             return None
 
@@ -168,7 +168,7 @@ class PointGeometryEngine:
         """Calculates a single point from atom input.
 
         One atom label resolves to that atom position.
-        Multiple atom labels resolve to the centroid of those atoms.
+        Multiple atom labels resolve to the group center of those atoms.
         """
 
         atom_names = self._normalise_atom_names(atom_names)
@@ -185,19 +185,19 @@ class PointGeometryEngine:
                 return None
             return positions[0]
 
-        centroid = self.calculate_point_group_center(coords, atom_names, symmetry)
-        if centroid is None:
+        center = self.calculate_point_group_center(coords, atom_names, symmetry)
+        if center is None:
             return None
 
         if group_center_round_dp is not None:
-            return np.round(centroid, group_center_round_dp)
+            return np.round(center, group_center_round_dp)
 
-        return centroid
+        return center
 
     def _point_uses_group_center(
         self, atom_names: "str | list[str] | tuple | set | np.ndarray"
     ) -> bool:
-        """Returns True when a point definition resolves via centroid averaging."""
+        """Returns True when a point definition resolves via point-group averaging."""
 
         return len(self._normalise_atom_names(atom_names)) > 1
 
@@ -307,12 +307,12 @@ class PointGeometryEngine:
         has_symmetry = any(
             item is not None for item in [symmetry_1, symmetry_2, symmetry_3, symmetry_4]
         )
-        has_centroid_point = any(
+        has_group_point = any(
             len(item) > 1
             for item in [point_1_list, point_2_list, point_3_list, point_4_list]
         )
 
-        if has_symmetry and has_centroid_point and abs(torsion_value) < 90.0:
+        if has_symmetry and has_group_point and abs(torsion_value) < 90.0:
             return torsion_value - 180.0 if torsion_value > 0.0 else torsion_value + 180.0
 
         return torsion_value
@@ -583,9 +583,9 @@ class PointGeometryEngine:
         symmetry_1: str = None,
         symmetry_2: str = None,
     ) -> float:
-        """Calculates the distance in Angstroms between the centroids of two atom groups.
+        """Calculates the distance in Angstroms between the centers of two atom groups.
 
-        Centroids are calculated in fractional coordinates then converted to Cartesian
+        Group centers are calculated in fractional coordinates then converted to Cartesian
         space using the unit cell orthonormalisation matrix before computing the
         Euclidean distance.
 
@@ -593,12 +593,12 @@ class PointGeometryEngine:
             coords (dict): fractional coordinates from LST_Read.extract_atom_coordinates()
             atom_list_1 (list): atom labels for the first group
             atom_list_2 (list): atom labels for the second group
-            symmetry_1 (str): optional symmetry operation string for centroid 1
-            symmetry_2 (str): optional symmetry operation string for centroid 2
+            symmetry_1 (str): optional symmetry operation string for group 1
+            symmetry_2 (str): optional symmetry operation string for group 2
 
         Returns:
-            distance (float): distance in Angstroms between the two centroids,
-                              or 0.0 if either centroid could not be calculated
+            distance (float): distance in Angstroms between the two group centers,
+                              or 0.0 if either center could not be calculated
         """
 
         return self.point_distance(
@@ -613,17 +613,17 @@ class PointGeometryEngine:
         symmetry_1: str = None,
         symmetry_2: str = None,
     ) -> float:
-        """Reads a .lst file and calculates the centroid-to-centroid distance.
+        """Reads a .lst file and calculates the point-group-to-point-group distance.
 
         Args:
             file_name (str): full path to the .lst file
             atom_list_1 (list): atom labels for the first group
             atom_list_2 (list): atom labels for the second group
-            symmetry_1 (str): optional symmetry operation string for centroid 1
-            symmetry_2 (str): optional symmetry operation string for centroid 2
+            symmetry_1 (str): optional symmetry operation string for group 1
+            symmetry_2 (str): optional symmetry operation string for group 2
 
         Returns:
-            distance (float): distance in Angstroms between the two centroids
+            distance (float): distance in Angstroms between the two group centers
         """
 
         data = self.lst_reader.read(file_name)
@@ -639,11 +639,11 @@ class PointGeometryEngine:
         results_path: str,
         atom_list_1: list,
         atom_list_2: list,
-        label: str = "Centroid Distance",
+        label: str = "Point Group Distance",
         symmetry_1: str = None,
         symmetry_2: str = None,
     ) -> None:
-        """Calculates the centroid distance between two atom groups and appends to a .csv.
+        """Calculates the point group distance between two atom groups and appends to a .csv.
 
         The output csv filename is derived from the label parameter.
 
@@ -655,8 +655,8 @@ class PointGeometryEngine:
             atom_list_2 (list): atom labels for the second group
             label (str): column header for the distance in the output csv;
                          also used to derive the csv filename
-            symmetry_1 (str): optional symmetry operation string for centroid 1
-            symmetry_2 (str): optional symmetry operation string for centroid 2
+            symmetry_1 (str): optional symmetry operation string for group 1
+            symmetry_2 (str): optional symmetry operation string for group 2
         """
 
         if lst_name == "":

@@ -142,8 +142,8 @@ class VT_Pipeline:
         )
         rotation = Rotation_Pipeline()
         rotation.analysis(location, reference_plane, graph_output_location)
-        centroids = PointsPipeline()
-        centroids.point_group_distance_analysis(
+        points_pipeline = PointsPipeline()
+        points_pipeline.point_group_distance_analysis(
             location,
             self.cfg["point_group_1_atoms"],
             self.cfg["point_group_2_atoms"],
