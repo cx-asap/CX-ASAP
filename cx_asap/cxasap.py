@@ -1603,6 +1603,120 @@ def module_intensity_compare(dependencies, files, configure, run):
         click.echo("Please select an option. To view options, add --help")
 
 
+@click.command(
+    "pipeline-intensity-compare", short_help="Compares intensities of hkl files"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_intensity_compare(dependencies, files, configure, run):
+    """This pipeline will analyse the intensities of multiple .hkl files
+    based on reflection conditions.
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- xprep")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a series of .hkl files in a single folder")
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        fields = yaml_extraction("pipeline-intensity-compare")
+        echo_config_descriptions(
+            fields,
+            {
+                "data_location": "enter the full path to the folder containing your hkl files",
+                "a_axis": "enter the a-axis of the unit cell",
+                "b_axis": "enter the b-axis of the unit cell",
+                "c_axis": "enter the c-axis of the unit cell",
+                "alpha": "enter the alpha angle of the unit cell",
+                "beta": "enter the beta angle of the unit cell",
+                "gamma": "enter the gamma angle of the unit cell",
+                "h_condition_1": "condition for group 1 of h-indicies, enter n for no condition",
+                "h_condition_2": "condition for group 2 of h-indicies, enter n for no condition",
+                "k_condition_1": "condition for group 1 of k-indicies, enter n for no condition",
+                "k_condition_2": "condition for group 2 of k-indicies, enter n for no condition",
+                "l_condition_1": "condition for group 1 of l-indicies, enter n for no condition",
+                "l_condition_2": "condition for group 2 of l-indicies, enter n for no condition",
+                "h+k_condition_1": "condition for group 1 of h+k indicies, enter n for no condition",
+                "h+k_condition_2": "condition for group 2 of h+k indicies, enter n for no condition",
+                "h+l_condition_1": "condition for group 1 of h+l indicies, enter n for no condition",
+                "h+l_condition_2": "condition for group 2 of h+l indicies, enter n for no condition",
+                "k+l_condition_1": "condition for group 1 of k+l indicies, enter n for no condition",
+                "k+l_condition_2": "condition for group 2 of k+l indicies, enter n for no condition",
+                "h+k+l_condition_1": "condition for group 1 of h+k+l indicies, enter n for no condition",
+                "h+k+l_condition_2": "condition for group 2 of h+k+l indicies, enter n for no condition",
+                "include_h_0_condition_1": "enter true if you want to include reflections where h = 0 for group 1, otherwise enter false",
+                "include_h_0_condition_2": "enter true if you want to include reflections where h = 0 for group 2, otherwise enter false",
+                "include_k_0_condition_1": "enter true if you want to include reflections where k = 0 for group 1, otherwise enter false",
+                "include_k_0_condition_2": "enter true if you want to include reflections where k = 0 for group 2, otherwise enter false",
+                "include_l_0_condition_1": "enter true if you want to include reflections where l = 0 for group 1, otherwise enter false",
+                "include_l_0_condition_2": "enter true if you want to include reflections where l = 0 for group 2, otherwise enter false",
+            },
+            [
+                "",
+                "Note that your conditions must be in the form Xn+Y, where X and Y are integers, and + can also be a -",
+            ],
+        )
+        yaml_creation(fields, "pipeline-intensity-compare")
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-intensity-compare")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            xprep = Intensity_Pipeline()
+
+            xprep.multiple_intensity(
+                cfg["data_location"],
+                cfg["h_condition_1"],
+                cfg["k_condition_1"],
+                cfg["l_condition_1"],
+                cfg["h_condition_2"],
+                cfg["k_condition_2"],
+                cfg["l_condition_2"],
+                cfg["h+k_condition_1"],
+                cfg["h+k_condition_2"],
+                cfg["h+l_condition_1"],
+                cfg["h+l_condition_2"],
+                cfg["k+l_condition_1"],
+                cfg["k+l_condition_2"],
+                cfg["h+k+l_condition_1"],
+                cfg["h+k+l_condition_2"],
+                cfg["a_axis"],
+                cfg["b_axis"],
+                cfg["c_axis"],
+                cfg["alpha"],
+                cfg["beta"],
+                cfg["gamma"],
+                cfg["include_h_0_condition_1"],
+                cfg["include_k_0_condition_1"],
+                cfg["include_l_0_condition_1"],
+                cfg["include_h_0_condition_2"],
+                cfg["include_k_0_condition_2"],
+                cfg["include_l_0_condition_2"],
+            )
+
+            copy_logs(cfg["data_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
 ###------Cif Merge Module-------###
 
 """This module will merge one instrument CIF with one structure cif.
