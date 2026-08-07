@@ -67,11 +67,11 @@ pipeline-variable-position:
   - atoms_for_analysis
   - atoms_for_rotation_analysis
   - reference_plane
-  - calculate_point_group_distance
-  - point_group_1_atoms
-  - point_group_2_atoms
-  - point_group_1_symmetry
-  - point_group_2_symmetry
+  - calculate_geometry_set_distance
+  - geometry_set_1_atoms
+  - geometry_set_2_atoms
+  - geometry_set_1_symmetry
+  - geometry_set_2_symmetry
 
 pipeline-general:
   - experiment_location

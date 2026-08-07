@@ -430,7 +430,7 @@ _CONF_SECTIONS: dict = {
         "space_group_number":             "XDS SETTINGS",
         "refinements_to_check":           "REFINEMENT",
         "cif_parameters":                 "ANALYSIS",
-        "calculate_point_group_distance": "GEOMETRY",
+        "calculate_geometry_set_distance": "GEOMETRY",
     },
     "pipeline-general": {
         "experiment_location": "INPUT",
@@ -570,8 +570,8 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
         "beta_gradient",
         "c_gradient",
         "gamma_gradient",
-        "point_group_1_symmetry",
-        "point_group_2_symmetry",
+        "geometry_set_1_symmetry",
+        "geometry_set_2_symmetry",
     ]
 
     if heading == "pipeline-AS-Brute-individual":
@@ -1073,11 +1073,11 @@ def pipeline_vp(dependencies, files, configure, run):
                 "atoms_for_analysis": "enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs",
                 "atoms_for_rotation_analysis": "enter atom labels for mean plane analysis as a list for a single MPLA plane (eg [Cu1, O1, O2]) or a list of lists for multiple planes (eg [[Cu1, O1], [C3, C4, C5]])",
                 "reference_plane": "enter the reference plane for mean plane analysis as a list",
-                "calculate_point_group_distance": "enter True for point-group analysis between two atom groups from the .lst files, otherwise enter False",
-                "point_group_1_atoms": "list of atom labels for the first point group (only needed if calculate_point_group_distance is true)",
-                "point_group_2_atoms": "list of atom labels for the second point group (only needed if calculate_point_group_distance is true)",
-                "point_group_1_symmetry": "optional symmetry operation for point group 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)",
-                "point_group_2_symmetry": "optional symmetry operation for point group 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)",
+                "calculate_geometry_set_distance": "enter True for geometry-set distance analysis between two atom groups from the .lst files, otherwise enter False",
+                "geometry_set_1_atoms": "list of atom labels for the first geometry set (only needed if calculate_geometry_set_distance is true)",
+                "geometry_set_2_atoms": "list of atom labels for the second geometry set (only needed if calculate_geometry_set_distance is true)",
+                "geometry_set_1_symmetry": "optional symmetry operation for geometry set 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)",
+                "geometry_set_2_symmetry": "optional symmetry operation for geometry set 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)",
             },
         )
         yaml_creation(fields, "pipeline-variable-position")
@@ -1161,15 +1161,15 @@ def pipeline_vp(dependencies, files, configure, run):
                 cfg["wedge_angles"],
                 cfg["reference_plane"],
             )
-            if cfg.get("calculate_point_group_distance", False):
+            if cfg.get("calculate_geometry_set_distance", False):
                 points_pipeline = PointsPipeline()
-                points_pipeline.point_group_distance_analysis(
+                points_pipeline.geometry_set_distance_analysis(
                     full_vp_analysis.sys["current_results_path"],
-                    cfg["point_group_1_atoms"],
-                    cfg["point_group_2_atoms"],
+                    cfg["geometry_set_1_atoms"],
+                    cfg["geometry_set_2_atoms"],
                     full_vp_analysis.sys["current_results_path"],
-                    symmetry_1=cfg.get("point_group_1_symmetry") or None,
-                    symmetry_2=cfg.get("point_group_2_symmetry") or None,
+                    symmetry_1=cfg.get("geometry_set_1_symmetry") or None,
+                    symmetry_2=cfg.get("geometry_set_2_symmetry") or None,
                 )
 
             copy_logs(full_vp_analysis.sys["current_results_path"])
@@ -4095,11 +4095,11 @@ def pipeline_position_analysis(dependencies, files, configure, run):
                 "structural_analysis_torsions": "enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command",
                 "structural_analysis_hbonds": "enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command",
                 "wedge_angles": "enter the wedge angles as a list for XDS processing",
-                "calculate_point_group_distance": "enter True for point-group analysis between two atom groups from the .lst files, otherwise enter False",
-                "point_group_1_atoms": "list of atom labels for the first point group (only needed if calculate_point_group_distance is true)",
-                "point_group_2_atoms": "list of atom labels for the second point group (only needed if calculate_point_group_distance is true)",
-                "point_group_1_symmetry": "optional symmetry operation for point group 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)",
-                "point_group_2_symmetry": "optional symmetry operation for point group 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)",
+                "calculate_geometry_set_distance": "enter True for geometry-set distance analysis between two atom groups from the .lst files, otherwise enter False",
+                "geometry_set_1_atoms": "list of atom labels for the first geometry set (only needed if calculate_geometry_set_distance is true)",
+                "geometry_set_2_atoms": "list of atom labels for the second geometry set (only needed if calculate_geometry_set_distance is true)",
+                "geometry_set_1_symmetry": "optional symmetry operation for geometry set 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)",
+                "geometry_set_2_symmetry": "optional symmetry operation for geometry set 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)",
             },
         )
         yaml_creation(fields, "pipeline-position-analysis")
@@ -4138,15 +4138,15 @@ def pipeline_position_analysis(dependencies, files, configure, run):
                 cfg["structural_analysis_hbonds"],
                 cfg["ADP_analysis"],
             )
-            if cfg.get("calculate_point_group_distance", False):
+            if cfg.get("calculate_geometry_set_distance", False):
                 points_pipeline = PointsPipeline()
-                points_pipeline.point_group_distance_analysis(
+                points_pipeline.geometry_set_distance_analysis(
                     cfg["experiment_location"],
-                    cfg["point_group_1_atoms"],
-                    cfg["point_group_2_atoms"],
+                    cfg["geometry_set_1_atoms"],
+                    cfg["geometry_set_2_atoms"],
                     cfg["experiment_location"],
-                    symmetry_1=cfg.get("point_group_1_symmetry") or None,
-                    symmetry_2=cfg.get("point_group_2_symmetry") or None,
+                    symmetry_1=cfg.get("geometry_set_1_symmetry") or None,
+                    symmetry_2=cfg.get("geometry_set_2_symmetry") or None,
                 )
 
             copy_logs(cfg["experiment_location"])

@@ -30,7 +30,7 @@ import pandas as pd
 
 
 class PointGeometryEngine:
-    """Calculates point positions and inter-point-group distances from .lst files.
+    """Calculates point positions and geometry-set distances from .lst files.
 
     Atom fractional coordinates are parsed from the embedded .res block of the
     SHELXL .lst file. Distances are computed in Cartesian coordinates using the
@@ -132,7 +132,7 @@ class PointGeometryEngine:
         atom_names: "str | list[str] | tuple | set | np.ndarray",
         symmetry: str = None,
     ) -> "np.ndarray | None":
-        """Calculates the mean fractional position of a group of atoms.
+        """Calculates the mean fractional position of a geometry set of atoms.
 
         If a symmetry operation string is provided, each atom's fractional
         coordinates are transformed by that operation before averaging.
@@ -152,7 +152,7 @@ class PointGeometryEngine:
 
         if not positions:
             logging.critical(
-                __name__ + " : No valid atoms found for point group center calculation"
+                __name__ + " : No valid atoms found for geometry-set center calculation"
             )
             return None
 
@@ -197,7 +197,7 @@ class PointGeometryEngine:
     def _point_uses_group_center(
         self, atom_names: "str | list[str] | tuple | set | np.ndarray"
     ) -> bool:
-        """Returns True when a point definition resolves via point-group averaging."""
+        """Returns True when a point definition resolves via geometry-set averaging."""
 
         return len(self._normalise_atom_names(atom_names)) > 1
 
