@@ -416,17 +416,131 @@ def yaml_extraction(heading: str) -> dict:
     return yaml_dict
 
 
-def yaml_creation(yaml_dict: dict) -> None:
+_HEADING = (
+    "# ==========================================================\n"
+    "# {name}\n"
+    "# ==========================================================\n"
+)
+
+# Maps first param of each section to its label, per pipeline/module.
+_CONF_SECTIONS: dict = {
+    "pipeline-variable-position": {
+        "location_of_frames":             "INPUT",
+        "chemical_formula":               "CRYSTAL INFO",
+        "space_group_number":             "XDS SETTINGS",
+        "refinements_to_check":           "REFINEMENT",
+        "cif_parameters":                 "ANALYSIS",
+        "calculate_geometry_set_distance": "GEOMETRY",
+    },
+    "pipeline-general": {
+        "experiment_location": "INPUT",
+        "cif_parameters":      "ANALYSIS",
+        "refinements_to_check":"REFINEMENT",
+    },
+    "pipeline-general-extra": {
+        "experiment_location":     "INPUT",
+        "_chemical_formula_moiety":"CIF FIELDS",
+        "cif_parameters":          "ANALYSIS",
+        "refinements_to_check":    "REFINEMENT",
+    },
+    "module-intensity-compare": {
+        "xprep_file_name": "INPUT",
+        "a_axis":          "UNIT CELL",
+        "h_condition_1":   "CONDITIONS",
+    },
+    "pipeline-intensity-compare": {
+        "data_location": "INPUT",
+        "a_axis":        "UNIT CELL",
+        "h_condition_1": "CONDITIONS",
+    },
+    "pipeline-cif": {
+        "experiment_location": "INPUT",
+        "chemical_formula":    "CRYSTAL INFO",
+        "instrument_ending":   "INSTRUMENT",
+    },
+    "pipeline-rigaku-vt": {
+        "experiment_location":  "INPUT",
+        "chemical_formula":     "CRYSTAL INFO",
+        "refinements_to_check": "REFINEMENT",
+        "cif_parameters":       "ANALYSIS",
+    },
+    "pipeline-aus-synch-vt": {
+        "location_of_autoprocess_folders": "INPUT",
+        "chemical_formula":                "CRYSTAL INFO",
+        "refinements_to_check":            "REFINEMENT",
+        "cif_parameters":                  "ANALYSIS",
+    },
+    "module-cif-read": {
+        "folder_containing_cifs": "INPUT",
+        "cif_parameters":         "ANALYSIS",
+    },
+    "module-cif-analysis": {
+        "folder_containing_cifs":   "INPUT",
+        "cif_parameters":           "ANALYSIS",
+        "point_geometry_distances": "GEOMETRY",
+    },
+    "pipeline-cif-analysis": {
+        "experiment_location":      "INPUT",
+        "cif_parameters":           "ANALYSIS",
+        "point_geometry_distances": "GEOMETRY",
+    },
+    "pipeline-variable-analysis": {
+        "experiment_location": "INPUT",
+        "cif_parameters":      "ANALYSIS",
+    },
+    "pipeline-position-analysis": {
+        "experiment_location": "INPUT",
+        "cif_parameters":      "ANALYSIS",
+        "wedge_angles":        "XDS SETTINGS",
+        "atoms_for_plane":     "GEOMETRY",
+    },
+    "pipeline-temperature-analysis": {
+        "experiment_location": "INPUT",
+        "cif_parameters":      "ANALYSIS",
+    },
+    "module-molecule-reconstruction": {
+        "reference_path": "INPUT",
+        "a_gradient":     "GRADIENTS",
+        "max_position":   "RANGE",
+    },
+}
+
+
+def yaml_creation(yaml_dict: dict, heading: str = "") -> None:
     """Converts the yaml_dict made from the yaml_extraction function into a yaml file
     This is the conf.yaml that the user will edit to configure the code
     Args:
         yaml_dict (dict): Dictionary of yaml parameters specific to the chosen module/pipeline
+        heading (str): Pipeline/module name used to look up section headings
     """
     yaml_path = pathlib.Path(os.path.abspath(__file__)).parent / "conf.yaml"
     # yaml_path = pathlib.Path(os.path.join(os.getcwd()), "conf.yaml")
 
+    # YAML comments are ignored by yaml.load, so headings don't affect parsing.
+    sections = _CONF_SECTIONS.get(heading, {})
+    parts = []
+    for key, value in yaml_dict.items():
+        if key in sections:
+            if parts:
+                parts.append("\n")
+            parts.append(_HEADING.format(name=sections[key]))
+        parts.append(yaml.dump({key: value}, sort_keys=False))
     with open(yaml_path, "w") as f:
-        new_yaml = yaml.dump(yaml_dict, f)
+        f.write("".join(parts))
+
+
+def echo_config_descriptions(yaml_dict, descriptions, extra_lines=None) -> None:
+    """Print configure text in the same order as the generated yaml."""
+
+    click.echo("Descriptions are listed below:")
+    for key in yaml_dict:
+        description = descriptions.get(key)
+        if description is not None:
+            click.echo(f" - {key}: {description}")
+
+    if extra_lines is not None:
+        for line in extra_lines:
+            click.echo(line)
 
 
 def configuration_check(heading: str) -> Tuple[bool, dict]:
@@ -456,8 +570,8 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
         "beta_gradient",
         "c_gradient",
         "gamma_gradient",
-        "point_group_1_symmetry",
-        "point_group_2_symmetry",
+        "geometry_set_1_symmetry",
+        "geometry_set_2_symmetry",
     ]
 
     if heading == "pipeline-AS-Brute-individual":
@@ -725,21 +839,18 @@ def module_refinement(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - reference_path: enter the full path to your reference .ins or .res file"
-        )
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(" - structure_location: enter the full path to your new .ins file")
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check\n"
-        )
-
         fields = yaml_extraction("module-refinement")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "structure_location": "enter the full path to your new .ins file",
+                "reference_path": "enter the full path to your reference .ins or .res file",
+                "refinements_to_check": "enter the number of refinements you want to check for convergence",
+                "tolerance": "enter the desired mean shift for the number of refinements in refinements_to_check",
+                "maximum_cycles": "enter the max number of cycles shelxl can run",
+            },
+        )
+        yaml_creation(fields, "module-refinement")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -821,23 +932,18 @@ def pipeline_refinement(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - experiment_location: enter the full path to the folder containing all dataset folders"
-        )
-        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - reference_path: enter the full path to your reference .ins or .res file"
-        )
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check\n"
-        )
-
         fields = yaml_extraction("pipeline-refinement")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "enter the full path to the folder containing all dataset folders",
+                "reference_path": "enter the full path to your reference .ins or .res file",
+                "refinements_to_check": "enter the number of refinements you want to check for convergence",
+                "tolerance": "enter the desired mean shift for the number of refinements in refinements_to_check",
+                "maximum_cycles": "enter the max number of cycles shelxl can run",
+            },
+        )
+        yaml_creation(fields, "pipeline-refinement")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -927,121 +1033,54 @@ def pipeline_vp(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - ADP_analysis: enter True for ADP analysis, otherwise enter False"
-        )
-        click.echo(
-            " - atoms_for_analysis: enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs"
-        )
-        click.echo(
-            " - atoms_for_rotation_analysis: enter atom labels for mean plane analysis as a list for a single MPLA plane (eg [Cu1, O1, O2]) or a list of lists for multiple planes (eg [[Cu1, O1], [C3, C4, C5]])"
-        )
-        click.echo(" - chemical_formula: enter the chemical formula of your crystal")
-        click.echo(
-            " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
-        )
-        click.echo(" - crystal_colour: enter the colour of your crystal")
-        click.echo(" - crystal_habit: enter the habit of your crystal")
-        click.echo(
-            " - experiment_name: enter the common name between frames (ie AJT-01-018)"
-        )
-        click.echo(
-            " - instrument_cif_path: enter the full path to your instrument cif file"
-        )
-        click.echo(
-            " - instrument_parameters_path: enter the full path to your reference GXPARM.XDS file"
-        )
-        click.echo(
-            " - location_of_frames: enter the full path to the folder containing your .h5 frames"
-        )
-        click.echo(
-            " - mapping_step_size: enter the step-size for the collection (in um)"
-        )
-        click.echo(
-            " - max_crystal_dimension: enter the largest dimension of your crystal (in mm)"
-        )
-        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - maximum_processors: enter the maximum number of processors you want XDS to use"
-        )
-        click.echo(
-            " - middle_crystal_dimension: enter the middle diimension of your crystal (in mm)"
-        )
-        click.echo(
-            " - min_crystal_dimension: enter the smallest dimension of your crystal (in mm)"
-        )
-        click.echo(
-            " - min_pixels: enter the values for minimum_pixels_in_a_spot as a list for XDS proessing"
-        )
-        click.echo(" - neggia_library: enter the full path to dectris_neggia.so")
-        click.echo(
-            " - reference_background_files_location: enter the full path to the folder containing BKGINIT.cbf, BLANK.cbf, GAIN.cbf, X-CORRECTIONS.cbf and Y-CORRECTIONS.cbf"
-        )
-        click.echo(
-            " - reference_plane: enter the reference plane for mean plane analysis as a list"
-        )
-        click.echo(
-            " - reference_structure_location: enter the full path to your reference .ins/.res file"
-        )
-        click.echo(
-            " - reference_XDS_INP_location: enter the full path to your reference XDS.INP file"
-        )
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(
-            " - sepmin: enter the values for sepmin as a list for XDS processing"
-        )
-        click.echo(
-            " - space_group_number: enter the space group number for your compound (ie 14)"
-        )
-        click.echo(" - space_group: enter the space group name for entry into xprep ")
-        click.echo(
-            " - spot_maximum_centroid: enter the values for spot_maximum_centroid as a list for XDS processing"
-        )
-        click.echo(
-            " - signal_pixel: enter the values for signal_pixel as a list for XDS processing"
-        )
-        click.echo(
-            " - minimum_fraction_of_indexed_spots: enter the minimum fraction of indexed spots threshold for XDS processing"
-        )
-        click.echo(
-            " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter True for angle analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
-        )
-        click.echo(
-            " - structural_analysis_hbonds: enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
-        )
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
-        )
-        click.echo(
-            " - wedge_angles: enter the wedge angles as a list for XDS processing"
-        )
-        click.echo(
-            " - calculate_point_group_distance: enter True for point-group analysis between two atom groups from the .lst files, otherwise enter False"
-        )
-        click.echo(
-            " - point_group_1_atoms: list of atom labels for the first point group (only needed if calculate_point_group_distance is true)"
-        )
-        click.echo(
-            " - point_group_2_atoms: list of atom labels for the second point group (only needed if calculate_point_group_distance is true)"
-        )
-        click.echo(
-            " - point_group_1_symmetry: optional symmetry operation for point group 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
-        )
-        click.echo(
-            " - point_group_2_symmetry: optional symmetry operation for point group 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
-        )
-
         fields = yaml_extraction("pipeline-variable-position")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "location_of_frames": "enter the full path to the folder containing your .h5 frames",
+                "experiment_name": "enter the common name between frames (ie AJT-01-018)",
+                "reference_structure_location": "enter the full path to your reference .ins/.res file",
+                "reference_XDS_INP_location": "enter the full path to your reference XDS.INP file",
+                "reference_background_files_location": "enter the full path to the folder containing BKGINIT.cbf, BLANK.cbf, GAIN.cbf, X-CORRECTIONS.cbf and Y-CORRECTIONS.cbf",
+                "instrument_parameters_path": "enter the full path to your reference GXPARM.XDS file",
+                "instrument_cif_path": "enter the full path to your instrument cif file",
+                "chemical_formula": "enter the chemical formula of your crystal",
+                "crystal_habit": "enter the habit of your crystal",
+                "crystal_colour": "enter the colour of your crystal",
+                "max_crystal_dimension": "enter the largest dimension of your crystal (in mm)",
+                "middle_crystal_dimension": "enter the middle diimension of your crystal (in mm)",
+                "min_crystal_dimension": "enter the smallest dimension of your crystal (in mm)",
+                "mapping_step_size": "enter the step-size for the collection (in um)",
+                "space_group_number": "enter the space group number for your compound (ie 14)",
+                "space_group": "enter the space group name for entry into xprep",
+                "maximum_processors": "enter the maximum number of processors you want XDS to use",
+                "neggia_library": "enter the full path to dectris_neggia.so",
+                "total_angle": "enter the total angle measured for the experiment",
+                "wedge_angles": "enter the wedge angles as a list for XDS processing",
+                "min_pixels": "enter the values for minimum_pixels_in_a_spot as a list for XDS processing",
+                "spot_maximum_centroid": "enter the values for spot_maximum_centroid as a list for XDS processing",
+                "signal_pixel": "enter the values for signal_pixel as a list for XDS processing",
+                "sepmin": "enter the values for sepmin as a list for XDS processing",
+                "minimum_fraction_of_indexed_spots": "enter the minimum fraction of indexed spots threshold for XDS processing",
+                "refinements_to_check": "enter the number of refinements you want to check for convergence",
+                "tolerance": "enter the desired mean shift for the number of refinements in refinements_to_check",
+                "cif_parameters": "enter the parameters to be extracted from your cifs - the default parameters are usually fine",
+                "structural_analysis_bonds": "enter True for bond length analysis, otherwise enter False",
+                "structural_analysis_angles": "enter True for angle analysis, otherwise enter False",
+                "structural_analysis_torsions": "enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file",
+                "structural_analysis_hbonds": "enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file",
+                "ADP_analysis": "enter True for ADP analysis, otherwise enter False",
+                "atoms_for_analysis": "enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs",
+                "atoms_for_rotation_analysis": "enter atom labels for mean plane analysis as a list for a single MPLA plane (eg [Cu1, O1, O2]) or a list of lists for multiple planes (eg [[Cu1, O1], [C3, C4, C5]])",
+                "reference_plane": "enter the reference plane for mean plane analysis as a list",
+                "calculate_geometry_set_distance": "enter True for geometry-set distance analysis between two atom groups from the .lst files, otherwise enter False",
+                "geometry_set_1_atoms": "list of atom labels for the first geometry set (only needed if calculate_geometry_set_distance is true)",
+                "geometry_set_2_atoms": "list of atom labels for the second geometry set (only needed if calculate_geometry_set_distance is true)",
+                "geometry_set_1_symmetry": "optional symmetry operation for geometry set 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)",
+                "geometry_set_2_symmetry": "optional symmetry operation for geometry set 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)",
+            },
+        )
+        yaml_creation(fields, "pipeline-variable-position")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1122,15 +1161,15 @@ def pipeline_vp(dependencies, files, configure, run):
                 cfg["wedge_angles"],
                 cfg["reference_plane"],
             )
-            if cfg.get("calculate_point_group_distance", False):
+            if cfg.get("calculate_geometry_set_distance", False):
                 points_pipeline = PointsPipeline()
-                points_pipeline.point_group_distance_analysis(
+                points_pipeline.geometry_set_distance_analysis(
                     full_vp_analysis.sys["current_results_path"],
-                    cfg["point_group_1_atoms"],
-                    cfg["point_group_2_atoms"],
+                    cfg["geometry_set_1_atoms"],
+                    cfg["geometry_set_2_atoms"],
                     full_vp_analysis.sys["current_results_path"],
-                    symmetry_1=cfg.get("point_group_1_symmetry") or None,
-                    symmetry_2=cfg.get("point_group_2_symmetry") or None,
+                    symmetry_1=cfg.get("geometry_set_1_symmetry") or None,
+                    symmetry_2=cfg.get("geometry_set_2_symmetry") or None,
                 )
 
             copy_logs(full_vp_analysis.sys["current_results_path"])
@@ -1198,50 +1237,27 @@ def pipeline_general(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - ADP_analysis: enter True for ADP analysis, otherwise enter False"
-        )
-        click.echo(
-            " - atoms_for_analysis: enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs"
-        )
-        click.echo(
-            " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
-        )
-        click.echo(
-            " - experiment_location: enter the full path to the folder containing your data sets"
-        )
-        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - reference_cif_location: enter the full path to your reference .cif file"
-        )
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(
-            " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter True for angle analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
-        )
-        click.echo(
-            " - structural_analysis_hbonds: enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
-        )
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
-        )
-        click.echo(
-            " - varying_cif_parameter: enter the parameter in your cif files that is varying in proper cif syntax (ie _diffrn_ambient_temperature)"
-        )
-        click.echo(
-            " - varying_parameter_values: enter the values of your varying parameter as a list with errors. Ie if you did a VT experiment at 100(2)K and 200(2)K, enter 100(2) and 200(2) in the provided list"
-        )
-
         fields = yaml_extraction("pipeline-general")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "enter the full path to the folder containing your data sets",
+                "reference_cif_location": "enter the full path to your reference .cif file",
+                "cif_parameters": "enter the parameters to be extracted from your cifs - the default parameters are usually fine",
+                "refinements_to_check": "enter the number of refinements you want to check for convergence",
+                "tolerance": "enter the desired mean shift for the number of refinements in refinements_to_check",
+                "maximum_cycles": "enter the max number of cycles shelxl can run",
+                "varying_cif_parameter": "enter the parameter in your cif files that is varying in proper cif syntax (ie _diffrn_ambient_temperature)",
+                "varying_parameter_values": "enter the values of your varying parameter as a list with errors. Ie if you did a VT experiment at 100(2)K and 200(2)K, enter 100(2) and 200(2) in the provided list",
+                "structural_analysis_bonds": "enter True for bond length analysis, otherwise enter False",
+                "structural_analysis_angles": "enter True for angle analysis, otherwise enter False",
+                "structural_analysis_torsions": "enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file",
+                "structural_analysis_hbonds": "enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file",
+                "ADP_analysis": "enter True for ADP analysis, otherwise enter False",
+                "atoms_for_analysis": "enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs",
+            },
+        )
+        yaml_creation(fields, "pipeline-general")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1365,52 +1381,32 @@ def pipeline_general_extra(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - atoms_for_analysis: enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs"
-        )
-        click.echo(
-            " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
-        )
-        click.echo(
-            " - experiment_location: enter the full path to the folder containing your data sets"
-        )
-        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - reference_location: enter the full path to your reference .ins/.res file"
-        )
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(
-            " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter True for angle analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
-        )
-        click.echo(
-            " - structural_analysis_hbonds: enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
-        )
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
-        )
-        click.echo(
-            " - varying_cif_parameter: enter the parameter in your cif files that is varying in proper cif syntax (ie _diffrn_ambient_temperature)"
-        )
-        click.echo(
-            " - varying_parameter_values: enter the values of your varying parameter as a list with errors. Ie if you did a VT experiment at 100(2)K and 200(2)K, enter 100(2) and 200(2) in the provided list\n"
-        )
-        click.echo("IMPORTANT NOTE: there are also a series of cif parameters listed")
-        click.echo("To minimise checkCIF alerts, fill these in")
-        click.echo(
-            "You can remove or add cif parameters as long as correct CIF syntax is used!\n"
-        )
-
         fields = yaml_extraction("pipeline-general-extra")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "enter the full path to the folder containing your data sets",
+                "reference_location": "enter the full path to your reference .ins/.res file",
+                "cif_parameters": "enter the parameters to be extracted from your cifs - the default parameters are usually fine",
+                "refinements_to_check": "enter the number of refinements you want to check for convergence",
+                "tolerance": "enter the desired mean shift for the number of refinements in refinements_to_check",
+                "maximum_cycles": "enter the max number of cycles shelxl can run",
+                "varying_cif_parameter": "enter the parameter in your cif files that is varying in proper cif syntax (ie _diffrn_ambient_temperature)",
+                "varying_parameter_values": "enter the values of your varying parameter as a list with errors. Ie if you did a VT experiment at 100(2)K and 200(2)K, enter 100(2) and 200(2) in the provided list",
+                "structural_analysis_bonds": "enter True for bond length analysis, otherwise enter False",
+                "structural_analysis_angles": "enter True for angle analysis, otherwise enter False",
+                "structural_analysis_torsions": "enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file",
+                "structural_analysis_hbonds": "enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file",
+                "ADP_analysis": "enter True for ADP analysis, otherwise enter False",
+                "atoms_for_analysis": "enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs",
+            },
+            [
+                "IMPORTANT NOTE: there are also a series of cif parameters listed",
+                "To minimise checkCIF alerts, fill these in",
+                "You can remove or add cif parameters as long as correct CIF syntax is used!",
+            ],
+        )
+        yaml_creation(fields, "pipeline-general-extra")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1517,83 +1513,44 @@ def module_intensity_compare(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - a_axis: enter the a-axis of the unit cell")
-        click.echo(" - alpha: enter the alpha angle of the unit cell")
-        click.echo(" - b_axis: enter the b-axis of the unit cell")
-        click.echo(" - beta: enter the beta angle of the unit cell")
-        click.echo(" - c_axis: enter the c-axis of the unit cell")
-
-        click.echo(" - gamma: enter the gamma angle of the unit cell")
-
-        click.echo(
-            " - h_condition_1: condition for group 1 of h-indicies, enter n for no condition"
-        )
-        click.echo(
-            " - h_condition_2: condition for group 2 of h-indicies, enter n for no condition"
-        )
-        click.echo(
-            " - k_condition_1: condition for group 1 of k-indicies, enter n for no condition"
-        )
-        click.echo(
-            " - k_condition_2: condition for group 2 of k-indicies, enter n for no condition"
-        )
-        click.echo(
-            " - l_condition_1: condition for group 1 of l-indicies, enter n for no condition"
-        )
-        click.echo(
-            " - l_condition_2: condition for group 2 of l-indicies, enter n for no condition"
-        )
-        click.echo(
-            " - h+k_condition_1: condition for group 1 of h+k indicies, enter n for no condition"
-        )
-        click.echo(
-            " - h+k_condition_2: condition for group 2 of h+k indicies, enter n for no condition"
-        )
-        click.echo(
-            " - h+l_condition_1: condition for group 1 of h+l indicies, enter n for no condition"
-        )
-        click.echo(
-            " - h+l_condition_2: condition for group 2 of h+l indicies, enter n for no condition"
-        )
-        click.echo(
-            " - k+l_condition_1: condition for group 1 of k+l indicies, enter n for no condition"
-        )
-        click.echo(
-            " - k+l_condition_2: condition for group 2 of k+l indicies, enter n for no condition"
-        )
-        click.echo(
-            " - h+k+l_condition_1: condition for group 1 of h+k+l indicies, enter n for no condition"
-        )
-        click.echo(
-            " - h+k+l_condition_2: condition for group 2 of h+k+l indicies, enter n for no condition"
-        )
-
-        click.echo(
-            " - include_h_0_condition_1: enter true if you want to include reflections where h = 0 for group 1, otherwise enter false"
-        )
-        click.echo(
-            " - include_h_0_condition_2: enter true if you want to include reflections where h = 0 for group 2, otherwise enter false"
-        )
-        click.echo(
-            " - include_k_0_condition_1: enter true if you want to include reflections where k = 0 for group 1, otherwise enter false"
-        )
-        click.echo(
-            " - include_k_0_condition_2: enter true if you want to include reflections where k = 0 for group 2, otherwise enter false"
-        )
-        click.echo(
-            " - include_l_0_condition_1: enter true if you want to include reflections where l = 0 for group 1, otherwise enter false"
-        )
-        click.echo(
-            " - include_l_0_condition_2: enter true if you want to include reflections where l = 0 for group 2, otherwise enter false"
-        )
-        click.echo(" - xprep_file_name: enter the full path to your hkl file")
-        click.echo(
-            "\nNote that your conditions must be in the form Xn+Y, where X and Y are integers, and + can also be a -"
-        )
-
         fields = yaml_extraction("module-intensity-compare")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "xprep_file_name": "enter the full path to your hkl file",
+                "a_axis": "enter the a-axis of the unit cell",
+                "b_axis": "enter the b-axis of the unit cell",
+                "c_axis": "enter the c-axis of the unit cell",
+                "alpha": "enter the alpha angle of the unit cell",
+                "beta": "enter the beta angle of the unit cell",
+                "gamma": "enter the gamma angle of the unit cell",
+                "h_condition_1": "condition for group 1 of h-indicies, enter n for no condition",
+                "h_condition_2": "condition for group 2 of h-indicies, enter n for no condition",
+                "k_condition_1": "condition for group 1 of k-indicies, enter n for no condition",
+                "k_condition_2": "condition for group 2 of k-indicies, enter n for no condition",
+                "l_condition_1": "condition for group 1 of l-indicies, enter n for no condition",
+                "l_condition_2": "condition for group 2 of l-indicies, enter n for no condition",
+                "h+k_condition_1": "condition for group 1 of h+k indicies, enter n for no condition",
+                "h+k_condition_2": "condition for group 2 of h+k indicies, enter n for no condition",
+                "h+l_condition_1": "condition for group 1 of h+l indicies, enter n for no condition",
+                "h+l_condition_2": "condition for group 2 of h+l indicies, enter n for no condition",
+                "k+l_condition_1": "condition for group 1 of k+l indicies, enter n for no condition",
+                "k+l_condition_2": "condition for group 2 of k+l indicies, enter n for no condition",
+                "h+k+l_condition_1": "condition for group 1 of h+k+l indicies, enter n for no condition",
+                "h+k+l_condition_2": "condition for group 2 of h+k+l indicies, enter n for no condition",
+                "include_h_0_condition_1": "enter true if you want to include reflections where h = 0 for group 1, otherwise enter false",
+                "include_h_0_condition_2": "enter true if you want to include reflections where h = 0 for group 2, otherwise enter false",
+                "include_k_0_condition_1": "enter true if you want to include reflections where k = 0 for group 1, otherwise enter false",
+                "include_k_0_condition_2": "enter true if you want to include reflections where k = 0 for group 2, otherwise enter false",
+                "include_l_0_condition_1": "enter true if you want to include reflections where l = 0 for group 1, otherwise enter false",
+                "include_l_0_condition_2": "enter true if you want to include reflections where l = 0 for group 2, otherwise enter false",
+            },
+            [
+                "",
+                "Note that your conditions must be in the form Xn+Y, where X and Y are integers, and + can also be a -",
+            ],
+        )
+        yaml_creation(fields, "module-intensity-compare")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1636,9 +1593,6 @@ def module_intensity_compare(dependencies, files, configure, run):
                 cfg["include_h_0_condition_1"],
                 cfg["include_k_0_condition_1"],
                 cfg["include_l_0_condition_1"],
-                cfg["include_h_0_condition_2"],
-                cfg["include_k_0_condition_2"],
-                cfg["include_l_0_condition_2"],
             )
 
             copy_logs(pathlib.Path(cfg["xprep_file_name"]).parent)
@@ -1649,38 +1603,17 @@ def module_intensity_compare(dependencies, files, configure, run):
         click.echo("Please select an option. To view options, add --help")
 
 
-###-----Intensity Compare-----####
-
-"""This pipeline will investigate a series of .hkl files and compare the   
-    intensities based on different reflection conditions.
-    Most of these click functions are specifying text output to commandline 
-    The main coding functions are checking the input of the yaml file
-    and setting up the corresponding class and calling its functions 
-    Args:
-        The user will enter one of the four arguments as a flag         
-        This will set that parameter as 'TRUE', while the others are 'FALSE'
-        This will define the value in the 'if/elif' statements
-        dependencies (bool): will check for dependencies
-        files (bool): will show the user what files are required
-        configure (bool): will set up the yaml for the user to fill out
-        run (bool): will execute the chosen module/pipeline 
-    """
-
-
 @click.command(
-    "pipeline-intensity-compare",
-    short_help="Compares intensities of multiple hkl files",
+    "pipeline-intensity-compare", short_help="Compares intensities of hkl files"
 )
 @click.option("--dependencies", is_flag=True, help="view the software dependencies")
 @click.option("--files", is_flag=True, help="view the required input files")
 @click.option("--configure", is_flag=True, help="generate your conf.yaml file")
 @click.option("--run", is_flag=True, help="run the code!")
 def pipeline_intensity_compare(dependencies, files, configure, run):
-    """This pipeline will investigate a series of .hkl files and compare the
-
-    intensities based on different reflection conditions.
+    """This pipeline will analyse the intensities of multiple .hkl files
+    based on reflection conditions.
     """
-
     if dependencies:
         click.echo("\nYou require the below software in your path:")
         click.echo("- xprep")
@@ -1691,86 +1624,48 @@ def pipeline_intensity_compare(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - a_axis: enter the a-axis of the unit cell")
-        click.echo(" - alpha: enter the alpha angle of the unit cell")
-        click.echo(" - b_axis: enter the b-axis of the unit cell")
-        click.echo(" - beta: enter the beta angle of the unit cell")
-        click.echo(" - c_axis: enter the c-axis of the unit cell")
-        click.echo(" - data_location: enter the full path to your folder of hkl files")
-
-        click.echo(" - gamma: enter the gamma angle of the unit cell")
-
-        click.echo(
-            " - h_condition_1: condition for group 1 of h-indicies, enter n for no condition"
-        )
-        click.echo(
-            " - h_condition_2: condition for group 2 of h-indicies, enter n for no condition"
-        )
-        click.echo(
-            " - k_condition_1: condition for group 1 of k-indicies, enter n for no condition"
-        )
-        click.echo(
-            " - k_condition_2: condition for group 2 of k-indicies, enter n for no condition"
-        )
-        click.echo(
-            " - l_condition_1: condition for group 1 of l-indicies, enter n for no condition"
-        )
-        click.echo(
-            " - l_condition_2: condition for group 2 of l-indicies, enter n for no condition"
-        )
-        click.echo(
-            " - h+k_condition_1: condition for group 1 of h+k indicies, enter n for no condition"
-        )
-        click.echo(
-            " - h+k_condition_2: condition for group 2 of h+k indicies, enter n for no condition"
-        )
-        click.echo(
-            " - h+l_condition_1: condition for group 1 of h+l indicies, enter n for no condition"
-        )
-        click.echo(
-            " - h+l_condition_2: condition for group 2 of h+l indicies, enter n for no condition"
-        )
-        click.echo(
-            " - k+l_condition_1: condition for group 1 of k+l indicies, enter n for no condition"
-        )
-        click.echo(
-            " - k+l_condition_2: condition for group 2 of k+l indicies, enter n for no condition"
-        )
-        click.echo(
-            " - h+k+l_condition_1: condition for group 1 of h+k+l indicies, enter n for no condition"
-        )
-        click.echo(
-            " - h+k+l_condition_2: condition for group 2 of h+k+l indicies, enter n for no condition"
-        )
-
-        click.echo(
-            " - include_h_0_condition_1: enter true if you want to include reflections where h = 0 for group 1, otherwise enter false"
-        )
-        click.echo(
-            " - include_h_0_condition_2: enter true if you want to include reflections where h = 0 for group 2, otherwise enter false"
-        )
-        click.echo(
-            " - include_k_0_condition_1: enter true if you want to include reflections where k = 0 for group 1, otherwise enter false"
-        )
-        click.echo(
-            " - include_k_0_condition_2: enter true if you want to include reflections where k = 0 for group 2, otherwise enter false"
-        )
-        click.echo(
-            " - include_l_0_condition_1: enter true if you want to include reflections where l = 0 for group 1, otherwise enter false"
-        )
-        click.echo(
-            " - include_l_0_condition_2: enter true if you want to include reflections where l = 0 for group 2, otherwise enter false"
-        )
-        click.echo(
-            "\nNote that your conditions must be in the form Xn+Y, where X and Y are integers, and + can also be a -"
-        )
-
         fields = yaml_extraction("pipeline-intensity-compare")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "data_location": "enter the full path to the folder containing your hkl files",
+                "a_axis": "enter the a-axis of the unit cell",
+                "b_axis": "enter the b-axis of the unit cell",
+                "c_axis": "enter the c-axis of the unit cell",
+                "alpha": "enter the alpha angle of the unit cell",
+                "beta": "enter the beta angle of the unit cell",
+                "gamma": "enter the gamma angle of the unit cell",
+                "h_condition_1": "condition for group 1 of h-indicies, enter n for no condition",
+                "h_condition_2": "condition for group 2 of h-indicies, enter n for no condition",
+                "k_condition_1": "condition for group 1 of k-indicies, enter n for no condition",
+                "k_condition_2": "condition for group 2 of k-indicies, enter n for no condition",
+                "l_condition_1": "condition for group 1 of l-indicies, enter n for no condition",
+                "l_condition_2": "condition for group 2 of l-indicies, enter n for no condition",
+                "h+k_condition_1": "condition for group 1 of h+k indicies, enter n for no condition",
+                "h+k_condition_2": "condition for group 2 of h+k indicies, enter n for no condition",
+                "h+l_condition_1": "condition for group 1 of h+l indicies, enter n for no condition",
+                "h+l_condition_2": "condition for group 2 of h+l indicies, enter n for no condition",
+                "k+l_condition_1": "condition for group 1 of k+l indicies, enter n for no condition",
+                "k+l_condition_2": "condition for group 2 of k+l indicies, enter n for no condition",
+                "h+k+l_condition_1": "condition for group 1 of h+k+l indicies, enter n for no condition",
+                "h+k+l_condition_2": "condition for group 2 of h+k+l indicies, enter n for no condition",
+                "include_h_0_condition_1": "enter true if you want to include reflections where h = 0 for group 1, otherwise enter false",
+                "include_h_0_condition_2": "enter true if you want to include reflections where h = 0 for group 2, otherwise enter false",
+                "include_k_0_condition_1": "enter true if you want to include reflections where k = 0 for group 1, otherwise enter false",
+                "include_k_0_condition_2": "enter true if you want to include reflections where k = 0 for group 2, otherwise enter false",
+                "include_l_0_condition_1": "enter true if you want to include reflections where l = 0 for group 1, otherwise enter false",
+                "include_l_0_condition_2": "enter true if you want to include reflections where l = 0 for group 2, otherwise enter false",
+            },
+            [
+                "",
+                "Note that your conditions must be in the form Xn+Y, where X and Y are integers, and + can also be a -",
+            ],
+        )
+        yaml_creation(fields, "pipeline-intensity-compare")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
+
         check, cfg = configuration_check("pipeline-intensity-compare")
 
         if check == False:
@@ -1865,16 +1760,16 @@ def module_cif_merge(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - instrument_cif: enter the full path to your CIF file containing instrument data"
-        )
-        click.echo(
-            " - new_cif: enter the full path to your CIF file containing a structure you want to add instrument data into"
-        )
 
         fields = yaml_extraction("module-cif-merge")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "instrument_cif": "enter the full path to your CIF file containing instrument data",
+                "new_cif": "enter the full path to your CIF file containing a structure you want to add instrument data into",
+            },
+        )
+        yaml_creation(fields, "module-cif-merge")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1947,13 +1842,13 @@ def module_instrument_cif_generation(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - reference_cif: full path to the completed cif file you want to extract the instrument parameters out of"
-        )
 
         fields = yaml_extraction("module-make-instrument-cif")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {"reference_cif": "full path to the completed cif file you want to extract the instrument parameters out of"},
+        )
+        yaml_creation(fields, "module-make-instrument-cif")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2018,13 +1913,13 @@ def pipeline_cif_combine(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - location_of_cifs: the full path to the folder containing all CIF files"
-        )
 
         fields = yaml_extraction("pipeline-cif-combine")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {"location_of_cifs": "the full path to the folder containing all CIF files"},
+        )
+        yaml_creation(fields, "pipeline-cif-combine")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2094,30 +1989,27 @@ def pipeline_cif(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - chemical_formula: enter the chemical formula")
-        click.echo(" - crystal_habit: enter the habit of your crystal")
-        click.echo(" - crystal_colour: describe the colour of your crystal")
-        click.echo(
-            " - experiment_location: full path to the folder containing all folders with CIFs"
-        )
-        click.echo(
-            " - instrument_ending: if your instrument CIFs have different names but a common ending, list it here (ie .cif_od). If not, enter False"
-        )
-        click.echo(
-            " - instrument_file: if your instrument CIFs have identical names and endings, enter it here. If not, enter False"
-        )
-        click.echo(" - max_crystal_dimension: largest dimension of your crystal")
-        click.echo(" - middle_crystal_dimension: middle dimension of your crystal")
-        click.echo(" - min_crystal_dimension: smallest dimension of your crystal")
-        click.echo(" - structure_solution: list the structure solution software used")
-
-        click.echo(
-            "\nNote that one of instrument_ending and instrument_file must be false. If neither apply to your dataset, then you cannot use this pipeline"
-        )
 
         fields = yaml_extraction("pipeline-cif")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "chemical_formula": "enter the chemical formula",
+                "crystal_habit": "enter the habit of your crystal",
+                "crystal_colour": "describe the colour of your crystal",
+                "experiment_location": "full path to the folder containing all folders with CIFs",
+                "instrument_ending": "if your instrument CIFs have different names but a common ending, list it here (ie .cif_od). If not, enter False",
+                "instrument_file": "if your instrument CIFs have identical names and endings, enter it here. If not, enter False",
+                "max_crystal_dimension": "largest dimension of your crystal",
+                "middle_crystal_dimension": "middle dimension of your crystal",
+                "min_crystal_dimension": "smallest dimension of your crystal",
+                "structure_solution": "list the structure solution software used",
+            },
+            extra_lines=[
+                "\nNote that one of instrument_ending and instrument_file must be false. If neither apply to your dataset, then you cannot use this pipeline"
+            ],
+        )
+        yaml_creation(fields, "pipeline-cif")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2209,53 +2101,32 @@ def pipeline_rigaku_vt(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - ADP_analysis: enter True for adp analysis, otherwise enter False"
-        )
-        click.echo(
-            " - atoms_for_analysis: enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs"
-        )
-        click.echo(" - chemical_formula: enter the chemical formula of your crystal")
-        click.echo(
-            " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
-        )
-        click.echo(" - crystal_colour: enter the colour of your crystal")
-        click.echo(" - crystal_habit: enter the habit of your crystal")
-        click.echo(
-            " - experiment_location: enter the full path to the folder containing your VT data set"
-        )
-        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - max_crystal_dimension: enter the largest dimension of your crystal (in mm)"
-        )
-        click.echo(
-            " - middle_crystal_dimension: enter the middle diimension of your crystal (in mm)"
-        )
-        click.echo(
-            " - min_crystal_dimension: enter the smallest dimension of your crystal (in mm)"
-        )
-        click.echo(
-            " - reference_location: enter the full path to your reference .ins/.res file"
-        )
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(
-            " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter True for angle analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
-        )
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
-        )
 
         fields = yaml_extraction("pipeline-rigaku-vt")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "ADP_analysis": "enter True for adp analysis, otherwise enter False",
+                "atoms_for_analysis": "enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs",
+                "chemical_formula": "enter the chemical formula of your crystal",
+                "cif_parameters": "enter the parameters to be extracted from your cifs - the default parameters are usually fine",
+                "crystal_colour": "enter the colour of your crystal",
+                "crystal_habit": "enter the habit of your crystal",
+                "experiment_location": "enter the full path to the folder containing your VT data set",
+                "maximum_cycles": "enter the max number of cycles shelxl can run",
+                "max_crystal_dimension": "enter the largest dimension of your crystal (in mm)",
+                "middle_crystal_dimension": "enter the middle diimension of your crystal (in mm)",
+                "min_crystal_dimension": "enter the smallest dimension of your crystal (in mm)",
+                "reference_location": "enter the full path to your reference .ins/.res file",
+                "refinements_to_check": "enter the number of refinements you want to check for convergence",
+                "structural_analysis_bonds": "enter True for bond length analysis, otherwise enter False",
+                "structural_analysis_angles": "enter True for angle analysis, otherwise enter False",
+                "structural_analysis_torsions": "enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file",
+                "structural_analysis_hbonds": "enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file",
+                "tolerance": "enter the desired mean shift for the number of refinements in refinements_to_check",
+            },
+        )
+        yaml_creation(fields, "pipeline-rigaku-vt")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2364,70 +2235,36 @@ def pipeline_aus_synch_vt(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - ADP_analysis: enter True for ADP analysis, otherwise enter False"
-        )
-        click.echo(
-            " - atoms_for_analysis: enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs"
-        )
-        click.echo(
-            " - atoms_for_rotation_analysis: enter atom labels for mean plane analysis as a list for a single MPLA plane (eg [Cu1, O1, O2]) or a list of lists for multiple planes (eg [[Cu1, O1], [C3, C4, C5]])"
-        )
-        click.echo(" - chemical_formula: enter the chemical formula of your crystal")
-        click.echo(
-            " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
-        )
-        click.echo(" - crystal_colour: enter the colour of your crystal")
-        click.echo(" - crystal_habit: enter the habit of your crystal")
-        click.echo(
-            " - experiment_name: root name that is common between all autoprocess folders"
-        )
-        click.echo(
-            " - location_of_autoprocess_folders: full path to the folder containing all autoprocess folders"
-        )
-        click.echo(
-            " - max_crystal_dimension: enter the largest dimension of your crystal (in mm)"
-        )
-        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - middle_crystal_dimension: enter the middle diimension of your crystal (in mm)"
-        )
-        click.echo(
-            " - min_crystal_dimension: enter the smallest dimension of your crystal (in mm)"
-        )
-        click.echo(
-            " - reference_location: enter the full path to your reference .ins/.res file"
-        )
-
-        click.echo(
-            " - reference_plane: enter the reference plane for mean plane analysis as a list"
-        )
-
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(
-            " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter True for angle analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
-        )
-        click.echo(
-            " - structural_analysis_hbonds: enter True for torsion analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
-        )
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
-        )
-        click.echo(
-            " - transformation_matrix: if your space group is incompatable with the matrix '1 0 0 0 1 0 0 0 1' - ie you have higer symmetry to apply, enter matrix here. Otherwise, use default. You can test this by running xprep manually for your structure and seeing what the applied matrix is"
-        )
 
         fields = yaml_extraction("pipeline-aus-synch-vt")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "ADP_analysis": "enter True for ADP analysis, otherwise enter False",
+                "atoms_for_analysis": "enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs",
+                "atoms_for_rotation_analysis": "enter atom labels for mean plane analysis as a list for a single MPLA plane (eg [Cu1, O1, O2]) or a list of lists for multiple planes (eg [[Cu1, O1], [C3, C4, C5]])",
+                "chemical_formula": "enter the chemical formula of your crystal",
+                "cif_parameters": "enter the parameters to be extracted from your cifs - the default parameters are usually fine",
+                "crystal_colour": "enter the colour of your crystal",
+                "crystal_habit": "enter the habit of your crystal",
+                "experiment_name": "root name that is common between all autoprocess folders",
+                "location_of_autoprocess_folders": "full path to the folder containing all autoprocess folders",
+                "max_crystal_dimension": "enter the largest dimension of your crystal (in mm)",
+                "maximum_cycles": "enter the max number of cycles shelxl can run",
+                "middle_crystal_dimension": "enter the middle diimension of your crystal (in mm)",
+                "min_crystal_dimension": "enter the smallest dimension of your crystal (in mm)",
+                "reference_location": "enter the full path to your reference .ins/.res file",
+                "reference_plane": "enter the reference plane for mean plane analysis as a list",
+                "refinements_to_check": "enter the number of refinements you want to check for convergence",
+                "structural_analysis_bonds": "enter True for bond length analysis, otherwise enter False",
+                "structural_analysis_angles": "enter True for angle analysis, otherwise enter False",
+                "structural_analysis_torsions": "enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file",
+                "structural_analysis_hbonds": "enter True for torsion analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file",
+                "tolerance": "enter the desired mean shift for the number of refinements in refinements_to_check",
+                "transformation_matrix": "if your space group is incompatable with the matrix '1 0 0 0 1 0 0 0 1' - ie you have higer symmetry to apply, enter matrix here. Otherwise, use default. You can test this by running xprep manually for your structure and seeing what the applied matrix is",
+            },
+        )
+        yaml_creation(fields, "pipeline-aus-synch-vt")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2546,12 +2383,16 @@ def module_xds_cell_transformation(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - XDS_ASCII_File_1: full path to the first XDS_ASCII file")
-        click.echo(" - XDS_ASCII_File_2: full path to the second XDS_ASCII file")
 
         fields = yaml_extraction("module-xds-cell-transform")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "XDS_ASCII_File_1": "full path to the first XDS_ASCII file",
+                "XDS_ASCII_File_2": "full path to the second XDS_ASCII file",
+            },
+        )
+        yaml_creation(fields, "module-xds-cell-transform")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2627,15 +2468,17 @@ def module_xds_reprocess(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - experiment_location: full path to the location of your folder containing the img folder"
-        )
-        click.echo(" - XDS_INP_path: full path to your XDS.INP file")
-        click.echo(" - xds_template_name: name of your dataset")
 
         fields = yaml_extraction("module-xds-reprocess")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "full path to the location of your folder containing the img folder",
+                "XDS_INP_path": "full path to your XDS.INP file",
+                "xds_template_name": "name of your dataset",
+            },
+        )
+        yaml_creation(fields, "module-xds-reprocess")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2706,19 +2549,19 @@ def module_xprep(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - chemical formula: enter the chemical formula of your crystal")
-        click.echo(
-            " - experiment_location: enter the full path to the folder containing your XDS_ASCII file"
-        )
-        click.echo(" - space group: enter the space group in xprep-readable form")
-        click.echo(
-            " - transformation matrix: enter the matrix for transformation (use 1 0 0 0 1 0 0 0 1 for no transformation)"
-        )
-        click.echo(" - xprep_file_name: name of your XDS_ASCII file")
 
         fields = yaml_extraction("module-xprep")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "chemical_formula": "enter the chemical formula of your crystal",
+                "experiment_location": "enter the full path to the folder containing your XDS_ASCII file",
+                "space_group": "enter the space group in xprep-readable form",
+                "transformation_matrix": "enter the matrix for transformation (use 1 0 0 0 1 0 0 0 1 for no transformation)",
+                "xprep_file_name": "name of your XDS_ASCII file",
+            },
+        )
+        yaml_creation(fields, "module-xprep")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2798,14 +2641,16 @@ def pipeline_xds_reprocess(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - experiment_location: full path to the location of your series of folders containing img folders"
-        )
-        click.echo(" - XDS_INP_path: full path to your XDS.INP file")
 
         fields = yaml_extraction("pipeline-xds-reprocess")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "full path to the location of your series of folders containing img folders",
+                "XDS_INP_path": "full path to your XDS.INP file",
+            },
+        )
+        yaml_creation(fields, "pipeline-xds-reprocess")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2872,20 +2717,19 @@ def pipeline_xprep(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - chemical formula: enter the chemical formula of your crystal")
-        click.echo(
-            " - experiment_location: enter the full path to the folder containing all dataset folders"
-        )
-        click.echo(" - space group: enter the space group in xprep-readable form")
-        click.echo(
-            " - transformation matrix: enter the matrix for transformation (use 1 0 0 0 1 0 0 0 1 for no transformation)"
-        )
-
-        click.echo(" - xprep_file_name: name of your XDS_ASCII file")
 
         fields = yaml_extraction("pipeline-xprep")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "chemical_formula": "enter the chemical formula of your crystal",
+                "experiment_location": "enter the full path to the folder containing all dataset folders",
+                "space_group": "enter the space group in xprep-readable form",
+                "transformation_matrix": "enter the matrix for transformation (use 1 0 0 0 1 0 0 0 1 for no transformation)",
+                "xprep_file_name": "name of your XDS_ASCII file",
+            },
+        )
+        yaml_creation(fields, "pipeline-xprep")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2958,26 +2802,21 @@ def pipeline_xprep_transform(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - data type: enter the data format of your hkl file (ie XDS, SHELX etc)"
-        )
-        click.echo(" - lattice type: enter the lattice type of your space group")
-        click.echo(" - chemical formula: enter the chemical formula of your crystal")
-        click.echo(
-            " - experiment_location: enter the full path to the folder containing all dataset folders"
-        )
-        click.echo(" - space group: enter the space group in xprep-readable form")
-        click.echo(
-            " - transformation matrix: enter the matrix for transformation (use 1 0 0 0 1 0 0 0 1 for no transformation)"
-        )
-        click.echo(
-            " - data type: enter the data format of your hkl file (ie XDS, SHELX etc)"
-        )
-        click.echo(" - output file name: name of your transformed ins and hkl file")
 
         fields = yaml_extraction("pipeline-xprep-transform")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "data_type": "enter the data format of your hkl file (ie XDS, SHELX etc)",
+                "lattice_type": "enter the lattice type of your space group",
+                "chemical_formula": "enter the chemical formula of your crystal",
+                "experiment_location": "enter the full path to the folder containing all dataset folders",
+                "space_group": "enter the space group in xprep-readable form",
+                "transformation_matrix": "enter the matrix for transformation (use 1 0 0 0 1 0 0 0 1 for no transformation)",
+                "output_name": "name of your transformed ins and hkl file",
+            },
+        )
+        yaml_creation(fields, "pipeline-xprep-transform")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3054,17 +2893,17 @@ def module_cell_analysis(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - csv_location: full path to your .csv file")
-        click.echo(
-            " - reference_unit_cell: enter the neutral unit cell for datasets to be compared to"
-        )
-        click.echo(
-            " - x_axis_header: enter the column title for your independent variable (ie temperature or pressure"
-        )
 
         fields = yaml_extraction("module-cell-analysis")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "csv_location": "full path to your .csv file",
+                "reference_unit_cell": "enter the neutral unit cell for datasets to be compared to",
+                "x_axis_header": "enter the column title for your independent variable (ie temperature or pressure",
+            },
+        )
+        yaml_creation(fields, "module-cell-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3158,27 +2997,21 @@ def module_cif_read(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - ADP_analysis: enter 'true' if you want to extract ADP information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - cif_parameters: these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format"
-        )
-        click.echo(
-            " - structural_analysis_bonds: enter 'true' if you want to extract bond information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter 'true' if you want to extract angle information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
-        )
-        click.echo(
-            " - structural_analysis_hbonds: enter 'true' if you want to extract Hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command"
-        )
+
         fields = yaml_extraction("module-cif-read")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "folder_containing_cifs": "full path to the folder containing your CIF files",
+                "cif_parameters": "these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format",
+                "structural_analysis_bonds": "enter 'true' if you want to extract bond information, otherwise enter 'false'",
+                "structural_analysis_angles": "enter 'true' if you want to extract angle information, otherwise enter 'false'",
+                "structural_analysis_torsions": "enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command",
+                "structural_analysis_hbonds": "enter 'true' if you want to extract Hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command",
+                "ADP_analysis": "enter 'true' if you want to extract ADP information, otherwise enter 'false'",
+            },
+        )
+        yaml_creation(fields, "module-cif-read")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3254,19 +3087,17 @@ def module_rotation_planes(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - lst_file_location: enter the full path to your lst file for analysis"
-        )
-        click.echo(
-            " - reference_plane: fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions."
-        )
-        click.echo(
-            " - calculate_interplane_angle: set to true to also extract the SHELXL inter-plane angle (requires two MPLA commands in the .lst file)"
-        )
 
         fields = yaml_extraction("module-rotation-planes")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "lst_file_location": "enter the full path to your lst file for analysis",
+                "reference_plane": "fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions.",
+                "calculate_interplane_angle": "set to true to also extract the SHELXL inter-plane angle (requires two MPLA commands in the .lst file)",
+            },
+        )
+        yaml_creation(fields, "module-rotation-planes")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3350,27 +3181,19 @@ def module_structural_analysis(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - angle_data: enter the full path to your angle .csv file (or false if you do not have one)"
-        )
-        click.echo(
-            " - atoms_for_analysis: enter the label of the atoms you are most interested in"
-        )
-        click.echo(
-            " - bond_data: enter the full path to your bond .csv file (or false if you do not have one)"
-        )
-
-        click.echo(
-            " - torsion_data: enter the full path to your torsion .csv file (or false if you do not have one)"
-        )
-
-        click.echo(
-            " - hbond_data: enter the full path to your hbond .csv file (or false if you do not have one)"
-        )
 
         fields = yaml_extraction("module-structural-analysis")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "angle_data": "enter the full path to your angle .csv file (or false if you do not have one)",
+                "atoms_for_analysis": "enter the label of the atoms you are most interested in",
+                "bond_data": "enter the full path to your bond .csv file (or false if you do not have one)",
+                "torsion_data": "enter the full path to your torsion .csv file (or false if you do not have one)",
+                "hbond_data": "enter the full path to your hbond .csv file (or false if you do not have one)",
+            },
+        )
+        yaml_creation(fields, "module-structural-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3443,19 +3266,17 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - experiment_location: full path to the parent folder containing a series of folders with .lst files inside"
-        )
-        click.echo(
-            " - reference_plane: fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions."
-        )
-        click.echo(
-            " - calculate_interplane_angle: set to true to also extract the SHELXL inter-plane angle (requires two MPLA commands in each .lst file)"
-        )
 
         fields = yaml_extraction("pipeline-rotation-planes")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "full path to the parent folder containing a series of folders with .lst files inside",
+                "reference_plane": "fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions.",
+                "calculate_interplane_angle": "set to true to also extract the SHELXL inter-plane angle (requires two MPLA commands in each .lst file)",
+            },
+        )
+        yaml_creation(fields, "pipeline-rotation-planes")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3515,28 +3336,20 @@ def module_point_geometry(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - lst_file_location: enter the full path to your lst file for analysis"
-        )
-        click.echo(
-            " - point_geometry_distances: list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry"
-        )
-        click.echo(
-            " - point_geometry_angles: list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry"
-        )
-        click.echo(
-            " - point_geometry_torsions: list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry"
-        )
-        click.echo(
-            " - point_geometry_plane_distances: list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry"
-        )
-        click.echo(
-            " - mercury_output: set to true to also write Mercury-style companion outputs using 3 dp rounded point-group coordinates"
-        )
 
         fields = yaml_extraction("module-point-geometry")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "lst_file_location": "enter the full path to your lst file for analysis",
+                "point_geometry_distances": "list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry",
+                "point_geometry_angles": "list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry",
+                "point_geometry_torsions": "list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry",
+                "point_geometry_plane_distances": "list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry",
+                "mercury_output": "set to true to also write Mercury-style companion outputs using 3 dp rounded centroid coordinates",
+            },
+        )
+        yaml_creation(fields, "module-point-geometry")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3660,31 +3473,21 @@ def pipeline_point_geometry(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - experiment_location: full path to the parent folder containing a series of folders with .lst files inside"
-        )
-        click.echo(
-            " - output: results will be written to a numbered folder inside Geometry_Analysis in the experiment_location folder"
-        )
-        click.echo(
-            " - point_geometry_distances: list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry"
-        )
-        click.echo(
-            " - point_geometry_angles: list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry"
-        )
-        click.echo(
-            " - point_geometry_torsions: list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry"
-        )
-        click.echo(
-            " - point_geometry_plane_distances: list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry"
-        )
-        click.echo(
-            " - mercury_output: set to true to also write Mercury-style companion outputs using 3 dp rounded point-group coordinates"
-        )
 
         fields = yaml_extraction("pipeline-point-geometry")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "full path to the parent folder containing a series of folders with .lst files inside",
+                "output": "results will be written to a numbered folder inside Geometry_Analysis in the experiment_location folder",
+                "point_geometry_distances": "list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry",
+                "point_geometry_angles": "list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry",
+                "point_geometry_torsions": "list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry",
+                "point_geometry_plane_distances": "list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry",
+                "mercury_output": "set to true to also write Mercury-style companion outputs using 3 dp rounded centroid coordinates",
+            },
+        )
+        yaml_creation(fields, "pipeline-point-geometry")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -3807,65 +3610,38 @@ def module_cif_analysis(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - folder_containing_cifs: full path to the folder containing your .cif files"
-        )
-        click.echo(
-            " - cif_parameters: cif parameters to extract (defaults are usually enough)"
-        )
-        click.echo(
-            " - atoms_for_analysis: atom labels for structural-analysis filtering"
-        )
-        click.echo(
-            " - varying_cif_parameter: cif heading used as x-axis, e.g. _diffrn_ambient_temperature"
-        )
-        click.echo(
-            "   if left blank or set to 0, CX-ASAP falls back to Data_Block"
-        )
-        click.echo(
-            "   examples: _diffrn_ambient_temperature, _diffrn_ambient_pressure"
-        )
-        click.echo(
-            " - reference_unit_cell: optional path to reference .ins for cell-deformation analysis"
-        )
-        click.echo(
-            " - structural_analysis_bonds/angles/torsions/hbonds: true or false"
-        )
-        click.echo(" - ADP_analysis: true or false")
-        click.echo(
-            " - point_geometry_distances: list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry"
-        )
-        click.echo(
-            " - point_geometry_angles: list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry"
-        )
-        click.echo(
-            " - point_geometry_torsions: list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry"
-        )
-        click.echo(
-            " - point_geometry_plane_distances: list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry"
-        )
-        click.echo(
-            " - rotation_reference_plane: optional [h,k,l] reference plane for CIF-native rotation angles"
-        )
-        click.echo(
-            " - rotation_plane_definitions: optional list of planes defined by plane_atoms and optional plane_symmetry"
-        )
-        click.echo(
-            " - mean_plane_definitions: optional list of planes used for mean-plane/interplane analysis (plane_atoms and optional plane_symmetry)"
-        )
-        click.echo(
-            " - calculate_interplane_angle: set true to calculate angle between first two mean_plane_definitions planes"
-        )
-        click.echo(
-            " - mercury_output: set true for 3 dp rounded point-group companion outputs for point geometry"
-        )
-        click.echo(
-            " - lst_file_location: optional explicit .lst path (otherwise first .lst in folder is used)"
-        )
 
         fields = yaml_extraction("module-cif-analysis")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "folder_containing_cifs": "full path to the folder containing your .cif files",
+                "cif_parameters": "cif parameters to extract (defaults are usually enough)",
+                "atoms_for_analysis": "atom labels for structural-analysis filtering",
+                "varying_cif_parameter": "cif heading used as x-axis, e.g. _diffrn_ambient_temperature",
+                "reference_unit_cell": "optional path to reference .ins for cell-deformation analysis",
+                "structural_analysis_bonds": "true or false",
+                "structural_analysis_angles": "true or false",
+                "structural_analysis_torsions": "true or false",
+                "structural_analysis_hbonds": "true or false",
+                "ADP_analysis": "true or false",
+                "point_geometry_distances": "list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry",
+                "point_geometry_angles": "list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry",
+                "point_geometry_torsions": "list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry",
+                "point_geometry_plane_distances": "list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry",
+                "rotation_reference_plane": "optional [h,k,l] reference plane for CIF-native rotation angles",
+                "rotation_plane_definitions": "optional list of planes defined by plane_atoms and optional plane_symmetry",
+                "mean_plane_definitions": "optional list of planes used for mean-plane/interplane analysis (plane_atoms and optional plane_symmetry)",
+                "calculate_interplane_angle": "set true to calculate angle between first two mean_plane_definitions planes",
+                "mercury_output": "set true for 3 dp rounded-centroid companion outputs for point geometry",
+                "lst_file_location": "optional explicit .lst path (otherwise first .lst in folder is used)",
+            },
+            extra_lines=[
+                "   if left blank or set to 0, CX-ASAP falls back to Data_Block",
+                "   examples: _diffrn_ambient_temperature, _diffrn_ambient_pressure",
+            ],
+        )
+        yaml_creation(fields, "module-cif-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4007,76 +3783,43 @@ def pipeline_cif_analysis(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - experiment_location: parent folder for CIF analysis")
-        click.echo(
-            " - cif_input_mode: 'nested' for subfolders or 'flat' for one CIF folder"
-        )
-        click.echo(
-            "   root-level CIFs are preferred; if both root and nested CIFs exist, root CIFs are used"
-        )
-        click.echo(
-            " - precombine_cifs: set true to merge discovered CIFs into one combined input file before analysis"
-        )
-        click.echo("   default: false")
-        click.echo(
-            "   set true when you want one merged input before extraction/analysis"
-        )
-        click.echo(
-            "   precombine outputs are written per run as combined_input.cif and combined_input_sources.txt in the CIF_Analysis/<run_number> folder"
-        )
-        click.echo(
-            " - cif_parameters: cif parameters to extract (defaults are usually enough)"
-        )
-        click.echo(
-            " - atoms_for_analysis: atom labels for structural-analysis filtering"
-        )
-        click.echo(
-            " - varying_cif_parameter: cif heading used as x-axis, e.g. _diffrn_ambient_temperature"
-        )
-        click.echo(
-            "   if left blank or set to 0, CX-ASAP falls back to Data_Block"
-        )
-        click.echo(
-            "   examples: _diffrn_ambient_temperature, _diffrn_ambient_pressure"
-        )
-        click.echo(
-            " - reference_unit_cell: optional path to reference .ins for cell-deformation analysis"
-        )
-        click.echo(
-            " - structural_analysis_bonds/angles/torsions/hbonds: true or false"
-        )
-        click.echo(" - ADP_analysis: true or false")
-        click.echo(
-            " - point_geometry_distances: list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry"
-        )
-        click.echo(
-            " - point_geometry_angles: list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry"
-        )
-        click.echo(
-            " - point_geometry_torsions: list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry"
-        )
-        click.echo(
-            " - point_geometry_plane_distances: list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry"
-        )
-        click.echo(
-            " - rotation_reference_plane: optional [h,k,l] reference plane for CIF-native rotation angles"
-        )
-        click.echo(
-            " - rotation_plane_definitions: optional list of planes defined by plane_atoms and optional plane_symmetry"
-        )
-        click.echo(
-            " - mean_plane_definitions: optional list of planes used for mean-plane/interplane analysis (plane_atoms and optional plane_symmetry)"
-        )
-        click.echo(
-            " - calculate_interplane_angle: set true to calculate angle between first two mean_plane_definitions planes"
-        )
-        click.echo(
-            " - mercury_output: set true for 3 dp rounded point-group companion outputs for point geometry"
-        )
 
         fields = yaml_extraction("pipeline-cif-analysis")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "parent folder for CIF analysis",
+                "cif_input_mode": "'nested' for subfolders or 'flat' for one CIF folder",
+                "precombine_cifs": "set true to merge discovered CIFs into one combined input file before analysis",
+                "cif_parameters": "cif parameters to extract (defaults are usually enough)",
+                "atoms_for_analysis": "atom labels for structural-analysis filtering",
+                "varying_cif_parameter": "cif heading used as x-axis, e.g. _diffrn_ambient_temperature",
+                "reference_unit_cell": "optional path to reference .ins for cell-deformation analysis",
+                "structural_analysis_bonds": "true or false",
+                "structural_analysis_angles": "true or false",
+                "structural_analysis_torsions": "true or false",
+                "structural_analysis_hbonds": "true or false",
+                "ADP_analysis": "true or false",
+                "point_geometry_distances": "list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry",
+                "point_geometry_angles": "list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry",
+                "point_geometry_torsions": "list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry",
+                "point_geometry_plane_distances": "list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry",
+                "rotation_reference_plane": "optional [h,k,l] reference plane for CIF-native rotation angles",
+                "rotation_plane_definitions": "optional list of planes defined by plane_atoms and optional plane_symmetry",
+                "mean_plane_definitions": "optional list of planes used for mean-plane/interplane analysis (plane_atoms and optional plane_symmetry)",
+                "calculate_interplane_angle": "set true to calculate angle between first two mean_plane_definitions planes",
+                "mercury_output": "set true for 3 dp rounded-centroid companion outputs for point geometry",
+            },
+            extra_lines=[
+                "   root-level CIFs are preferred; if both root and nested CIFs exist, root CIFs are used",
+                "   default: false",
+                "   set true when you want one merged input before extraction/analysis",
+                "   precombine outputs are written per run as combined_input.cif and combined_input_sources.txt in the CIF_Analysis/<run_number> folder",
+                "   if left blank or set to 0, CX-ASAP falls back to Data_Block",
+                "   examples: _diffrn_ambient_temperature, _diffrn_ambient_pressure",
+            ],
+        )
+        yaml_creation(fields, "pipeline-cif-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4233,38 +3976,24 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - ADP_analysis: enter 'true' if you want to extract ADP information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - atoms_for_analysis: enter the label of the atoms you are most interested in"
-        )
-        click.echo(
-            " - cif_parameters: these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format"
-        )
-        click.echo(
-            " - experiment_location: enter the full path to the folder which contains your .cif files"
-        )
-        click.echo(" - reference_unit_cell: enter the path to a reference .ins file")
-        click.echo(
-            " - structural_analysis_bonds: enter 'true' if you want to extract bond information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter 'true' if you want to extract angle information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
-        )
-        click.echo(
-            " - structural_analysis_hbonds: enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command"
-        )
-        click.echo(
-            " - varying_cif_parameter: enter the parameter in your .cif files that is changing. Make sure you use proper .cif syntax"
-        )
 
         fields = yaml_extraction("pipeline-variable-analysis")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "ADP_analysis": "enter 'true' if you want to extract ADP information, otherwise enter 'false'",
+                "atoms_for_analysis": "enter the label of the atoms you are most interested in",
+                "cif_parameters": "these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format",
+                "experiment_location": "enter the full path to the folder which contains your .cif files",
+                "reference_unit_cell": "enter the path to a reference .ins file",
+                "structural_analysis_bonds": "enter 'true' if you want to extract bond information, otherwise enter 'false'",
+                "structural_analysis_angles": "enter 'true' if you want to extract angle information, otherwise enter 'false'",
+                "structural_analysis_torsions": "enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command",
+                "structural_analysis_hbonds": "enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command",
+                "varying_cif_parameter": "enter the parameter in your .cif files that is changing. Make sure you use proper .cif syntax",
+            },
+        )
+        yaml_creation(fields, "pipeline-variable-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4344,77 +4073,36 @@ def pipeline_position_analysis(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - ADP_analysis: enter 'true' if you want to extract ADP information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - atoms_for_analysis: enter the label of the atoms you are most interested in"
-        )
-        click.echo(
-            " - atoms_for_rotation_analysis: enter atom labels for mean plane analysis as a list for a single MPLA plane (eg [Cu1, O1, O2]) or a list of lists for multiple planes (eg [[Cu1, O1], [C3, C4, C5]])"
-        )
-        click.echo(
-            " - cif_parameters: these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format"
-        )
-        click.echo(
-            " - experiment_location: enter the full path to your folder containing your cif files"
-        )
-        click.echo(
-            " - mapping_step_size: enter the step-size for the collection (in um)"
-        )
-        click.echo(
-            " - min_pixels: enter the values for minimum_pixels_in_a_spot as a list for XDS proessing"
-        )
-        click.echo(
-            " - reference_plane: fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions."
-        )
-        click.echo(
-            " - reference_unit_cell: enter the neutral unit cell for datasets to be compared to"
-        )
-        click.echo(
-            " - sepmin: enter the values for sepmin as a list for XDS processing"
-        )
-        click.echo(
-            " - spot_maximum_centroid: enter the values for spot_maximum_centroid as a list for XDS processing"
-        )
-        click.echo(
-            " - signal_pixel: enter the values for signal_pixel as a list for XDS processing"
-        )
-
-        click.echo(
-            " - structural_analysis_bonds: enter 'true' if you want to extract bond information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter 'true' if you want to extract angle information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
-        )
-        click.echo(
-            " - structural_analysis_hbonds: enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command"
-        )
-        click.echo(
-            " - wedge_angles: enter the wedge angles as a list for XDS processing"
-        )
-        click.echo(
-            " - calculate_point_group_distance: enter True for point-group analysis between two atom groups from the .lst files, otherwise enter False"
-        )
-        click.echo(
-            " - point_group_1_atoms: list of atom labels for the first point group (only needed if calculate_point_group_distance is true)"
-        )
-        click.echo(
-            " - point_group_2_atoms: list of atom labels for the second point group (only needed if calculate_point_group_distance is true)"
-        )
-        click.echo(
-            " - point_group_1_symmetry: optional symmetry operation for point group 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
-        )
-        click.echo(
-            " - point_group_2_symmetry: optional symmetry operation for point group 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)"
-        )
 
         fields = yaml_extraction("pipeline-position-analysis")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "ADP_analysis": "enter 'true' if you want to extract ADP information, otherwise enter 'false'",
+                "atoms_for_analysis": "enter the label of the atoms you are most interested in",
+                "atoms_for_rotation_analysis": "enter atom labels for mean plane analysis as a list for a single MPLA plane (eg [Cu1, O1, O2]) or a list of lists for multiple planes (eg [[Cu1, O1], [C3, C4, C5]])",
+                "cif_parameters": "these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format",
+                "experiment_location": "enter the full path to your folder containing your cif files",
+                "mapping_step_size": "enter the step-size for the collection (in um)",
+                "min_pixels": "enter the values for minimum_pixels_in_a_spot as a list for XDS proessing",
+                "reference_plane": "fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions.",
+                "reference_unit_cell": "enter the neutral unit cell for datasets to be compared to",
+                "sepmin": "enter the values for sepmin as a list for XDS processing",
+                "spot_maximum_centroid": "enter the values for spot_maximum_centroid as a list for XDS processing",
+                "signal_pixel": "enter the values for signal_pixel as a list for XDS processing",
+                "structural_analysis_bonds": "enter 'true' if you want to extract bond information, otherwise enter 'false'",
+                "structural_analysis_angles": "enter 'true' if you want to extract angle information, otherwise enter 'false'",
+                "structural_analysis_torsions": "enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command",
+                "structural_analysis_hbonds": "enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command",
+                "wedge_angles": "enter the wedge angles as a list for XDS processing",
+                "calculate_geometry_set_distance": "enter True for geometry-set distance analysis between two atom groups from the .lst files, otherwise enter False",
+                "geometry_set_1_atoms": "list of atom labels for the first geometry set (only needed if calculate_geometry_set_distance is true)",
+                "geometry_set_2_atoms": "list of atom labels for the second geometry set (only needed if calculate_geometry_set_distance is true)",
+                "geometry_set_1_symmetry": "optional symmetry operation for geometry set 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)",
+                "geometry_set_2_symmetry": "optional symmetry operation for geometry set 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)",
+            },
+        )
+        yaml_creation(fields, "pipeline-position-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4450,15 +4138,15 @@ def pipeline_position_analysis(dependencies, files, configure, run):
                 cfg["structural_analysis_hbonds"],
                 cfg["ADP_analysis"],
             )
-            if cfg.get("calculate_point_group_distance", False):
+            if cfg.get("calculate_geometry_set_distance", False):
                 points_pipeline = PointsPipeline()
-                points_pipeline.point_group_distance_analysis(
+                points_pipeline.geometry_set_distance_analysis(
                     cfg["experiment_location"],
-                    cfg["point_group_1_atoms"],
-                    cfg["point_group_2_atoms"],
+                    cfg["geometry_set_1_atoms"],
+                    cfg["geometry_set_2_atoms"],
                     cfg["experiment_location"],
-                    symmetry_1=cfg.get("point_group_1_symmetry") or None,
-                    symmetry_2=cfg.get("point_group_2_symmetry") or None,
+                    symmetry_1=cfg.get("geometry_set_1_symmetry") or None,
+                    symmetry_2=cfg.get("geometry_set_2_symmetry") or None,
                 )
 
             copy_logs(cfg["experiment_location"])
@@ -4511,37 +4199,23 @@ def pipeline_temperature_analysis(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - ADP_analysis: enter 'true' if you want to extract ADP information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - atoms_for_analysis: enter the label of the atoms you are most interested in"
-        )
-        click.echo(
-            " - cif_parameters: these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format"
-        )
-        click.echo(
-            " - experiment_location: enter the full path to the folder which contains your .cif files"
-        )
-        click.echo(
-            " - reference_unit_cell: enter the neutral unit cell for datasets to be compared to"
-        )
-        click.echo(
-            " - structural_analysis_bonds: enter 'true' if you want to extract bond information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter 'true' if you want to extract angle information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
-        )
-        click.echo(
-            " - structural_analysis_hbonds: enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined with an HTAB command"
-        )
 
         fields = yaml_extraction("pipeline-temperature-analysis")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "ADP_analysis": "enter 'true' if you want to extract ADP information, otherwise enter 'false'",
+                "atoms_for_analysis": "enter the label of the atoms you are most interested in",
+                "cif_parameters": "these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format",
+                "experiment_location": "enter the full path to the folder which contains your .cif files",
+                "reference_unit_cell": "enter the neutral unit cell for datasets to be compared to",
+                "structural_analysis_bonds": "enter 'true' if you want to extract bond information, otherwise enter 'false'",
+                "structural_analysis_angles": "enter 'true' if you want to extract angle information, otherwise enter 'false'",
+                "structural_analysis_torsions": "enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command",
+                "structural_analysis_hbonds": "enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined with an HTAB command",
+            },
+        )
+        yaml_creation(fields, "pipeline-temperature-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4612,11 +4286,14 @@ def module_platon_squeeze(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - file_name: full path to your .ins file")
-
         fields = yaml_extraction("module-platon-squeeze")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "file_name": "full path to your .ins file",
+            },
+        )
+        yaml_creation(fields, "module-platon-squeeze")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4696,13 +4373,14 @@ def pipeline_platon_squeeze(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - experiment_location: enter the full path to your folder containing all dataset folders"
-        )
-
         fields = yaml_extraction("pipeline-platon-squeeze")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "enter the full path to your folder containing all dataset folders",
+            },
+        )
+        yaml_creation(fields, "pipeline-platon-squeeze")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4783,13 +4461,13 @@ def pipeline_platon_twinrotmat(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - experiment_location: enter the full path to your folder containing all datasets"
-        )
 
         fields = yaml_extraction("pipeline-platon-twinrotmat")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {"experiment_location": "enter the full path to your folder containing all datasets"},
+        )
+        yaml_creation(fields, "pipeline-platon-twinrotmat")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4861,16 +4539,15 @@ def module_adp_analysis(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - cell_path: Enter the path to the .csv file containing extracted unit cell data (recommended you run module-cif-read first!)"
-        )
-        click.echo(
-            " - csv_path: Enter the path to the .csv file containing extracted ADP data (recommended you run module-cif-read first)"
-        )
-
         fields = yaml_extraction("module-adp-analysis")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "csv_path": "Enter the path to the .csv file containing extracted ADP data (recommended you run module-cif-read first)",
+                "cell_path": "Enter the path to the .csv file containing extracted unit cell data (recommended you run module-cif-read first!)",
+            },
+        )
+        yaml_creation(fields, "module-adp-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -4947,13 +4624,13 @@ def pipeline_AS_Brute(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - experiment_location: enter the full path to your folder containing all dataset folders"
-        )
 
         fields = yaml_extraction("pipeline-AS-Brute")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {"experiment_location": "enter the full path to your folder containing all dataset folders"},
+        )
+        yaml_creation(fields, "pipeline-AS-Brute")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -5036,36 +4713,28 @@ def module_molecule_reconstruction(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - a_gradient: enter the rate of change of the a-axis")
-        click.echo(" - alpha_gradient: enter the rate of change of the alpha angle")
-        click.echo(" - atom_list: enter each atom as a list on a new line")
-        click.echo(" - b_gradient: enter the rate of change of the b-axis")
-        click.echo(" - beta_gradient: enter the rate of change of the beta angle")
-        click.echo(
-            " - bond_list: enter each bond in the molecule as a list on a new line. Example syntax: Cu1-O1"
-        )
-        click.echo(" - c_gradient: enter the rate of change of the c-axis")
-        click.echo(" - gamma_gradient: enter the rate of change of the gamma angle")
-        click.echo(
-            " - max_position: enter the maximum position (this value is in the same units as x for your gradient"
-        )
-        click.echo(
-            " - min_position: enter the minimum position (this value is in the same units as x for your gradient"
-        )
-        click.echo(
-            " - position_step_size: enter the step size between positions for your theoretical structures"
-        )
-        click.echo(" - reference_path: enter the path to your reference .res file")
-        click.echo(
-            " - starting_atom: enter the atom that the reconstruction should start from"
-        )
-        click.echo(
-            " - starting_coordinates: enter the coordinates of the starting atom"
-        )
 
         fields = yaml_extraction("module-molecule-reconstruction")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "a_gradient": "enter the rate of change of the a-axis",
+                "alpha_gradient": "enter the rate of change of the alpha angle",
+                "atom_list": "enter each atom as a list on a new line",
+                "b_gradient": "enter the rate of change of the b-axis",
+                "beta_gradient": "enter the rate of change of the beta angle",
+                "bond_list": "enter each bond in the molecule as a list on a new line. Example syntax: Cu1-O1",
+                "c_gradient": "enter the rate of change of the c-axis",
+                "gamma_gradient": "enter the rate of change of the gamma angle",
+                "max_position": "enter the maximum position (this value is in the same units as x for your gradient",
+                "min_position": "enter the minimum position (this value is in the same units as x for your gradient",
+                "position_step_size": "enter the step size between positions for your theoretical structures",
+                "reference_path": "enter the path to your reference .res file",
+                "starting_atom": "enter the atom that the reconstruction should start from",
+                "starting_coordinates": "enter the coordinates of the starting atom",
+            },
+        )
+        yaml_creation(fields, "module-molecule-reconstruction")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -5165,13 +4834,13 @@ def pipeline_shelxt_auto(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - experiment_location: enter the full path to your folder containing all dataset folders"
-        )
 
         fields = yaml_extraction("pipeline-shelxt-auto")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {"experiment_location": "enter the full path to your folder containing all dataset folders"},
+        )
+        yaml_creation(fields, "pipeline-shelxt-auto")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -5238,14 +4907,16 @@ def pipeline_AS_Brute_individual(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - chemical_formula: enter the chemical formula of your crystal")
-        click.echo(
-            " - experiment_location: enter the full path to your folder containing all dataset folders"
-        )
 
         fields = yaml_extraction("pipeline-AS-Brute-individual")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "chemical_formula": "enter the chemical formula of your crystal",
+                "experiment_location": "enter the full path to your folder containing all dataset folders",
+            },
+        )
+        yaml_creation(fields, "pipeline-AS-Brute-individual")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")

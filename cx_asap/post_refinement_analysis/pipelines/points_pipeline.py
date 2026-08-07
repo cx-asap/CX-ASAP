@@ -62,34 +62,34 @@ class PointsPipeline:
         results_path.mkdir()
         return results_path
 
-    def point_group_distance_analysis(
+    def geometry_set_distance_analysis(
         self,
         working_directory: str,
         atom_list_1: list,
         atom_list_2: list,
         results_directory: str,
-        label: str = "Point Group Distance",
+        label: str = "Geometry Set Distance",
         symmetry_1: str = None,
         symmetry_2: str = None,
     ) -> None:
-        """Calculates point-group-to-point-group distances for a series of .lst files
+        """Calculates geometry-set-to-geometry-set distances for a series of .lst files
         in separate folders within a common parent folder.
 
-        Produces a scatter graph of point group distance vs structure number.
+        Produces a scatter graph of geometry-set distance vs structure number.
 
         Args:
             working_directory (str): full path to the parent folder containing
                                      folders with .lst files
-            atom_list_1 (list): atom labels for the first point group
-            atom_list_2 (list): atom labels for the second point group
+            atom_list_1 (list): atom labels for the first geometry set
+            atom_list_2 (list): atom labels for the second geometry set
             results_directory (str): full path to the output directory
             label (str): column header for the output csv and graph y-axis
-            symmetry_1 (str): optional symmetry operation string for point group 1
-            symmetry_2 (str): optional symmetry operation string for point group 2
+            symmetry_1 (str): optional symmetry operation string for geometry set 1
+            symmetry_2 (str): optional symmetry operation string for geometry set 2
         """
 
         logging.info(
-            "Running point group distance analysis with "
+            "Running geometry set distance analysis with "
             f"working_directory={working_directory}, "
             f"results_directory={results_directory}, "
             f"atom_list_1={atom_list_1}, "
