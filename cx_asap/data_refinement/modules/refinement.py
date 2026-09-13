@@ -33,6 +33,7 @@ from typing import Tuple
 
 class Structure_Refinement:
     def __init__(self, test_mode: bool = False) -> None:
+
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -101,10 +102,12 @@ class Structure_Refinement:
 
             if ref_zerr is not None and new_zerr is not None:
                 ref_z = structure[ref_zerr.start() : ref_zerr.end()].split()[1]
-                new_header = (
-                    new_header[: new_zerr.start() + len("ZERR")]
-                    + " " + ref_z
-                    + new_header[new_zerr.end() :]
+                new_header = re.sub(
+                    r"^(ZERR\s+)\S+",
+                    lambda m: m.group(1) + ref_z,
+                    new_header,
+                    count=1,
+                    flags=re.MULTILINE,
                 )
 
             complete_file = new_header + structure[ref_x.start() : ref_y.end()]
@@ -112,6 +115,7 @@ class Structure_Refinement:
         return complete_file
 
     def import_refinement(self, file_name: str, ref_struct: str) -> None:
+
         """Imports the reference and the new .ins files
 
         Outputs the combined file
@@ -152,6 +156,7 @@ class Structure_Refinement:
         weights_old: list,
         weights_new: list,
     ) -> Tuple[bool, bool]:
+
         """Check if the structure has converged or not
 
         For the structure to have converged, it requires:
@@ -237,6 +242,7 @@ class Structure_Refinement:
         tolerance: float,
         refinement_failed: bool,
     ) -> Tuple[bool, list, bool]:
+
         """Function sets up values to check the convergence of the refinements
 
         The actual convergence check is in a separate function (above).
@@ -322,6 +328,7 @@ class Structure_Refinement:
         tolerance: float,
         max_cycles: int,
     ) -> bool:
+
         """Runs SHELXL on a single structure that has had a reference model
 
         imported into it

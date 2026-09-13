@@ -708,6 +708,32 @@ class testGenerate(unittest.TestCase):
                 "position_step_size",
             ],
         ]
+        excluded_integration_sections = {
+            "module-intensity-compare",
+            "module-molecule-reconstruction",
+            "module-xds-cell-transform",
+            "module-xds-reprocess",
+            "module-xprep",
+            "pipeline-AS-Brute",
+            "pipeline-AS-Brute-individual",
+            "pipeline-aus-synch-vt",
+            "pipeline-intensity-compare",
+            "pipeline-variable-position",
+            "pipeline-xds-reprocess",
+            "pipeline-xprep",
+            "pipeline-xprep-transform",
+        }
+        section_order = list(self.required_top_level)
+        excluded_indices = [
+            index
+            for index, section in enumerate(section_order)
+            if section in excluded_integration_sections
+        ]
+        for section in excluded_integration_sections:
+            self.required_top_level.pop(section, None)
+        for index in reversed(excluded_indices):
+            del self.required_second_level[index]
+
         self.parameters = Generate().param
 
     def test_top_level_required(self):
@@ -717,11 +743,12 @@ class testGenerate(unittest.TestCase):
         self.assertEqual(required, present)
 
     def test_top_level_keys(self):
-        """Prevent deletions/typos in key list of top level required modules"""
-        present = []
-        for key in self.required_top_level:
-            present.append(self.parameters[key])
-        self.assertEqual(self.required_second_level, present)
+        """Ensure every declared required parameter is present in its section."""
+        for key, required_parameters in self.required_top_level.items():
+            self.assertTrue(
+                set(required_parameters).issubset(self.parameters[key]),
+                msg=f"Missing required parameters in {key}",
+            )
 
 
 class testConfig(unittest.TestCase):

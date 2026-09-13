@@ -11,6 +11,7 @@
 # ----------Required Modules----------#
 
 from system_files.utils import Nice_YAML_Dumper, Config
+from system_files.crystal_math import metric_matrix
 import logging
 import pandas as pd
 import numpy as np
@@ -177,29 +178,7 @@ class ADP_analysis:
             beta = cell_df.iloc[counter]["_cell_angle_beta"]
             gamma = cell_df.iloc[counter]["_cell_angle_gamma"]
 
-            alpha_rad = alpha * (math.pi / 180)
-            beta_rad = beta * (math.pi / 180)
-            gamma_rad = gamma * (math.pi / 180)
-
-            G = np.array(
-                [
-                    [
-                        (a * a),
-                        (a * b * math.cos(gamma_rad)),
-                        (a * c * math.cos(beta_rad)),
-                    ],
-                    [
-                        (b * a * math.cos(gamma_rad)),
-                        (b * b),
-                        (b * c * math.cos(alpha_rad)),
-                    ],
-                    [
-                        (c * a * math.cos(beta_rad)),
-                        (c * b * math.cos(alpha_rad)),
-                        (c * c),
-                    ],
-                ]
-            )
+            G = metric_matrix([a, b, c, alpha, beta, gamma])
 
             G_recip = np.linalg.inv(G)
 
@@ -232,48 +211,14 @@ class ADP_analysis:
 
                 values_unsorted, vectors = np.linalg.eig(BG)
 
-                test = values_unsorted.tolist()
+                # Numerical noise can produce tiny imaginary components.
+                # Sort by real part and coerce near-real values back to float.
+                order = np.argsort(np.real(values_unsorted))[::-1]
+                values = [float(np.real(values_unsorted[i])) for i in order]
 
-                values = sorted(test)
-
-                values.reverse()
-
-                positions = {}
-
-                for i_1, i in enumerate(values_unsorted):
-                    for i_2, j in enumerate(values):
-                        if i == j:
-                            positions[i_1] = i_2
-
-                vector_1 = np.array(
-                    [
-                        [
-                            vectors[0][positions[0]],
-                            vectors[1][positions[0]],
-                            vectors[2][positions[0]],
-                        ]
-                    ]
-                )
-
-                vector_2 = np.array(
-                    [
-                        [
-                            vectors[0][positions[1]],
-                            vectors[1][positions[1]],
-                            vectors[2][positions[1]],
-                        ]
-                    ]
-                )
-
-                vector_3 = np.array(
-                    [
-                        [
-                            vectors[0][positions[2]],
-                            vectors[1][positions[2]],
-                            vectors[2][positions[2]],
-                        ]
-                    ]
-                )
+                vector_1 = np.array([np.real_if_close(vectors[:, order[0]]).astype(float)])
+                vector_2 = np.array([np.real_if_close(vectors[:, order[1]]).astype(float)])
+                vector_3 = np.array([np.real_if_close(vectors[:, order[2]]).astype(float)])
 
                 try:
                     principle_A.append(math.sqrt(values[0] / (2 * (math.pi**2))))
