@@ -380,6 +380,8 @@ def yaml_extraction(heading: str) -> dict:
             yaml_dict[item] = "nested"
         elif item == "precombine_cifs":
             yaml_dict[item] = False
+        elif item == "calculate_interplane_angle":
+            yaml_dict[item] = False
         elif item == "varying_cif_parameter":
             yaml_dict[item] = "_diffrn_ambient_temperature"
         elif item == "reference_plane" or item == "starting_coordinates":
