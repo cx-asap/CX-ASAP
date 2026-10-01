@@ -19,7 +19,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import math
 import re
-import fileinput
 from typing import Tuple
 
 # ----------Class Definition----------#
@@ -144,6 +143,7 @@ class Configure_Flexible:
         space_group_number: int,
         MPLA_atoms: str,
         total_angle: int,
+        minimum_fraction_of_indexed_spots: float = 0.2,
     ) -> None:
         """Primarily sets up the XDS.INP file for a flexible crystal experiment
 
@@ -156,6 +156,7 @@ class Configure_Flexible:
             MPLA_atoms (str): atoms for MPLA command to be written into reference
                                 .ins/.res file
             total_angle (int): total wedge angle measured in the experiment
+            minimum_fraction_of_indexed_spots (float): minimum fraction of indexed spots threshold for XDS indexing
 
         """
 
@@ -237,7 +238,7 @@ class Configure_Flexible:
                     self.XDS.change(
                         self.sys["XDS_inp_organised"],
                         "MINIMUM_FRACTION_OF_INDEXED_SPOTS",
-                        0.2,
+                        minimum_fraction_of_indexed_spots,
                     )
                     flag1 += 1
                 elif "SEPMIN" in line:
@@ -272,7 +273,11 @@ class Configure_Flexible:
 
         with open(self.sys["XDS_inp_organised"], "a") as in_file:
             if flag1 == 0:
-                in_file.write(" MINIMUM_FRACTION_OF_INDEXED_SPOTS= 0.2\n")
+                in_file.write(
+                    " MINIMUM_FRACTION_OF_INDEXED_SPOTS= "
+                    + str(minimum_fraction_of_indexed_spots)
+                    + "\n"
+                )
             if flag2 == 0:
                 in_file.write(" SEPMIN= 7\n")
             if flag3 == 0:
@@ -926,31 +931,127 @@ class Reprocess_Setup:
 
             os.chdir("..")
 
-            # For old detector images:
+            # Perform frame ingestion and symlink setup on first setup only.
+            location_path = pathlib.Path(self.home_path).parent
+            os.chdir(location_path)
 
-            folders_made = []
+            # Check if frames live directly in location (no dataset subfolders).
+            direct_frames = [
+                f
+                for f in location_path.iterdir()
+                if f.is_file() and (f.name.endswith(".h5") or f.name.endswith(".img"))
+            ]
+            if direct_frames:
+                moved_count = 0
+                for frame_file in direct_frames:
+                    destination = pathlib.Path(self.frames_path) / frame_file.name
+                    if not destination.exists():
+                        shutil.move(frame_file, destination)
+                        moved_count += 1
+                if moved_count:
+                    print(f"Moved {moved_count} frame files to {self.frames_path}")
+                # Create one analysis folder per dataset, identified by _master.h5 files.
+                master_files = [
+                    f for f in direct_frames if f.name.endswith("_master.h5")
+                ]
+                if master_files:
+                    for master in master_files:
+                        dataset_name = master.stem[: -len("_master")]
+                        analysis_dataset_path = (
+                            pathlib.Path(self.analysis_path) / dataset_name
+                        )
+                        if not os.path.exists(analysis_dataset_path):
+                            os.mkdir(analysis_dataset_path)
+                else:
+                    # No master files — fall back to one folder named after location
+                    analysis_dataset_path = (
+                        pathlib.Path(self.analysis_path) / location_path.name
+                    )
+                    if not os.path.exists(analysis_dataset_path):
+                        os.mkdir(analysis_dataset_path)
+            else:
+                folders_made = []
+                candidate_dirs = [
+                    item
+                    for item in os.listdir()
+                    if pathlib.Path(item).is_dir()
+                    and item != pathlib.Path(self.home_path).name
+                    and "analysis" not in item
+                ]
+                matching_dirs = [
+                    item for item in candidate_dirs if self.experiment_name in item
+                ]
+                dirs_to_process = matching_dirs or candidate_dirs
 
-            for item in os.listdir():
-                if self.experiment_name in item:
-                    if "analysis" not in item:
-                        shutil.move(item, pathlib.Path(self.frames_path) / item)
+                for item in dirs_to_process:
+                    source_path = pathlib.Path(item)
 
-                        if item.endswith("master.h5"):
-                            b = item.replace("_master.h5", "")
+                    # Handle one-folder-per-dataset layouts. Prefer an existing img
+                    # folder, otherwise look for frames directly in the dataset folder.
+                    if (source_path / "img").is_dir():
+                        frame_source = source_path / "img"
+                    else:
+                        frame_source = source_path
+
+                    frame_files = [
+                        frame
+                        for frame in frame_source.iterdir()
+                        if frame.is_file()
+                        and (frame.name.endswith(".h5") or frame.name.endswith(".img"))
+                    ]
+
+                    if frame_files:
+                        dataset_name = source_path.name
+                        dataset_frames_path = (
+                            pathlib.Path(self.frames_path) / dataset_name
+                        )
+                        dataset_frames_path.mkdir(parents=True, exist_ok=True)
+
+                        moved_count = 0
+                        for frame_file in frame_files:
+                            destination = dataset_frames_path / frame_file.name
+                            if not destination.exists():
+                                shutil.move(frame_file, destination)
+                                moved_count += 1
+                        if moved_count:
+                            print(
+                                f"Moved {moved_count} frame files to {dataset_frames_path}"
+                            )
+
+                        analysis_dataset_path = (
+                            pathlib.Path(self.analysis_path) / dataset_name
+                        )
+                        if not os.path.exists(analysis_dataset_path):
+                            os.mkdir(analysis_dataset_path)
+                        continue
+
+                    # Legacy support for flat frame layouts at the location root.
+                    shutil.move(item, pathlib.Path(self.frames_path) / item)
+
+                    if item.endswith("master.h5"):
+                        b = item.replace("_master.h5", "")
+                        os.mkdir(pathlib.Path(self.analysis_path) / b)
+
+                    if item.endswith(".img"):
+                        b = "_".join(item.split("_")[:-1])
+                        if b not in folders_made:
                             os.mkdir(pathlib.Path(self.analysis_path) / b)
-
-                        # For old detector images:
-
-                        if item.endswith(".img"):
-                            b = "_".join(item.split("_")[:-1])
-                            if b not in folders_made:
-                                os.mkdir(pathlib.Path(self.analysis_path) / b)
-                                folders_made.append(b)
+                            folders_made.append(b)
 
             os.chdir(self.analysis_path)
 
             for folder in os.listdir():
-                os.symlink(self.frames_path, os.path.join(folder, "img"))
+                link_path = pathlib.Path(folder) / "img"
+                target_frames_path = pathlib.Path(self.frames_path) / folder
+                target = (
+                    target_frames_path
+                    if os.path.exists(target_frames_path)
+                    else pathlib.Path(self.frames_path)
+                )
+
+                if link_path.is_symlink() or os.path.exists(link_path):
+                    continue
+                os.symlink(target, link_path)
 
         os.chdir(self.results_path)
 
@@ -1062,9 +1163,18 @@ class Grapher:
             s (list): marker sizes for multiple series
         """
 
+        x_is_per_series = (
+            isinstance(x, list)
+            and len(x) == len(y)
+            and len(x) > 0
+            and isinstance(x[0], list)
+        )
+
         for index, item in enumerate(y):
+            x_series = x[index] if x_is_per_series else x
+
             if type(item) != float and type(item) != int:
-                if len(x) != len(item):
+                if len(x_series) != len(item):
                     logging.info(
                         __name__
                         + " : Possible error with plotting structural changes. Check the structures in the output CIF for unreasonable structures."
@@ -1080,17 +1190,17 @@ class Grapher:
 
                     # all the temperatures hadn't been edited yet
 
-                    to_repeat = x[0]
+                    to_repeat = x_series[0]
 
-                    x = [to_repeat] * len(item)
+                    x_series = [to_repeat] * len(item)
 
                 if colour == None and y_series_title != None:
-                    plt.scatter(x, item, label=y_series_title[index])
+                    plt.scatter(x_series, item, label=y_series_title[index])
                 elif y_series_title == None:
-                    plt.scatter(x, y)
+                    plt.scatter(x_series, item)
                 else:
                     plt.scatter(
-                        x,
+                        x_series,
                         item,
                         c=colour[index],
                         marker=marker[index],
@@ -1100,7 +1210,7 @@ class Grapher:
                     )
 
             else:
-                plt.scatter(x, y)
+                plt.scatter(x_series, item)
 
         plt.xlabel(x_title, fontsize=12)
         plt.ylabel(y_title, fontsize=12)
@@ -1380,7 +1490,7 @@ class Grapher:
         if "alpha" or "beta" or "gamma" in title.lower():
             plt.ylabel("Angle(" + chr(176) + ")")
         elif "vol" in title.lower():
-            plt.ylabel("Volume (\u212B\u00B3)")
+            plt.ylabel("Volume (\u212b\u00b3)")
         else:
             plt.ylabel(r"Distance ($\AA$)")
         plt.title(title)
@@ -1484,30 +1594,50 @@ class Cell_Import:
 
         self.cfg, self.sys = self.config.yaml_reload(self.test_mode)
 
-    def ref_edit(self, ins: str, MPLA_atoms: str) -> None:
+    def ref_edit(
+        self, ins: str, MPLA_atoms: "str | list[str] | list[list[str]]"
+    ) -> None:
         """Edits the reference .ins/.res file to put the MPLA
 
-        command in with the user defined atoms
+        command in with the user defined atoms.
+
+        MPLA_atoms can be:
+          - a space-separated string (single plane), e.g. "Cu1 O1 O2"
+          - a flat list of atom labels (single plane), e.g. ["Cu1", "O1", "O2"]
+          - a list of space-separated strings (multiple planes), e.g. ["Cu1 O1", "C3 C4"]
+          - a list of lists (multiple planes), e.g. [["Cu1", "O1"], ["C3", "C4"]]
+          - or a list of "-" separated stings (multiple planes): e.g. 
+          "- Cu1 O1 O2
+            - C3 C4 C5"
 
         Args:
             ins (str): full path to the .ins/.res file
-            MPLA_atoms (str): list of atoms for MPLA command
+            MPLA_atoms (str | list[str] | list[list[str]]):
+                atom labels in any of the above forms
         """
+
+        # Normalise to list of lists
+        if isinstance(MPLA_atoms, str):
+            planes = [MPLA_atoms.split()]
+        elif MPLA_atoms and isinstance(MPLA_atoms[0], str):
+            planes = [
+                item.split() if isinstance(item, str) else item for item in MPLA_atoms
+            ]
+        else:
+            planes = MPLA_atoms
 
         with open(ins, "rt") as ins_file:
             content = ins_file.readlines()
 
-        flag = False
+        flag = any("MPLA" in line for line in content)
 
         with open(ins, "w") as ins_file:
-            for line in content:
-                if "MPLA" in line:
-                    flag = True
-            if flag == False:
+            if not flag:
                 for line in content:
                     if "PLAN" in line:
                         ins_file.write(line)
-                        ins_file.write("MPLA " + MPLA_atoms + "\n")
+                        for plane in planes:
+                            ins_file.write("MPLA " + " ".join(plane) + "\n")
                         ins_file.write("CONF\n")
                     else:
                         ins_file.write(line)
@@ -1571,34 +1701,39 @@ class XDS_File_Edit:
             new_value (str): the new value of the XDS.INP parameter
         """
 
-        # Honestly I forget why this is so complicated, but I remember having a lot of problems so it is the way that it is *shrugs in code*
+        # Match the first explicit "PARAM = value" assignment regardless of spacing.
+        new_value_str = str(new_value)
+        key_pattern = re.compile(
+            rf"^(\s*{re.escape(parameter)}\s*=\s*)([^!\r\n]*)(.*)$"
+        )
 
-        flag = 0
-        editing = ""
+        updated = False
+        output_lines = []
+
         with open(file_path, "rt") as in_file:
             for line in in_file:
-                if parameter in line and flag == 0:
-                    to_edit = line.split()[1:]
-                    flag += 1
+                if not updated:
+                    match = key_pattern.match(line)
+                    if match:
+                        line_ending = "\n" if line.endswith("\n") else ""
+                        prefix, _, suffix = match.groups()
+                        updated_line = prefix + new_value_str
+                        if suffix.lstrip().startswith(
+                            "!"
+                        ) and not updated_line.endswith(" "):
+                            updated_line += " "
+                        output_lines.append(updated_line + suffix + line_ending)
+                        updated = True
+                        continue
+                output_lines.append(line)
 
-        try:
-            test = to_edit
-        except UnboundLocalError:
-            with open(file_path, "a") as f:
-                f.write(" " + parameter + "= " + new_value)
-        else:
-            for element in to_edit:
-                editing += " " + str(element)
-            edit = editing.strip(" ")
-            flag = 0
-            for line in fileinput.input(file_path, inplace=True):
-                if parameter in line and flag == 0:
-                    line = line.rstrip("\r\n")
-                    print(line.replace(edit, str(new_value)))
-                    flag += 1
-                else:
-                    line = line.rstrip("\r\n")
-                    print(line)
+        if not updated:
+            with open(file_path, "a") as out_file:
+                out_file.write(" " + parameter + "= " + new_value_str + "\n")
+            return
+
+        with open(file_path, "wt") as out_file:
+            out_file.writelines(output_lines)
 
     def get_value(self, file_path: str, parameter: str) -> str:
         """Gets the value of a parameter in an XDS.INP
@@ -1611,16 +1746,25 @@ class XDS_File_Edit:
             value (str): the value of the specified parameter in the XDS.INP file
         """
 
-        # Gets a value from the XDS INP file and saves it as a parameter
+        # Gets a value from the XDS INP file and saves it as a parameter.
+        # Accepts spacing variants like "KEY=1", "KEY = 1", and preserves
+        # historic behavior by returning the value with spaces removed.
 
-        self.value = ""
+        value_pattern = re.compile(rf"\b{re.escape(parameter)}\s*=\s*([^!\r\n]*)")
+        value = None
+
         with open(file_path, "rt") as in_file:
             for line in in_file:
-                if parameter in line:
-                    val_list = line.split()[1:]
-        for element in val_list:
-            self.value += "" + str(element)
-        return self.value
+                match = value_pattern.search(line)
+                if match:
+                    raw_value = match.group(1).strip()
+                    value = "".join(raw_value.split())
+                    break
+
+        if value is None:
+            raise ValueError(f"Could not find {parameter} in XDS.INP file: {file_path}")
+
+        return value
 
     def start_angle(self, file_path: str) -> float:
         """Gets start and total angle from XDS.INP
@@ -1639,13 +1783,24 @@ class XDS_File_Edit:
         Returns:
             angle (float): starting angle of the experiment
         """
-
+        match = None
         with open(file_path, "rt") as in_file:
             for line in in_file:
-                if "STARTING_ANGLE= " in line:
-                    angle = float(line.split()[1])
+                # Accepts variants like "STARTING_ANGLE=1.0" and "STARTING_ANGLE = 1.0"
+                candidate = re.search(
+                    r"\bSTARTING_ANGLE\s*=\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)",
+                    line,
+                )
+                if candidate:
+                    match = candidate
+                    break
 
-        return angle
+        if match:
+            return float(match.group(1))
+        else:
+            raise ValueError(
+                f"Could not find STARTING_ANGLE in XDS.INP file: {file_path}"
+            )
 
     def new_line_rewrite(self, file_path: str) -> None:
         """To make editing the file easier later,
@@ -1707,6 +1862,40 @@ class Nice_YAML_Dumper(yaml.SafeDumper):
             super().write_line_break()
 
 
+def format_yaml_error_message(file_path: pathlib.Path, error: Exception) -> str:
+    """Formats YAML parsing errors with location and actionable hints."""
+
+    file_text = str(file_path)
+    message = [f"Failed to parse YAML file: {file_text}"]
+
+    problem = getattr(error, "problem", None)
+    if problem:
+        message.append(f"Problem: {problem}")
+
+    mark = getattr(error, "problem_mark", None)
+    if mark is not None:
+        message.append(f"Location: line {mark.line + 1}, column {mark.column + 1}")
+
+    hint = (
+        "Hint: check indentation and list formatting, and ensure key/value pairs "
+        "use a space after ':'."
+    )
+
+    problem_text = str(problem).lower() if problem else ""
+    if "mapping values are not allowed here" in problem_text:
+        hint = (
+            "Hint: this often means a missing space after ':' or inconsistent "
+            "indentation on this line."
+        )
+    elif "could not find expected ':'" in problem_text:
+        hint = "Hint: a key is likely missing ':' or is mis-indented."
+    elif "expected <block end>" in problem_text:
+        hint = "Hint: check list/item indentation and unmatched nesting near this line."
+
+    message.append(hint)
+    return "\n".join(message)
+
+
 # ----------Class Definition----------#
 
 
@@ -1731,8 +1920,9 @@ class Config:
             with open(self.conf_path, "r") as f:
                 try:
                     self.cfg = yaml.load(f, yaml.FullLoader)
-                except:
-                    logging.critical(__name__ + " : Failed to open config file")
+                except yaml.YAMLError as error:
+                    formatted = format_yaml_error_message(self.conf_path, error)
+                    logging.critical(__name__ + " : " + formatted)
                     print("Error - See Log")
                     exit()
 
@@ -1742,8 +1932,9 @@ class Config:
         with open(self.sys_path, "r") as f:
             try:
                 self.sys = yaml.load(f, yaml.FullLoader)
-            except:
-                logging.critical(__name__ + " : Failed to open system file")
+            except yaml.YAMLError as error:
+                formatted = format_yaml_error_message(self.sys_path, error)
+                logging.critical(__name__ + " : " + formatted)
                 print("Error - See Log")
                 exit()
 
@@ -1762,10 +1953,22 @@ class Config:
 
         if test_mode == False:
             with open(self.conf_path, "r") as f:
-                self.cfg = yaml.load(f, yaml.FullLoader)
+                try:
+                    self.cfg = yaml.load(f, yaml.FullLoader)
+                except yaml.YAMLError as error:
+                    formatted = format_yaml_error_message(self.conf_path, error)
+                    logging.critical(__name__ + " : " + formatted)
+                    print("Error - See Log")
+                    exit()
 
         with open(self.sys_path, "r") as f:
-            self.sys = yaml.load(f, yaml.FullLoader)
+            try:
+                self.sys = yaml.load(f, yaml.FullLoader)
+            except yaml.YAMLError as error:
+                formatted = format_yaml_error_message(self.sys_path, error)
+                logging.critical(__name__ + " : " + formatted)
+                print("Error - See Log")
+                exit()
 
         return self.cfg, self.sys
 
@@ -1796,8 +1999,9 @@ class Generate:
         with open(self.parameter_conf, "r") as f:
             try:
                 self.param = yaml.load(f, yaml.FullLoader)
-            except:
-                logging.critical(__name__ + " : Failed to open parameter dictionary")
+            except yaml.YAMLError as error:
+                formatted = format_yaml_error_message(self.parameter_conf, error)
+                logging.critical(__name__ + " : " + formatted)
                 print("Error - See Log")
                 exit()
 

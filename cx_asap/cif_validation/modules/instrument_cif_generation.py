@@ -21,6 +21,7 @@ import logging
 
 class Instrument_CIF:
     def __init__(self, test_mode: bool = False) -> None:
+
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -79,6 +80,7 @@ class Instrument_CIF:
         ]
 
     def read_reference_cif(self, reference: str) -> None:
+
         """Imports a fully completed CIF file which is used as a reference
 
         This is done using the PyCIFRW library
@@ -99,6 +101,7 @@ class Instrument_CIF:
             exit()
 
     def make_instrument_cif(self) -> None:
+
         """Extracts the instrument parameters defined in the _init_ function
 
         from the reference CIF.

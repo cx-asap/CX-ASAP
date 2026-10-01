@@ -113,7 +113,7 @@ import time
 import shutil
 from typing import Union, Tuple
 
-from system_files.utils import Generate, File_Sorter
+from system_files.utils import Generate, File_Sorter, format_yaml_error_message
 from system_files.test_installation import Test
 from data_refinement.modules.refinement import Structure_Refinement
 from data_refinement.pipelines.refine_pipeline import Refinement_Pipeline
@@ -126,11 +126,29 @@ from post_refinement_analysis.modules.cif_read import CIF_Read
 from post_refinement_analysis.modules.rotation_planes import Rotation
 from post_refinement_analysis.modules.structural_analysis import Structural_Analysis
 from post_refinement_analysis.modules.ADP_analysis import ADP_analysis
+from post_refinement_analysis.modules.points import PointGeometryEngine
 from post_refinement_analysis.pipelines.rotation_pipeline import Rotation_Pipeline
+from post_refinement_analysis.pipelines.points_pipeline import PointsPipeline
+from post_refinement_analysis.modules.cif_analysis import CIF_Analysis
+from post_refinement_analysis.pipelines.cif_analysis_pipeline import CIF_Analysis_Pipeline
 from post_refinement_analysis.pipelines.variable_cif_parameter import (
     Variable_Analysis_Pipeline,
 )
+from post_refinement_analysis.pipelines.variable_position_analysis import (
+    VP_Analysis_Pipeline,
+)
+from post_refinement_analysis.pipelines.variable_temperature_analysis import (
+    VT_Analysis_Pipeline,
+)
 from overall_pipelines.cxasap_pipeline import General_Pipeline
+from overall_pipelines.rigaku_synergy_vt_pipeline import Synergy_VT
+from tools.modules.platon_squeeze import Platon_Squeeze
+from tools.pipelines.platon_squeeze_pipeline import Squeeze_Pipeline
+from tools.modules.platon_twinrotmat import Platon_Twin
+from tools.pipelines.platon_twinrotmat_pipeline import Twin_Pipeline
+from tools.modules.shelx_t import SHELXT
+from tools.pipelines.shelx_t_pipeline import SHELXT_Pipeline
+from tools.pipelines.pipeline_shelx_t_auto import SHELXT_Pipeline_auto
 
 
 def reset_logs() -> None:
@@ -190,7 +208,9 @@ def reset_logs() -> None:
 def copy_logs(destination: str) -> None:
     """Copies logs to the output folder defined.
     If the module / pipeline outputs results, it goes to the results folder
-    Otherwise, it goes to the experiment location folder
+    Otherwise, it goes to the experiment location folder.
+    In some virtual environment set ups (on windows) pathlib seems to have issues
+    resolving the path. So this sometimes fails - it does report so, though.
     Args:
         destination (string): path to the log destination
     """
@@ -202,10 +222,17 @@ def copy_logs(destination: str) -> None:
         pathlib.Path(os.path.abspath(__file__)).parent / "error_logs/error_output_1.txt"
     )
 
+    folder_name = pathlib.Path(destination).parent
+
     try:
         shutil.copy(log_location, destination)
     except FileNotFoundError:
-        shutil.copy(log_location_1, destination)
+        try:
+            shutil.copy(log_location_1, destination)
+        except FileNotFoundError:
+            print(
+                f"your log file is located in the error-logs folder inside the cx_asap folder but has not been copied to the {folder_name} folder"
+            )
 
 
 def yaml_extraction(heading: str) -> dict:
@@ -242,12 +269,19 @@ def yaml_extraction(heading: str) -> dict:
         "wedge_angles",
         "min_pixels",
         "spot_maximum_centroid",
-        "strong_pixels",
+        "signal_pixel",
         "sepmin",
         "atoms_for_analysis",
         "varying_parameter_values",
         "atom_list",
         "bond_list",
+        "point_geometry_distances",
+        "point_geometry_angles",
+        "point_geometry_torsions",
+        "point_geometry_plane_distances",
+        "rotation_reference_plane",
+        "rotation_plane_definitions",
+        "mean_plane_definitions",
     ]
 
     structure_params = [
@@ -260,6 +294,7 @@ def yaml_extraction(heading: str) -> dict:
         "bond_data",
         "hbond_data",
         "torsion_data",
+        "mercury_output",
     ]
 
     for item in list_of_params:
@@ -277,6 +312,78 @@ def yaml_extraction(heading: str) -> dict:
                 "_diffrn_ambient_temperature",
                 "_refine_ls_R_factor_gt",
             ]
+        elif item == "point_geometry_distances":
+            yaml_dict[item] = [
+                {
+                    "label": 0,
+                    "point_1_atoms": 0,
+                    "point_2_atoms": 0,
+                    "point_1_symmetry": 0,
+                    "point_2_symmetry": 0,
+                }
+            ]
+        elif item == "point_geometry_angles":
+            yaml_dict[item] = [
+                {
+                    "label": 0,
+                    "point_1_atoms": 0,
+                    "point_2_atoms": 0,
+                    "point_3_atoms": 0,
+                    "point_1_symmetry": 0,
+                    "point_2_symmetry": 0,
+                    "point_3_symmetry": 0,
+                }
+            ]
+        elif item == "point_geometry_torsions":
+            yaml_dict[item] = [
+                {
+                    "label": 0,
+                    "point_1_atoms": 0,
+                    "point_2_atoms": 0,
+                    "point_3_atoms": 0,
+                    "point_4_atoms": 0,
+                    "point_1_symmetry": 0,
+                    "point_2_symmetry": 0,
+                    "point_3_symmetry": 0,
+                    "point_4_symmetry": 0,
+                }
+            ]
+        elif item == "point_geometry_plane_distances":
+            yaml_dict[item] = [
+                {
+                    "label": 0,
+                    "point_atoms": 0,
+                    "plane_atoms": 0,
+                    "point_symmetry": 0,
+                    "plane_symmetry": 0,
+                }
+            ]
+        elif item == "rotation_reference_plane":
+            yaml_dict[item] = [0, 0, 0]
+        elif item == "rotation_plane_definitions":
+            yaml_dict[item] = [
+                {
+                    "label": 0,
+                    "plane_atoms": 0,
+                    "plane_symmetry": 0,
+                }
+            ]
+        elif item == "mean_plane_definitions":
+            yaml_dict[item] = [
+                {
+                    "label": 0,
+                    "plane_atoms": 0,
+                    "plane_symmetry": 0,
+                }
+            ]
+        elif item == "cif_input_mode":
+            yaml_dict[item] = "nested"
+        elif item == "precombine_cifs":
+            yaml_dict[item] = False
+        elif item == "calculate_interplane_angle":
+            yaml_dict[item] = False
+        elif item == "varying_cif_parameter":
+            yaml_dict[item] = "_diffrn_ambient_temperature"
         elif item == "reference_plane" or item == "starting_coordinates":
             yaml_dict[item] = [0, 0, 0]
         elif item in list_params:
@@ -285,6 +392,8 @@ def yaml_extraction(heading: str) -> dict:
             yaml_dict[item] = 8
         elif item == "tolerance":
             yaml_dict[item] = 0.002
+        elif item == "minimum_fraction_of_indexed_spots":
+            yaml_dict[item] = 0.2
         elif item == "transformation_matrix":
             yaml_dict[item] = "1 0 0 0 1 0 0 0 1"
         elif item == "maximum_cycles":
@@ -297,17 +406,102 @@ def yaml_extraction(heading: str) -> dict:
     return yaml_dict
 
 
-def yaml_creation(yaml_dict: dict) -> None:
+_HEADING = (
+    "# ==========================================================\n"
+    "# {name}\n"
+    "# ==========================================================\n"
+)
+
+# Maps first param of each section to its label, per pipeline/module.
+_CONF_SECTIONS: dict = {
+    "pipeline-general": {
+        "experiment_location": "INPUT",
+        "cif_parameters":      "ANALYSIS",
+        "refinements_to_check":"REFINEMENT",
+    },
+    "pipeline-general-extra": {
+        "experiment_location":     "INPUT",
+        "_chemical_formula_moiety":"CIF FIELDS",
+        "cif_parameters":          "ANALYSIS",
+        "refinements_to_check":    "REFINEMENT",
+    },
+    "pipeline-cif": {
+        "experiment_location": "INPUT",
+        "chemical_formula":    "CRYSTAL INFO",
+        "instrument_ending":   "INSTRUMENT",
+    },
+    "pipeline-rigaku-vt": {
+        "experiment_location":  "INPUT",
+        "chemical_formula":     "CRYSTAL INFO",
+        "refinements_to_check": "REFINEMENT",
+        "cif_parameters":       "ANALYSIS",
+    },
+    "module-cif-read": {
+        "folder_containing_cifs": "INPUT",
+        "cif_parameters":         "ANALYSIS",
+    },
+    "module-cif-analysis": {
+        "folder_containing_cifs":   "INPUT",
+        "cif_parameters":           "ANALYSIS",
+        "point_geometry_distances": "GEOMETRY",
+    },
+    "pipeline-cif-analysis": {
+        "experiment_location":      "INPUT",
+        "cif_parameters":           "ANALYSIS",
+        "point_geometry_distances": "GEOMETRY",
+    },
+    "pipeline-variable-analysis": {
+        "experiment_location": "INPUT",
+        "cif_parameters":      "ANALYSIS",
+    },
+    "pipeline-position-analysis": {
+        "experiment_location": "INPUT",
+        "cif_parameters":      "ANALYSIS",
+        "wedge_angles":        "XDS SETTINGS",
+        "atoms_for_plane":     "GEOMETRY",
+    },
+    "pipeline-temperature-analysis": {
+        "experiment_location": "INPUT",
+        "cif_parameters":      "ANALYSIS",
+    },
+}
+
+
+def yaml_creation(yaml_dict: dict, heading: str = "") -> None:
     """Converts the yaml_dict made from the yaml_extraction function into a yaml file
     This is the conf.yaml that the user will edit to configure the code
     Args:
         yaml_dict (dict): Dictionary of yaml parameters specific to the chosen module/pipeline
+        heading (str): Pipeline/module name used to look up section headings
     """
     yaml_path = pathlib.Path(os.path.abspath(__file__)).parent / "conf.yaml"
     # yaml_path = pathlib.Path(os.path.join(os.getcwd()), "conf.yaml")
 
+    # YAML comments are ignored by yaml.load, so headings don't affect parsing.
+    sections = _CONF_SECTIONS.get(heading, {})
+    parts = []
+    for key, value in yaml_dict.items():
+        if key in sections:
+            if parts:
+                parts.append("\n")
+            parts.append(_HEADING.format(name=sections[key]))
+        parts.append(yaml.dump({key: value}, sort_keys=False))
     with open(yaml_path, "w") as f:
-        new_yaml = yaml.dump(yaml_dict, f)
+        f.write("".join(parts))
+
+
+def echo_config_descriptions(yaml_dict, descriptions, extra_lines=None) -> None:
+    """Print configure text in the same order as the generated yaml."""
+
+    click.echo("Descriptions are listed below:")
+    for key in yaml_dict:
+        description = descriptions.get(key)
+        if description is not None:
+            click.echo(f" - {key}: {description}")
+
+    if extra_lines is not None:
+        for line in extra_lines:
+            click.echo(line)
 
 
 def configuration_check(heading: str) -> Tuple[bool, dict]:
@@ -337,10 +531,9 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
         "beta_gradient",
         "c_gradient",
         "gamma_gradient",
+        "geometry_set_1_symmetry",
+        "geometry_set_2_symmetry",
     ]
-
-    if heading == "pipeline-AS-Brute-individual":
-        zero_exceptions.append("chemical_formula")
 
     if os.path.exists(yaml_path) == False:
         click.echo("No configuration file, please run with --configure option\n")
@@ -348,9 +541,17 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
         with open(yaml_path, "r") as f:
             try:
                 cfg = yaml.load(f, yaml.FullLoader)
-            except:
-                click.echo("Failed to set up config file. Try reconfiguring")
+            except yaml.YAMLError as error:
+                click.echo(format_yaml_error_message(yaml_path, error))
                 exit()
+
+        # If varying parameter is left blank/zero, fall back to Data_Block.
+        if "varying_cif_parameter" in cfg:
+            varying_value = cfg.get("varying_cif_parameter")
+            if varying_value in [0, None]:
+                cfg["varying_cif_parameter"] = "Data_Block"
+            elif isinstance(varying_value, str) and varying_value.strip() in ["", "0"]:
+                cfg["varying_cif_parameter"] = "Data_Block"
 
         flag = True
 
@@ -387,6 +588,31 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
                 cfg["cif_parameters"].append(cfg["varying_cif_parameter"])
 
     return flag, cfg
+
+
+def _point_geometry_definition_complete(definition: dict, required_keys: list) -> bool:
+    """Checks that a point-geometry definition contains non-placeholder values."""
+
+    if not isinstance(definition, dict):
+        return False
+
+    for key in required_keys:
+        value = definition.get(key)
+        if value is None:
+            return False
+
+        if isinstance(value, str):
+            if value.strip() == "" or value.strip() == "0":
+                return False
+        elif isinstance(value, (list, tuple, set)):
+            if len(value) == 0:
+                return False
+            if all(str(item).strip() in ["", "0"] for item in value):
+                return False
+        elif value == 0:
+            return False
+
+    return True
 
 
 @click.group()
@@ -443,7 +669,7 @@ def cli():
 
     #####################################################################\n
 
-    You are currently running version 1.1.2
+    You are currently running version 2.0.0
 
     #####################################################################\n
 
@@ -571,21 +797,18 @@ def module_refinement(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - reference_path: enter the full path to your reference .ins or .res file"
-        )
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(" - structure_location: enter the full path to your new .ins file")
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check\n"
-        )
-
         fields = yaml_extraction("module-refinement")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "structure_location": "enter the full path to your new .ins file",
+                "reference_path": "enter the full path to your reference .ins or .res file",
+                "refinements_to_check": "enter the number of refinements you want to check for convergence",
+                "tolerance": "enter the desired mean shift for the number of refinements in refinements_to_check",
+                "maximum_cycles": "enter the max number of cycles shelxl can run",
+            },
+        )
+        yaml_creation(fields, "module-refinement")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -667,23 +890,18 @@ def pipeline_refinement(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - experiment_location: enter the full path to the folder containing all dataset folders"
-        )
-        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - reference_path: enter the full path to your reference .ins or .res file"
-        )
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check\n"
-        )
-
         fields = yaml_extraction("pipeline-refinement")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "enter the full path to the folder containing all dataset folders",
+                "reference_path": "enter the full path to your reference .ins or .res file",
+                "refinements_to_check": "enter the number of refinements you want to check for convergence",
+                "tolerance": "enter the desired mean shift for the number of refinements in refinements_to_check",
+                "maximum_cycles": "enter the max number of cycles shelxl can run",
+            },
+        )
+        yaml_creation(fields, "pipeline-refinement")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -773,50 +991,27 @@ def pipeline_general(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - ADP_analysis: enter True for ADP analysis, otherwise enter False"
-        )
-        click.echo(
-            " - atoms_for_analysis: enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs"
-        )
-        click.echo(
-            " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
-        )
-        click.echo(
-            " - experiment_location: enter the full path to the folder containing your data sets"
-        )
-        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - reference_cif_location: enter the full path to your reference .cif file"
-        )
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(
-            " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter True for angle analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
-        )
-        click.echo(
-            " - structural_analysis_hbonds: enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
-        )
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
-        )
-        click.echo(
-            " - varying_cif_parameter: enter the parameter in your cif files that is varying in proper cif syntax (ie _diffrn_ambient_temperature)"
-        )
-        click.echo(
-            " - varying_parameter_values: enter the values of your varying parameter as a list with errors. Ie if you did a VT experiment at 100(2)K and 200(2)K, enter 100(2) and 200(2) in the provided list"
-        )
-
         fields = yaml_extraction("pipeline-general")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "enter the full path to the folder containing your data sets",
+                "reference_cif_location": "enter the full path to your reference .cif file",
+                "cif_parameters": "enter the parameters to be extracted from your cifs - the default parameters are usually fine",
+                "refinements_to_check": "enter the number of refinements you want to check for convergence",
+                "tolerance": "enter the desired mean shift for the number of refinements in refinements_to_check",
+                "maximum_cycles": "enter the max number of cycles shelxl can run",
+                "varying_cif_parameter": "enter the parameter in your cif files that is varying in proper cif syntax (ie _diffrn_ambient_temperature)",
+                "varying_parameter_values": "enter the values of your varying parameter as a list with errors. Ie if you did a VT experiment at 100(2)K and 200(2)K, enter 100(2) and 200(2) in the provided list",
+                "structural_analysis_bonds": "enter True for bond length analysis, otherwise enter False",
+                "structural_analysis_angles": "enter True for angle analysis, otherwise enter False",
+                "structural_analysis_torsions": "enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file",
+                "structural_analysis_hbonds": "enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file",
+                "ADP_analysis": "enter True for ADP analysis, otherwise enter False",
+                "atoms_for_analysis": "enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs",
+            },
+        )
+        yaml_creation(fields, "pipeline-general")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -940,52 +1135,32 @@ def pipeline_general_extra(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - atoms_for_analysis: enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs"
-        )
-        click.echo(
-            " - cif_parameters: enter the parameters to be extracted from your cifs - the default parameters are usually fine"
-        )
-        click.echo(
-            " - experiment_location: enter the full path to the folder containing your data sets"
-        )
-        click.echo(" - maximum_cycles: enter the max number of cycles shelxl can run")
-        click.echo(
-            " - reference_location: enter the full path to your reference .ins/.res file"
-        )
-        click.echo(
-            " - refinements_to_check: enter the number of refinements you want to check for convergence"
-        )
-        click.echo(
-            " - structural_analysis_bonds: enter True for bond length analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter True for angle analysis, otherwise enter False"
-        )
-        click.echo(
-            " - structural_analysis_torsions: enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file"
-        )
-        click.echo(
-            " - structural_analysis_hbonds: enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file"
-        )
-        click.echo(
-            " - tolerance: enter the desired mean shift for the number of refinements in refinements_to_check"
-        )
-        click.echo(
-            " - varying_cif_parameter: enter the parameter in your cif files that is varying in proper cif syntax (ie _diffrn_ambient_temperature)"
-        )
-        click.echo(
-            " - varying_parameter_values: enter the values of your varying parameter as a list with errors. Ie if you did a VT experiment at 100(2)K and 200(2)K, enter 100(2) and 200(2) in the provided list\n"
-        )
-        click.echo("IMPORTANT NOTE: there are also a series of cif parameters listed")
-        click.echo("To minimise checkCIF alerts, fill these in")
-        click.echo(
-            "You can remove or add cif parameters as long as correct CIF syntax is used!\n"
-        )
-
         fields = yaml_extraction("pipeline-general-extra")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "enter the full path to the folder containing your data sets",
+                "reference_location": "enter the full path to your reference .ins/.res file",
+                "cif_parameters": "enter the parameters to be extracted from your cifs - the default parameters are usually fine",
+                "refinements_to_check": "enter the number of refinements you want to check for convergence",
+                "tolerance": "enter the desired mean shift for the number of refinements in refinements_to_check",
+                "maximum_cycles": "enter the max number of cycles shelxl can run",
+                "varying_cif_parameter": "enter the parameter in your cif files that is varying in proper cif syntax (ie _diffrn_ambient_temperature)",
+                "varying_parameter_values": "enter the values of your varying parameter as a list with errors. Ie if you did a VT experiment at 100(2)K and 200(2)K, enter 100(2) and 200(2) in the provided list",
+                "structural_analysis_bonds": "enter True for bond length analysis, otherwise enter False",
+                "structural_analysis_angles": "enter True for angle analysis, otherwise enter False",
+                "structural_analysis_torsions": "enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file",
+                "structural_analysis_hbonds": "enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file",
+                "ADP_analysis": "enter True for ADP analysis, otherwise enter False",
+                "atoms_for_analysis": "enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs",
+            },
+            [
+                "IMPORTANT NOTE: there are also a series of cif parameters listed",
+                "To minimise checkCIF alerts, fill these in",
+                "You can remove or add cif parameters as long as correct CIF syntax is used!",
+            ],
+        )
+        yaml_creation(fields, "pipeline-general-extra")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1095,16 +1270,16 @@ def module_cif_merge(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - instrument_cif: enter the full path to your CIF file containing instrument data"
-        )
-        click.echo(
-            " - new_cif: enter the full path to your CIF file containing a structure you want to add instrument data into"
-        )
 
         fields = yaml_extraction("module-cif-merge")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "instrument_cif": "enter the full path to your CIF file containing instrument data",
+                "new_cif": "enter the full path to your CIF file containing a structure you want to add instrument data into",
+            },
+        )
+        yaml_creation(fields, "module-cif-merge")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1177,13 +1352,13 @@ def module_instrument_cif_generation(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - reference_cif: full path to the completed cif file you want to extract the instrument parameters out of"
-        )
 
         fields = yaml_extraction("module-make-instrument-cif")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {"reference_cif": "full path to the completed cif file you want to extract the instrument parameters out of"},
+        )
+        yaml_creation(fields, "module-make-instrument-cif")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1248,13 +1423,13 @@ def pipeline_cif_combine(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - location_of_cifs: the full path to the folder containing all CIF files"
-        )
 
         fields = yaml_extraction("pipeline-cif-combine")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {"location_of_cifs": "the full path to the folder containing all CIF files"},
+        )
+        yaml_creation(fields, "pipeline-cif-combine")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1324,30 +1499,27 @@ def pipeline_cif(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - chemical_formula: enter the chemical formula")
-        click.echo(" - crystal_habit: enter the habit of your crystal")
-        click.echo(" - crystal_colour: describe the colour of your crystal")
-        click.echo(
-            " - experiment_location: full path to the folder containing all folders with CIFs"
-        )
-        click.echo(
-            " - instrument_ending: if your instrument CIFs have different names but a common ending, list it here (ie .cif_od). If not, enter False"
-        )
-        click.echo(
-            " - instrument_file: if your instrument CIFs have identical names and endings, enter it here. If not, enter False"
-        )
-        click.echo(" - max_crystal_dimension: largest dimension of your crystal")
-        click.echo(" - middle_crystal_dimension: middle dimension of your crystal")
-        click.echo(" - min_crystal_dimension: smallest dimension of your crystal")
-        click.echo(" - structure_solution: list the structure solution software used")
-
-        click.echo(
-            "\nNote that one of instrument_ending and instrument_file must be false. If neither apply to your dataset, then you cannot use this pipeline"
-        )
 
         fields = yaml_extraction("pipeline-cif")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "chemical_formula": "enter the chemical formula",
+                "crystal_habit": "enter the habit of your crystal",
+                "crystal_colour": "describe the colour of your crystal",
+                "experiment_location": "full path to the folder containing all folders with CIFs",
+                "instrument_ending": "if your instrument CIFs have different names but a common ending, list it here (ie .cif_od). If not, enter False",
+                "instrument_file": "if your instrument CIFs have identical names and endings, enter it here. If not, enter False",
+                "max_crystal_dimension": "largest dimension of your crystal",
+                "middle_crystal_dimension": "middle dimension of your crystal",
+                "min_crystal_dimension": "smallest dimension of your crystal",
+                "structure_solution": "list the structure solution software used",
+            },
+            extra_lines=[
+                "\nNote that one of instrument_ending and instrument_file must be false. If neither apply to your dataset, then you cannot use this pipeline"
+            ],
+        )
+        yaml_creation(fields, "pipeline-cif")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1380,6 +1552,142 @@ def pipeline_cif(dependencies, files, configure, run):
             cifs.compile_cifs(cfg["experiment_location"])
 
             copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+######----- Rigaku VT Pipeline------####
+
+"""This pipeline will perform a fully automated analysis for variable temperature 
+    collections performed on a rigaku diffractometer.
+    The only additional file you will need is your reference structure.
+    Completed CIF files and a simple analysis will be output.   
+    Most of these click functions are specifying text output to commandline 
+    The main coding functions are checking the input of the yaml file
+    and setting up the corresponding class and calling its functions 
+    Args:
+        The user will enter one of the four arguments as a flag 
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        This will define the value in the 'if/elif' statements
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-rigaku-vt", short_help="Full pipeline for rigaku VT collections"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_rigaku_vt(dependencies, files, configure, run):
+    """This pipeline will perform a fully automated analysis for variable temperature
+    collections performed on a rigaku diffractometer.
+    The only additional file you will need is your reference structure.
+    Completed CIF files and a simple analysis will be output.
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- SHELXL")
+        click.echo("- PLATON")
+
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a reference .ins or .res file")
+        click.echo(" - a VT dataset from a rigaku diffractometer")
+        click.echo(
+            "\nYour VT dataset is likely named after the radiation source you used (ie Mo for molybdenum)"
+        )
+        click.echo("Your VT dataset can be located anywhere.")
+        click.echo(
+            "Your reference files should be located outside of the VT dataset folder."
+        )
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+
+        fields = yaml_extraction("pipeline-rigaku-vt")
+        echo_config_descriptions(
+            fields,
+            {
+                "ADP_analysis": "enter True for adp analysis, otherwise enter False",
+                "atoms_for_analysis": "enter the atom labels for graphical structural analysis as a list (best suited to small numbers to avoid over cluttering graphs",
+                "chemical_formula": "enter the chemical formula of your crystal",
+                "cif_parameters": "enter the parameters to be extracted from your cifs - the default parameters are usually fine",
+                "crystal_colour": "enter the colour of your crystal",
+                "crystal_habit": "enter the habit of your crystal",
+                "experiment_location": "enter the full path to the folder containing your VT data set",
+                "maximum_cycles": "enter the max number of cycles shelxl can run",
+                "max_crystal_dimension": "enter the largest dimension of your crystal (in mm)",
+                "middle_crystal_dimension": "enter the middle diimension of your crystal (in mm)",
+                "min_crystal_dimension": "enter the smallest dimension of your crystal (in mm)",
+                "reference_location": "enter the full path to your reference .ins/.res file",
+                "refinements_to_check": "enter the number of refinements you want to check for convergence",
+                "structural_analysis_bonds": "enter True for bond length analysis, otherwise enter False",
+                "structural_analysis_angles": "enter True for angle analysis, otherwise enter False",
+                "structural_analysis_torsions": "enter True for torsion analysis, otherwise enter False - note that this will have required the CONF command in your reference .ins/.res file",
+                "structural_analysis_hbonds": "enter True for hbond analysis, otherwise enter False - note that this will have required the HTAB command in your reference .ins/.res file",
+                "tolerance": "enter the desired mean shift for the number of refinements in refinements_to_check",
+            },
+        )
+        yaml_creation(fields, "pipeline-rigaku-vt")
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-rigaku-vt")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            full_VT = Synergy_VT()
+
+            full_VT.initialise(cfg["experiment_location"])
+
+            full_VT.process(
+                cfg["experiment_location"],
+                cfg["reference_location"],
+                full_VT.stats_location,
+                cfg["refinements_to_check"],
+                cfg["tolerance"],
+                cfg["maximum_cycles"],
+            )
+
+            full_VT.analyse(
+                cfg["reference_location"],
+                cfg["experiment_location"],
+                full_VT.results_location,
+                "cx-asap",
+                cfg["chemical_formula"],
+                cfg["crystal_habit"],
+                cfg["crystal_colour"],
+                cfg["max_crystal_dimension"],
+                cfg["middle_crystal_dimension"],
+                cfg["min_crystal_dimension"],
+                cfg["structural_analysis_bonds"],
+                cfg["structural_analysis_angles"],
+                cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
+                cfg["cif_parameters"],
+                cfg["atoms_for_analysis"],
+                cfg["ADP_analysis"],
+                ".cif_od",
+                False,
+            )
+
+            copy_logs(full_VT.results_location)
 
         output_message()
 
@@ -1427,17 +1735,17 @@ def module_cell_analysis(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(" - csv_location: full path to your .csv file")
-        click.echo(
-            " - reference_unit_cell: enter the neutral unit cell for datasets to be compared to"
-        )
-        click.echo(
-            " - x_axis_header: enter the column title for your independent variable (ie temperature or pressure"
-        )
 
         fields = yaml_extraction("module-cell-analysis")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "csv_location": "full path to your .csv file",
+                "reference_unit_cell": "enter the neutral unit cell for datasets to be compared to",
+                "x_axis_header": "enter the column title for your independent variable (ie temperature or pressure",
+            },
+        )
+        yaml_creation(fields, "module-cell-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1531,27 +1839,21 @@ def module_cif_read(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - ADP_analysis: enter 'true' if you want to extract ADP information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - cif_parameters: these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format"
-        )
-        click.echo(
-            " - structural_analysis_bonds: enter 'true' if you want to extract bond information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter 'true' if you want to extract angle information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
-        )
-        click.echo(
-            " - structural_analysis_hbonds: enter 'true' if you want to extract Hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command"
-        )
+
         fields = yaml_extraction("module-cif-read")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "folder_containing_cifs": "full path to the folder containing your CIF files",
+                "cif_parameters": "these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format",
+                "structural_analysis_bonds": "enter 'true' if you want to extract bond information, otherwise enter 'false'",
+                "structural_analysis_angles": "enter 'true' if you want to extract angle information, otherwise enter 'false'",
+                "structural_analysis_torsions": "enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command",
+                "structural_analysis_hbonds": "enter 'true' if you want to extract Hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command",
+                "ADP_analysis": "enter 'true' if you want to extract ADP information, otherwise enter 'false'",
+            },
+        )
+        yaml_creation(fields, "module-cif-read")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1627,16 +1929,17 @@ def module_rotation_planes(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - lst_file_location: enter the full path to your lst file for analysis"
-        )
-        click.echo(
-            " - reference_plane: fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions."
-        )
 
         fields = yaml_extraction("module-rotation-planes")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "lst_file_location": "enter the full path to your lst file for analysis",
+                "reference_plane": "fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions.",
+                "calculate_interplane_angle": "set to true to also extract the SHELXL inter-plane angle (requires two MPLA commands in the .lst file)",
+            },
+        )
+        yaml_creation(fields, "module-rotation-planes")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1659,6 +1962,12 @@ def module_rotation_planes(dependencies, files, configure, run):
                 1,
                 pathlib.Path(cfg["lst_file_location"]).parent,
             )
+            if cfg["calculate_interplane_angle"]:
+                rotation_analysis.analyse_interplane_angle(
+                    cfg["lst_file_location"],
+                    1,
+                    pathlib.Path(cfg["lst_file_location"]).parent,
+                )
 
             copy_logs(pathlib.Path(cfg["lst_file_location"]).parent)
 
@@ -1714,27 +2023,19 @@ def module_structural_analysis(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - angle_data: enter the full path to your angle .csv file (or false if you do not have one)"
-        )
-        click.echo(
-            " - atoms_for_analysis: enter the label of the atoms you are most interested in"
-        )
-        click.echo(
-            " - bond_data: enter the full path to your bond .csv file (or false if you do not have one)"
-        )
-
-        click.echo(
-            " - torsion_data: enter the full path to your torsion .csv file (or false if you do not have one)"
-        )
-
-        click.echo(
-            " - hbond_data: enter the full path to your hbond .csv file (or false if you do not have one)"
-        )
 
         fields = yaml_extraction("module-structural-analysis")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "angle_data": "enter the full path to your angle .csv file (or false if you do not have one)",
+                "atoms_for_analysis": "enter the label of the atoms you are most interested in",
+                "bond_data": "enter the full path to your bond .csv file (or false if you do not have one)",
+                "torsion_data": "enter the full path to your torsion .csv file (or false if you do not have one)",
+                "hbond_data": "enter the full path to your hbond .csv file (or false if you do not have one)",
+            },
+        )
+        yaml_creation(fields, "module-structural-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1807,16 +2108,17 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - experiment_location: full path to the parent folder containing a series of folders with .lst files inside"
-        )
-        click.echo(
-            " - reference_plane: fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions."
-        )
 
         fields = yaml_extraction("pipeline-rotation-planes")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "full path to the parent folder containing a series of folders with .lst files inside",
+                "reference_plane": "fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions.",
+                "calculate_interplane_angle": "set to true to also extract the SHELXL inter-plane angle (requires two MPLA commands in each .lst file)",
+            },
+        )
+        yaml_creation(fields, "pipeline-rotation-planes")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1838,8 +2140,637 @@ def pipeline_rotation_planes(dependencies, files, configure, run):
                 cfg["reference_plane"],
                 cfg["experiment_location"],
             )
+            if cfg["calculate_interplane_angle"]:
+                multi_rotation.interplane_angle_analysis(
+                    cfg["experiment_location"],
+                    cfg["experiment_location"],
+                )
 
             copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+#####------ Module Point Geometry -----#######
+
+
+@click.command(
+    "module-point-geometry",
+    short_help="calculate point/atom-group distances/angles/torsions/plane distances",
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def module_point_geometry(dependencies, files, configure, run):
+    """For a single dataset, calculate configured point-geometry values
+    from a .lst file.
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a .lst file output after refinement in SHELXL")
+        click.echo("\nThis file can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+
+        fields = yaml_extraction("module-point-geometry")
+        echo_config_descriptions(
+            fields,
+            {
+                "lst_file_location": "enter the full path to your lst file for analysis",
+                "point_geometry_distances": "list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry",
+                "point_geometry_angles": "list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry",
+                "point_geometry_torsions": "list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry",
+                "point_geometry_plane_distances": "list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry",
+                "mercury_output": "set to true to also write Mercury-style companion outputs using 3 dp rounded centroid coordinates",
+            },
+        )
+        yaml_creation(fields, "module-point-geometry")
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("module-point-geometry")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            distance_defs = cfg.get("point_geometry_distances") or []
+            angle_defs = cfg.get("point_geometry_angles") or []
+            torsion_defs = cfg.get("point_geometry_torsions") or []
+            plane_defs = cfg.get("point_geometry_plane_distances") or []
+
+            valid_distance_defs = [
+                item
+                for item in distance_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms"]
+                )
+            ]
+            valid_angle_defs = [
+                item
+                for item in angle_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms", "point_3_atoms"]
+                )
+            ]
+            valid_torsion_defs = [
+                item
+                for item in torsion_defs
+                if _point_geometry_definition_complete(
+                    item,
+                    [
+                        "point_1_atoms",
+                        "point_2_atoms",
+                        "point_3_atoms",
+                        "point_4_atoms",
+                    ],
+                )
+            ]
+            valid_plane_defs = [
+                item
+                for item in plane_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_atoms", "plane_atoms"]
+                )
+            ]
+
+            valid_defs = [
+                item
+                for item in (
+                    valid_distance_defs
+                    + valid_angle_defs
+                    + valid_torsion_defs
+                    + valid_plane_defs
+                )
+                if isinstance(item, dict)
+            ]
+
+            if len(valid_defs) == 0:
+                click.echo(
+                    "No valid point geometry definitions found. Fill in at least one angle/torsion/point-plane entry in conf.yaml."
+                )
+                output_message()
+                return
+
+            results_dir = pathlib.Path(cfg["lst_file_location"]).parent
+            point_engine = PointGeometryEngine()
+            point_engine.analyse_point_geometry(
+                cfg["lst_file_location"],
+                1,
+                results_dir,
+                valid_distance_defs,
+                valid_angle_defs,
+                valid_torsion_defs,
+                valid_plane_defs,
+                mercury_output=cfg.get("mercury_output", False),
+            )
+
+            copy_logs(results_dir)
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+#####------ Pipeline Point Geometry -----#######
+
+
+@click.command(
+    "pipeline-point-geometry",
+    short_help="calculate point/atom-group distances/angles/torsions/plane distances",
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_point_geometry(dependencies, files, configure, run):
+    """For a series of datasets, calculate configured point-geometry values
+    from .lst files across multiple folders.
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(
+            " - a series of .lst files in separate folders contained in a single parent folder"
+        )
+        click.echo("\nThis parent folder can be located anywhere ")
+        click.echo(
+            "Results will be written to a numbered folder inside Geometry_Analysis within this parent folder"
+        )
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+
+        fields = yaml_extraction("pipeline-point-geometry")
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "full path to the parent folder containing a series of folders with .lst files inside",
+                "output": "results will be written to a numbered folder inside Geometry_Analysis in the experiment_location folder",
+                "point_geometry_distances": "list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry",
+                "point_geometry_angles": "list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry",
+                "point_geometry_torsions": "list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry",
+                "point_geometry_plane_distances": "list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry",
+                "mercury_output": "set to true to also write Mercury-style companion outputs using 3 dp rounded centroid coordinates",
+            },
+        )
+        yaml_creation(fields, "pipeline-point-geometry")
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-point-geometry")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            distance_defs = cfg.get("point_geometry_distances") or []
+            angle_defs = cfg.get("point_geometry_angles") or []
+            torsion_defs = cfg.get("point_geometry_torsions") or []
+            plane_defs = cfg.get("point_geometry_plane_distances") or []
+
+            valid_distance_defs = [
+                item
+                for item in distance_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms"]
+                )
+            ]
+            valid_angle_defs = [
+                item
+                for item in angle_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms", "point_3_atoms"]
+                )
+            ]
+            valid_torsion_defs = [
+                item
+                for item in torsion_defs
+                if _point_geometry_definition_complete(
+                    item,
+                    [
+                        "point_1_atoms",
+                        "point_2_atoms",
+                        "point_3_atoms",
+                        "point_4_atoms",
+                    ],
+                )
+            ]
+            valid_plane_defs = [
+                item
+                for item in plane_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_atoms", "plane_atoms"]
+                )
+            ]
+
+            valid_defs = [
+                item
+                for item in (
+                    valid_distance_defs
+                    + valid_angle_defs
+                    + valid_torsion_defs
+                    + valid_plane_defs
+                )
+                if isinstance(item, dict)
+            ]
+
+            if len(valid_defs) == 0:
+                click.echo(
+                    "No valid point geometry definitions found. Fill in at least one angle/torsion/point-plane entry in conf.yaml."
+                )
+                output_message()
+                return
+
+            multi_geometry = PointsPipeline()
+            results_dir = multi_geometry.create_numbered_results_directory(
+                cfg["experiment_location"], "Geometry_Analysis"
+            )
+            multi_geometry.point_geometry_analysis(
+                cfg["experiment_location"],
+                results_dir,
+                valid_distance_defs,
+                valid_angle_defs,
+                valid_torsion_defs,
+                valid_plane_defs,
+                mercury_output=cfg.get("mercury_output", False),
+            )
+
+            copy_logs(results_dir)
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+#####------ Module CIF Analysis -----#######
+
+
+@click.command(
+    "module-cif-analysis",
+    short_help="analyse CIF folder with optional point/rotation/ADP/structural outputs",
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def module_cif_analysis(dependencies, files, configure, run):
+    """Runs CIF-based analysis for one folder, with optional point-geometry
+    and rotation-plane calculations directly from CIF atom coordinates.
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - one folder containing one or more .cif files")
+        click.echo(
+            " - optional: one .lst file only if you want legacy MPLA fallback rotation analysis"
+        )
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+
+        fields = yaml_extraction("module-cif-analysis")
+        echo_config_descriptions(
+            fields,
+            {
+                "folder_containing_cifs": "full path to the folder containing your .cif files",
+                "cif_parameters": "cif parameters to extract (defaults are usually enough)",
+                "atoms_for_analysis": "atom labels for structural-analysis filtering",
+                "varying_cif_parameter": "cif heading used as x-axis, e.g. _diffrn_ambient_temperature",
+                "reference_unit_cell": "optional path to reference .ins for cell-deformation analysis",
+                "structural_analysis_bonds": "true or false",
+                "structural_analysis_angles": "true or false",
+                "structural_analysis_torsions": "true or false",
+                "structural_analysis_hbonds": "true or false",
+                "ADP_analysis": "true or false",
+                "point_geometry_distances": "list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry",
+                "point_geometry_angles": "list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry",
+                "point_geometry_torsions": "list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry",
+                "point_geometry_plane_distances": "list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry",
+                "rotation_reference_plane": "optional [h,k,l] reference plane for CIF-native rotation angles",
+                "rotation_plane_definitions": "optional list of planes defined by plane_atoms and optional plane_symmetry",
+                "mean_plane_definitions": "optional list of planes used for mean-plane/interplane analysis (plane_atoms and optional plane_symmetry)",
+                "calculate_interplane_angle": "set true to calculate angle between first two mean_plane_definitions planes",
+                "mercury_output": "set true for 3 dp rounded-centroid companion outputs for point geometry",
+                "lst_file_location": "optional explicit .lst path (otherwise first .lst in folder is used)",
+            },
+            extra_lines=[
+                "   if left blank or set to 0, CX-ASAP falls back to Data_Block",
+                "   examples: _diffrn_ambient_temperature, _diffrn_ambient_pressure",
+            ],
+        )
+        yaml_creation(fields, "module-cif-analysis")
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("module-cif-analysis")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+
+            distance_defs = cfg.get("point_geometry_distances") or []
+            angle_defs = cfg.get("point_geometry_angles") or []
+            torsion_defs = cfg.get("point_geometry_torsions") or []
+            plane_defs = cfg.get("point_geometry_plane_distances") or []
+
+            valid_distance_defs = [
+                item
+                for item in distance_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms"]
+                )
+            ]
+            valid_angle_defs = [
+                item
+                for item in angle_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms", "point_3_atoms"]
+                )
+            ]
+            valid_torsion_defs = [
+                item
+                for item in torsion_defs
+                if _point_geometry_definition_complete(
+                    item,
+                    [
+                        "point_1_atoms",
+                        "point_2_atoms",
+                        "point_3_atoms",
+                        "point_4_atoms",
+                    ],
+                )
+            ]
+            valid_plane_defs = [
+                item
+                for item in plane_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_atoms", "plane_atoms"]
+                )
+            ]
+            rotation_plane_defs = cfg.get("rotation_plane_definitions") or []
+            valid_rotation_plane_defs = [
+                item
+                for item in rotation_plane_defs
+                if _point_geometry_definition_complete(item, ["plane_atoms"])
+            ]
+            mean_plane_defs = cfg.get("mean_plane_definitions") or []
+            valid_mean_plane_defs = [
+                item
+                for item in mean_plane_defs
+                if _point_geometry_definition_complete(item, ["plane_atoms"])
+            ]
+
+            if (
+                cfg.get("calculate_interplane_angle", False)
+                and len(valid_mean_plane_defs) == 0
+                and len(valid_rotation_plane_defs) > 0
+            ):
+                click.echo(
+                    "No valid mean_plane_definitions found; reusing rotation_plane_definitions for interplane calculation."
+                )
+                valid_mean_plane_defs = valid_rotation_plane_defs
+
+            results_dir = pathlib.Path(cfg["folder_containing_cifs"])
+            analysis = CIF_Analysis()
+            analysis.run(
+                cfg["folder_containing_cifs"],
+                str(results_dir),
+                cfg["cif_parameters"],
+                cfg["atoms_for_analysis"],
+                cfg["varying_cif_parameter"],
+                reference_unit_cell=cfg.get("reference_unit_cell", ""),
+                structural_analysis_bonds=cfg["structural_analysis_bonds"],
+                structural_analysis_angles=cfg["structural_analysis_angles"],
+                structural_analysis_torsions=cfg["structural_analysis_torsions"],
+                structural_analysis_hbonds=cfg["structural_analysis_hbonds"],
+                ADP_analysis_enabled=cfg["ADP_analysis"],
+                point_geometry_distances=valid_distance_defs,
+                point_geometry_angles=valid_angle_defs,
+                point_geometry_torsions=valid_torsion_defs,
+                point_geometry_plane_distances=valid_plane_defs,
+                mercury_output=cfg.get("mercury_output", False),
+                reference_plane=cfg.get("rotation_reference_plane", None),
+                rotation_plane_definitions=valid_rotation_plane_defs,
+                mean_plane_definitions=valid_mean_plane_defs,
+                calculate_interplane_angle=cfg.get("calculate_interplane_angle", False),
+                lst_file_location=cfg.get("lst_file_location", ""),
+            )
+
+            copy_logs(str(results_dir))
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+#####------ Pipeline CIF Analysis -----#######
+
+
+@click.command(
+    "pipeline-cif-analysis",
+    short_help="batch CIF analysis with optional point/rotation/ADP/structural outputs",
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_cif_analysis(dependencies, files, configure, run):
+    """Runs CIF-based analysis over either nested dataset folders or one flat CIF folder.
+    Optional point-geometry and rotation-plane calculations run directly from CIF data.
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - experiment_location containing either:")
+        click.echo("   a) nested dataset folders with .cif files, or")
+        click.echo("   b) a single flat folder of .cif files")
+        click.echo(
+            " - optional: .lst files only if you want legacy MPLA fallback rotation analysis"
+        )
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+
+        fields = yaml_extraction("pipeline-cif-analysis")
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "parent folder for CIF analysis",
+                "cif_input_mode": "'nested' for subfolders or 'flat' for one CIF folder",
+                "precombine_cifs": "set true to merge discovered CIFs into one combined input file before analysis",
+                "cif_parameters": "cif parameters to extract (defaults are usually enough)",
+                "atoms_for_analysis": "atom labels for structural-analysis filtering",
+                "varying_cif_parameter": "cif heading used as x-axis, e.g. _diffrn_ambient_temperature",
+                "reference_unit_cell": "optional path to reference .ins for cell-deformation analysis",
+                "structural_analysis_bonds": "true or false",
+                "structural_analysis_angles": "true or false",
+                "structural_analysis_torsions": "true or false",
+                "structural_analysis_hbonds": "true or false",
+                "ADP_analysis": "true or false",
+                "point_geometry_distances": "list of distance definitions with keys label, point_1_atoms, point_2_atoms and optional point_n_symmetry",
+                "point_geometry_angles": "list of angle definitions with keys label, point_1_atoms, point_2_atoms, point_3_atoms and optional point_n_symmetry",
+                "point_geometry_torsions": "list of torsion definitions with keys label, point_1_atoms..point_4_atoms and optional point_n_symmetry",
+                "point_geometry_plane_distances": "list of point-plane definitions with keys label, point_atoms, plane_atoms and optional point_symmetry/plane_symmetry",
+                "rotation_reference_plane": "optional [h,k,l] reference plane for CIF-native rotation angles",
+                "rotation_plane_definitions": "optional list of planes defined by plane_atoms and optional plane_symmetry",
+                "mean_plane_definitions": "optional list of planes used for mean-plane/interplane analysis (plane_atoms and optional plane_symmetry)",
+                "calculate_interplane_angle": "set true to calculate angle between first two mean_plane_definitions planes",
+                "mercury_output": "set true for 3 dp rounded-centroid companion outputs for point geometry",
+            },
+            extra_lines=[
+                "   root-level CIFs are preferred; if both root and nested CIFs exist, root CIFs are used",
+                "   default: false",
+                "   set true when you want one merged input before extraction/analysis",
+                "   precombine outputs are written per run as combined_input.cif and combined_input_sources.txt in the CIF_Analysis/<run_number> folder",
+                "   if left blank or set to 0, CX-ASAP falls back to Data_Block",
+                "   examples: _diffrn_ambient_temperature, _diffrn_ambient_pressure",
+            ],
+        )
+        yaml_creation(fields, "pipeline-cif-analysis")
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-cif-analysis")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+
+            distance_defs = cfg.get("point_geometry_distances") or []
+            angle_defs = cfg.get("point_geometry_angles") or []
+            torsion_defs = cfg.get("point_geometry_torsions") or []
+            plane_defs = cfg.get("point_geometry_plane_distances") or []
+
+            valid_distance_defs = [
+                item
+                for item in distance_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms"]
+                )
+            ]
+            valid_angle_defs = [
+                item
+                for item in angle_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_1_atoms", "point_2_atoms", "point_3_atoms"]
+                )
+            ]
+            valid_torsion_defs = [
+                item
+                for item in torsion_defs
+                if _point_geometry_definition_complete(
+                    item,
+                    [
+                        "point_1_atoms",
+                        "point_2_atoms",
+                        "point_3_atoms",
+                        "point_4_atoms",
+                    ],
+                )
+            ]
+            valid_plane_defs = [
+                item
+                for item in plane_defs
+                if _point_geometry_definition_complete(
+                    item, ["point_atoms", "plane_atoms"]
+                )
+            ]
+            rotation_plane_defs = cfg.get("rotation_plane_definitions") or []
+            valid_rotation_plane_defs = [
+                item
+                for item in rotation_plane_defs
+                if _point_geometry_definition_complete(item, ["plane_atoms"])
+            ]
+            mean_plane_defs = cfg.get("mean_plane_definitions") or []
+            valid_mean_plane_defs = [
+                item
+                for item in mean_plane_defs
+                if _point_geometry_definition_complete(item, ["plane_atoms"])
+            ]
+
+            if (
+                cfg.get("calculate_interplane_angle", False)
+                and len(valid_mean_plane_defs) == 0
+                and len(valid_rotation_plane_defs) > 0
+            ):
+                click.echo(
+                    "No valid mean_plane_definitions found; reusing rotation_plane_definitions for interplane calculation."
+                )
+                valid_mean_plane_defs = valid_rotation_plane_defs
+
+            pipe = CIF_Analysis_Pipeline()
+            results_dir = pipe.create_numbered_results_directory(
+                cfg["experiment_location"], "CIF_Analysis"
+            )
+
+            pipe.run(
+                cfg["experiment_location"],
+                str(results_dir),
+                cfg["cif_input_mode"],
+                cfg["cif_parameters"],
+                cfg["atoms_for_analysis"],
+                cfg["varying_cif_parameter"],
+                reference_unit_cell=cfg.get("reference_unit_cell", ""),
+                structural_analysis_bonds=cfg["structural_analysis_bonds"],
+                structural_analysis_angles=cfg["structural_analysis_angles"],
+                structural_analysis_torsions=cfg["structural_analysis_torsions"],
+                structural_analysis_hbonds=cfg["structural_analysis_hbonds"],
+                ADP_analysis_enabled=cfg["ADP_analysis"],
+                point_geometry_distances=valid_distance_defs,
+                point_geometry_angles=valid_angle_defs,
+                point_geometry_torsions=valid_torsion_defs,
+                point_geometry_plane_distances=valid_plane_defs,
+                mercury_output=cfg.get("mercury_output", False),
+                reference_plane=cfg.get("rotation_reference_plane", None),
+                rotation_plane_definitions=valid_rotation_plane_defs,
+                mean_plane_definitions=valid_mean_plane_defs,
+                calculate_interplane_angle=cfg.get("calculate_interplane_angle", False),
+                precombine_cifs=cfg.get("precombine_cifs", False),
+            )
+
+            copy_logs(str(results_dir))
 
         output_message()
 
@@ -1887,38 +2818,24 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - ADP_analysis: enter 'true' if you want to extract ADP information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - atoms_for_analysis: enter the label of the atoms you are most interested in"
-        )
-        click.echo(
-            " - cif_parameters: these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format"
-        )
-        click.echo(
-            " - experiment_location: enter the full path to the folder which contains your .cif files"
-        )
-        click.echo(" - reference_unit_cell: enter the path to a reference .ins file")
-        click.echo(
-            " - structural_analysis_bonds: enter 'true' if you want to extract bond information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - structural_analysis_angles: enter 'true' if you want to extract angle information, otherwise enter 'false'"
-        )
-        click.echo(
-            " - structural_analysis_torsions: enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command"
-        )
-        click.echo(
-            " - structural_analysis_hbonds: enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command"
-        )
-        click.echo(
-            " - varying_cif_parameter: enter the parameter in your .cif files that is changing. Make sure you use proper .cif syntax"
-        )
 
         fields = yaml_extraction("pipeline-variable-analysis")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "ADP_analysis": "enter 'true' if you want to extract ADP information, otherwise enter 'false'",
+                "atoms_for_analysis": "enter the label of the atoms you are most interested in",
+                "cif_parameters": "these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format",
+                "experiment_location": "enter the full path to the folder which contains your .cif files",
+                "reference_unit_cell": "enter the path to a reference .ins file",
+                "structural_analysis_bonds": "enter 'true' if you want to extract bond information, otherwise enter 'false'",
+                "structural_analysis_angles": "enter 'true' if you want to extract angle information, otherwise enter 'false'",
+                "structural_analysis_torsions": "enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command",
+                "structural_analysis_hbonds": "enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command",
+                "varying_cif_parameter": "enter the parameter in your .cif files that is changing. Make sure you use proper .cif syntax",
+            },
+        )
+        yaml_creation(fields, "pipeline-variable-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -1947,6 +2864,470 @@ def pipeline_variable_analysis(dependencies, files, configure, run):
                 cfg["structural_analysis_hbonds"],
                 cfg["ADP_analysis"],
             )
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+####-----Pipeline Variable Position Analysis-----####
+
+"""This pipeline will analyse .cif files for a variable    
+    position experiment.
+    It will output graphs displaying changes in unit cell 
+    parameters and defined structural changes.    
+    Most of these click functions are specifying text output to commandline 
+    The main coding functions are checking the input of the yaml file    
+    and setting up the corresponding class and calling its functions 
+    Args:
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        This will define the value in the 'if/elif' statements        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-position-analysis", short_help="analysis of variable position cifs"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_position_analysis(dependencies, files, configure, run):
+    """This pipeline will analyse .cif files for a variable
+    position experiment.
+    It will output graphs displaying changes in unit cell
+    parameters and defined structural changes.
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a series of .cif files located in a single folder")
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+
+        fields = yaml_extraction("pipeline-position-analysis")
+        echo_config_descriptions(
+            fields,
+            {
+                "ADP_analysis": "enter 'true' if you want to extract ADP information, otherwise enter 'false'",
+                "atoms_for_analysis": "enter the label of the atoms you are most interested in",
+                "atoms_for_rotation_analysis": "enter atom labels for mean plane analysis as a list for a single MPLA plane (eg [Cu1, O1, O2]) or a list of lists for multiple planes (eg [[Cu1, O1], [C3, C4, C5]])",
+                "cif_parameters": "these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format",
+                "experiment_location": "enter the full path to your folder containing your cif files",
+                "mapping_step_size": "enter the step-size for the collection (in um)",
+                "min_pixels": "enter the values for minimum_pixels_in_a_spot as a list for XDS proessing",
+                "reference_plane": "fill out the list with the three numbers that form your reference crystallographic plane. For example, to compare to the (100) plane, enter the three numbers '1', '0', and '0' in the three positions.",
+                "reference_unit_cell": "enter the neutral unit cell for datasets to be compared to",
+                "sepmin": "enter the values for sepmin as a list for XDS processing",
+                "spot_maximum_centroid": "enter the values for spot_maximum_centroid as a list for XDS processing",
+                "signal_pixel": "enter the values for signal_pixel as a list for XDS processing",
+                "structural_analysis_bonds": "enter 'true' if you want to extract bond information, otherwise enter 'false'",
+                "structural_analysis_angles": "enter 'true' if you want to extract angle information, otherwise enter 'false'",
+                "structural_analysis_torsions": "enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command",
+                "structural_analysis_hbonds": "enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'HTAB' command",
+                "wedge_angles": "enter the wedge angles as a list for XDS processing",
+                "calculate_geometry_set_distance": "enter True for geometry-set distance analysis between two atom groups from the .lst files, otherwise enter False",
+                "geometry_set_1_atoms": "list of atom labels for the first geometry set (only needed if calculate_geometry_set_distance is true)",
+                "geometry_set_2_atoms": "list of atom labels for the second geometry set (only needed if calculate_geometry_set_distance is true)",
+                "geometry_set_1_symmetry": "optional symmetry operation for geometry set 1 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)",
+                "geometry_set_2_symmetry": "optional symmetry operation for geometry set 2 atoms, e.g. -x+1/2, y+1/2, -z+1/2 (leave blank if not required)",
+            },
+        )
+        yaml_creation(fields, "pipeline-position-analysis")
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-position-analysis")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            vp_analysis = VP_Analysis_Pipeline()
+            vp_analysis.analyse_data(
+                cfg["reference_unit_cell"],
+                cfg["experiment_location"],
+                cfg["cif_parameters"],
+                cfg["atoms_for_analysis"],
+                cfg["atoms_for_plane"],
+                cfg["mapping_step_size"],
+                cfg["spot_maximum_centroid"],
+                cfg["min_pixels"],
+                cfg["signal_pixel"],
+                cfg["sepmin"],
+                cfg["wedge_angles"],
+                cfg["reference_plane"],
+                cfg["structural_analysis_bonds"],
+                cfg["structural_analysis_angles"],
+                cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
+                cfg["ADP_analysis"],
+            )
+            if cfg.get("calculate_geometry_set_distance", False):
+                points_pipeline = PointsPipeline()
+                points_pipeline.geometry_set_distance_analysis(
+                    cfg["experiment_location"],
+                    cfg["geometry_set_1_atoms"],
+                    cfg["geometry_set_2_atoms"],
+                    cfg["experiment_location"],
+                    symmetry_1=cfg.get("geometry_set_1_symmetry") or None,
+                    symmetry_2=cfg.get("geometry_set_2_symmetry") or None,
+                )
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+#####------Pipeline Variable Temperature Analysis-----####
+
+"""This pipeline will analyse .cif files for a variable    
+    temperature experiment.
+    It will output graphs displaying changes in unit cell parameters 
+    and defined structural changes.    
+    Most of these click functions are specifying text output to commandline 
+    The main coding functions are checking the input of the yaml file    
+    and setting up the corresponding class and calling its functions 
+    Args:
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'
+        This will define the value in the 'if/elif' statements        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-temperature-analysis", short_help="analysis of variable temperature cifs"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_temperature_analysis(dependencies, files, configure, run):
+    """This pipeline will analyse .cif files for a variable
+    temperature experiment.
+    It will output graphs displaying changes in unit cell parameters
+    and defined structural changes.
+    """
+    if dependencies:
+        click.echo("\nYou do not require any additional software in your path!\n")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a series of .cif files located in a single folder")
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+
+        fields = yaml_extraction("pipeline-temperature-analysis")
+        echo_config_descriptions(
+            fields,
+            {
+                "ADP_analysis": "enter 'true' if you want to extract ADP information, otherwise enter 'false'",
+                "atoms_for_analysis": "enter the label of the atoms you are most interested in",
+                "cif_parameters": "these are the parameters that will be extracted from the cif - default ones are usually enough - note that any additional ones must be written in exact cif format",
+                "experiment_location": "enter the full path to the folder which contains your .cif files",
+                "reference_unit_cell": "enter the neutral unit cell for datasets to be compared to",
+                "structural_analysis_bonds": "enter 'true' if you want to extract bond information, otherwise enter 'false'",
+                "structural_analysis_angles": "enter 'true' if you want to extract angle information, otherwise enter 'false'",
+                "structural_analysis_torsions": "enter 'true' if you want to extract torsion information, otherwise enter 'false' - note that cif files will only contain this information if you refined your structures with the 'CONF' command",
+                "structural_analysis_hbonds": "enter 'true' if you want to extract hbond information, otherwise enter 'false' - note that cif files will only contain this information if you refined with an HTAB command",
+            },
+        )
+        yaml_creation(fields, "pipeline-temperature-analysis")
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-temperature-analysis")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            vt_analysis = VT_Analysis_Pipeline()
+            vt_analysis.analyse_data(
+                cfg["reference_unit_cell"],
+                cfg["experiment_location"],
+                cfg["cif_parameters"],
+                cfg["atoms_for_analysis"],
+                cfg["structural_analysis_bonds"],
+                cfg["structural_analysis_angles"],
+                cfg["structural_analysis_torsions"],
+                cfg["structural_analysis_hbonds"],
+                cfg["ADP_analysis"],
+            )
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+### -------- Module Platon Squeeze --------###
+
+"""This module will run squeeze on a single .ins file via PLATON.   
+    Most of these click functions are specifying text output to commandline 
+    The main coding functions are checking the input of the yaml file
+    and setting up the corresponding class and calling its functions 
+    Args:
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command("module-platon-squeeze", short_help="Run Platon Squeeze")
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def module_platon_squeeze(dependencies, files, configure, run):
+    """This module will run squeeze on a single .ins file via PLATON."""
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- PLATON")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - .ins/.hkl files in a single folder")
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        fields = yaml_extraction("module-platon-squeeze")
+        echo_config_descriptions(
+            fields,
+            {
+                "file_name": "full path to your .ins file",
+            },
+        )
+        yaml_creation(fields, "module-platon-squeeze")
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("module-platon-squeeze")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            squeeze = Platon_Squeeze()
+            squeeze.run_squeeze(cfg["file_name"])
+
+            copy_logs(pathlib.Path(cfg["file_name"]).parent)
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+### ------ Pipeline Platon Squeeze ---- ###
+
+"""This pipeline will run squeeze on a series of .ins files via PLATON.   
+    It will do this is a separate directory to retain the original structures 
+    for comparison.
+    If you wish to use this in a larger pipeline, it is recommended 
+    you use pipeline-refinement, followed by this squeeze pipeline,     
+    then finally pipeline-general on the new squeezed folder.     
+    Make sure you use a squeezed reference for the general pipeline!    
+    Most of these click functions are specifying text output to commandline
+    The main coding functions are checking the input of the yaml file    
+    and setting up the corresponding class and calling its functions 
+    Args:
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-platon-squeeze", short_help="Run squeeze over multiple structures"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_platon_squeeze(dependencies, files, configure, run):
+    """This pipeline will run squeeze on a series of .ins files via PLATON.
+    It will do this is a separate directory to retain the original structures
+    for comparison.
+    If you wish to use this in a larger pipeline, it is recommended
+    you use pipeline-refinement, followed by this squeeze pipeline,
+    then finally pipeline-general on the new squeezed folder.
+    Make sure you use a squeezed reference for the general pipeline!
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- PLATON")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a series of .hkl files")
+        click.echo(" - a series .ins files corresponding to the .hkl files")
+        click.echo(
+            "\nYour .hkl/.ins files should be in separate folders located in a single parent folder"
+        )
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+        fields = yaml_extraction("pipeline-platon-squeeze")
+        echo_config_descriptions(
+            fields,
+            {
+                "experiment_location": "enter the full path to your folder containing all dataset folders",
+            },
+        )
+        yaml_creation(fields, "pipeline-platon-squeeze")
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-platon-squeeze")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            squeeze = Squeeze_Pipeline()
+            squeeze.new_squeeze_directory(cfg["experiment_location"])
+            squeeze.multi_squeeze(squeeze.new_location)
+
+            copy_logs(cfg["experiment_location"])
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+### ------ Pipeline Platon TwinRotMat ---- ###
+
+"""This pipeline will run TwinRotMat on a series of .cif and .fcf files via PLATON.   
+    It will do this is a separate directory to retain the original structures 
+    for comparison.
+    If you wish to use this in a larger pipeline, it is recommended 
+    you use pipeline-refinement (with LIST 4), followed by this twinrotmat pipeline,     
+    then finally pipeline-general on the new twinrotmat folder inlcuding BASF and HKLF 5.     
+    Make sure you use a twinrotmat suitable reference for the general pipeline!    
+    Most of these click functions are specifying text output to commandline
+    The main coding functions are checking the input of the yaml file    
+    and setting up the corresponding class and calling its functions 
+    Args:
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command(
+    "pipeline-platon-twinrotmat", short_help="Run twinrotmat over multiple structures"
+)
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_platon_twinrotmat(dependencies, files, configure, run):
+    """This pipeline will run twinrotmat on a series of .cif and .fcf files via PLATON.
+    It will do this is a separate directory to retain the original structures
+    for comparison.
+    If you wish to use this in a larger pipeline, it is recommended
+    you use pipeline-refinement (with LIST 4 and ACTA), followed by this pipeline,
+    then finally pipeline-general on the new twinrotmat folder.
+    Make sure you use a an HKLF5 reference for the general pipeline!
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- PLATON")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a series of .cif files")
+        click.echo(" - a series .fcf files corresponding to the .cif files")
+        click.echo(
+            "\nYour .cif/.fcf files should be in separate folders located in a single parent"
+        )
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+
+        fields = yaml_extraction("pipeline-platon-twinrotmat")
+        echo_config_descriptions(
+            fields,
+            {"experiment_location": "enter the full path to your folder containing all datasets"},
+        )
+        yaml_creation(fields, "pipeline-platon-twinrotmat")
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-platon-twinrotmat")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            twinrotmat = Twin_Pipeline()
+            twinrotmat.new_twinrotmat_directory(cfg["experiment_location"])
+            twinrotmat.multi_twinrotmat(twinrotmat.new_location)
 
             copy_logs(cfg["experiment_location"])
 
@@ -2000,16 +3381,15 @@ def module_adp_analysis(dependencies, files, configure, run):
     elif configure:
         click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
         click.echo("You will need to fill out the parameters.")
-        click.echo("Descriptions are listed below:")
-        click.echo(
-            " - cell_path: Enter the path to the .csv file containing extracted unit cell data (recommended you run module-cif-read first!)"
-        )
-        click.echo(
-            " - csv_path: Enter the path to the .csv file containing extracted ADP data (recommended you run module-cif-read first)"
-        )
-
         fields = yaml_extraction("module-adp-analysis")
-        yaml_creation(fields)
+        echo_config_descriptions(
+            fields,
+            {
+                "csv_path": "Enter the path to the .csv file containing extracted ADP data (recommended you run module-cif-read first)",
+                "cell_path": "Enter the path to the .csv file containing extracted unit cell data (recommended you run module-cif-read first!)",
+            },
+        )
+        yaml_creation(fields, "module-adp-analysis")
 
     elif run:
         click.echo("\nChecking to see if experiment configured....\n")
@@ -2029,6 +3409,92 @@ def module_adp_analysis(dependencies, files, configure, run):
             adps.analyse_data(cfg["csv_path"], cfg["cell_path"])
 
             copy_logs(pathlib.Path(cfg["csv_path"]).parent)
+
+        output_message()
+
+    else:
+        click.echo("Please select an option. To view options, add --help")
+
+
+### ------ Pipeline SHELXT AUTO ---- ###
+
+"""This pipeline will run shelxt on a series of .ins and .hkl files.    
+    It will do this is a separate directory to retain the original structures 
+    for comparison.
+    It will only retain the first (_a) shelxt result.
+    If you wish to use this in a larger pipeline, it is recommended 
+    you use pipeline-refinement, followed by this shelxt pipeline, 
+    then finally pipeline-general on the new squeezed folder. 
+    Make sure you use a squeezed reference for the general pipeline!
+    Most of these click functions are specifying text output to commandline 
+    The main coding functions are checking the input of the yaml file
+    and setting up the corresponding class and calling its functions 
+    Args:
+        The user will enter one of the four arguments as a flag         
+        This will set that parameter as 'TRUE', while the others are 'FALSE'        
+        This will define the value in the 'if/elif' statements        
+        dependencies (bool): will check for dependencies
+        files (bool): will show the user what files are required
+        configure (bool): will set up the yaml for the user to fill out
+        run (bool): will execute the chosen module/pipeline 
+"""
+
+
+@click.command("pipeline-shelxt-auto", short_help="Run shelxt over multiple structures")
+@click.option("--dependencies", is_flag=True, help="view the software dependencies")
+@click.option("--files", is_flag=True, help="view the required input files")
+@click.option("--configure", is_flag=True, help="generate your conf.yaml file")
+@click.option("--run", is_flag=True, help="run the code!")
+def pipeline_shelxt_auto(dependencies, files, configure, run):
+    """This pipeline will run shexlt on a series of .ins and .hkl files.
+    It will do this is a separate directory to retain the original structures
+    for comparison.
+    It will retain only the first result and rename the .res file as a .ins file.
+    If you wish to use this in a larger pipeline, it is recommended
+    you use pipeline-refinement, followed by this shelxt pipeline,
+    then finally pipeline-general on the new shelxt folder.
+    """
+    if dependencies:
+        click.echo("\nYou require the below software in your path:")
+        click.echo("- SHELXT")
+    elif files:
+        click.echo("\nYou require the below files:")
+        click.echo(" - a series of .hkl files")
+        click.echo(" - a series .ins files corresponding to the .hkl files")
+        click.echo(
+            "\nYour .hkl/.ins files should be in separate folders located in a single parent folder"
+        )
+        click.echo("\nThis folder can be located anywhere ")
+    elif configure:
+        click.echo("\nWriting a file called conf.yaml in the cx_asap folder...\n")
+        click.echo("You will need to fill out the parameters.")
+
+        fields = yaml_extraction("pipeline-shelxt-auto")
+        echo_config_descriptions(
+            fields,
+            {"experiment_location": "enter the full path to your folder containing all dataset folders"},
+        )
+        yaml_creation(fields, "pipeline-shelxt-auto")
+
+    elif run:
+        click.echo("\nChecking to see if experiment configured....\n")
+
+        check, cfg = configuration_check("pipeline-shelxt-auto")
+
+        if check == False:
+            click.echo("Make sure you fill in the configuration file!")
+            click.echo(
+                "If you last ran a different code, make sure you reconfigure for the new script!"
+            )
+            click.echo("Re-run configuration for description of each parameter\n")
+        else:
+            click.echo("READY TO RUN SCRIPT!\n")
+            reset_logs()
+            shelxt = SHELXT_Pipeline_auto()
+            shelxt.new_shelxt_directory(cfg["experiment_location"])
+            shelxt.multi_shelxt(shelxt.new_location)
+
+            copy_logs(cfg["experiment_location"])
 
         output_message()
 
@@ -2058,20 +3524,21 @@ windows_modules = [
     module_cif_read,
     module_rotation_planes,
     module_structural_analysis,
-    # pipeline_temperature_analysis,
+    pipeline_temperature_analysis,
     pipeline_variable_analysis,
     module_adp_analysis,
-    # module_platon_squeeze,
-    # pipeline_platon_squeeze,
+    module_platon_squeeze,
+    pipeline_platon_squeeze,
 ]
 
-# windows_modules_dev = [
-# module_intensity_compare,
-# pipeline_intensity_compare,
-# pipeline_rigaku_vt,
-# module_molecule_reconstruction,
-# pipeline_shelxt_auto,
-# ]
+windows_modules_dev = [
+    pipeline_rigaku_vt,
+    pipeline_shelxt_auto,
+    module_point_geometry,
+    pipeline_point_geometry,
+    module_cif_analysis,
+    pipeline_cif_analysis,
+]
 
 if BadOS == True:
     # Modules for master branch ###
@@ -2081,8 +3548,8 @@ if BadOS == True:
 
     # Modules for dev branch ###
 
-# for item in windows_modules_dev:
-#    cli.add_command(item)
+    for item in windows_modules_dev:
+        cli.add_command(item)
 
 else:
     ### Modules for master branch ###
@@ -2101,30 +3568,23 @@ else:
     cli.add_command(module_cif_read)
     cli.add_command(module_rotation_planes)
     cli.add_command(module_structural_analysis)
-    # cli.add_command(pipeline_temperature_analysis)
+    cli.add_command(pipeline_temperature_analysis)
     cli.add_command(pipeline_variable_analysis)
     cli.add_command(module_adp_analysis)
 
     ### Modules for dev branch ###
 
-    # cli.add_command(pipeline_vp)
-    # cli.add_command(module_intensity_compare)
-    # cli.add_command(pipeline_intensity_compare)
-    # cli.add_command(pipeline_rigaku_vt)
-    # cli.add_command(pipeline_aus_synch_vt)
-    # cli.add_command(module_xds_cell_transformation)
-    # cli.add_command(module_xds_reprocess)
-    # cli.add_command(module_xprep)
-    # cli.add_command(pipeline_xds_reprocess)
-    # cli.add_command(pipeline_xprep)
-    # cli.add_command(pipeline_rotation_planes)
-    # cli.add_command(pipeline_position_analysis)
-    # cli.add_command(pipeline_AS_Brute)
-    # cli.add_command(module_molecule_reconstruction)
-    # cli.add_command(pipeline_shelxt_auto)
-    # cli.add_command(module_platon_squeeze)
-    # cli.add_command(pipeline_platon_squeeze)
-    # cli.add_command(pipeline_AS_Brute_individual)
+    cli.add_command(pipeline_rigaku_vt)
+    cli.add_command(pipeline_rotation_planes)
+    cli.add_command(module_point_geometry)
+    cli.add_command(pipeline_point_geometry)
+    cli.add_command(module_cif_analysis)
+    cli.add_command(pipeline_cif_analysis)
+    cli.add_command(pipeline_position_analysis)
+    cli.add_command(pipeline_shelxt_auto)
+    cli.add_command(module_platon_squeeze)
+    cli.add_command(pipeline_platon_squeeze)
+    cli.add_command(pipeline_platon_twinrotmat)
 
 
 def run() -> None:

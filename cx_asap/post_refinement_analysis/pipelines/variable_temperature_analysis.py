@@ -21,8 +21,8 @@ import logging
 # ----------Class Definition----------#
 
 
-class Variable_Analysis_Pipeline:
-    def __init__(self, test_mode: bool = False) -> None:
+class VT_Analysis_Pipeline:
+    def __init__(self) -> None:
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -32,25 +32,18 @@ class Variable_Analysis_Pipeline:
         which stores a yaml of code-only parameters accessible throughout
 
         the software package
-
-        Args:
-            test_mode (bool): Automatically false, if true it will
-
-                            make the functions compatible with the testing script
         """
 
         # Setup yaml files and logger
 
-        self.test_mode = test_mode
-
-        config = Config(self.test_mode)
+        config = Config()
 
         self.cfg = config.cfg
         self.sys = config.sys
         self.conf_path = config.conf_path
         self.sys_path = config.sys_path
 
-    def determine_behaviour(self, df: "pd.DataFrame", param: str) -> list:
+    def determine_temp_behaviour(self, df: "pd.DataFrame") -> list:
         """Searches through the data and classifies everything as a
 
         minima, maxima, increasing or decreasing
@@ -61,12 +54,10 @@ class Variable_Analysis_Pipeline:
 
         Makes it easier to understand any hysteresis
 
-        THIS FUNCTION CAN BE CUSTOMISED FOR ANY CHANGING CIF PARAMETER
+        THIS FUNCTION IS SPECIFIC TO VT, SO LOOKS FOR "_diffrn_ambient_temperature"
 
         Args:
             df ("pd.DataFrame") = dataframe containing all the... data
-            param (str) = heading in the dataframe for the variable of interest
-                            function analyses how THIS param in the df is changing
 
         Returns:
             behaviour (list) = a list of the behaviour with the same length
@@ -75,7 +66,7 @@ class Variable_Analysis_Pipeline:
 
         behaviour = []
 
-        data = list(df[param])
+        data = list(df["_diffrn_ambient_temperature"])
 
         if len(data) == 0:
             df["behaviour"] = behaviour
@@ -85,6 +76,8 @@ class Variable_Analysis_Pipeline:
             behaviour.append("Did Not Change")
             df["behaviour"] = behaviour
             return behaviour
+
+        # Searches through the data and classifies everything as a temperature minima, maxima, increasing or decreasing
 
         for index, i in enumerate(data):
             if index != 0 and index != len(data) - 1:
@@ -129,11 +122,10 @@ class Variable_Analysis_Pipeline:
 
     def analyse_data(
         self,
-        ref_cell: str,
+        ref_ins: str,
         location: str,
         cif_parameters: list,
         atoms_for_analysis: list,
-        param: str,
         bonds: bool = False,
         angles: bool = False,
         torsions: bool = False,
@@ -150,27 +142,26 @@ class Variable_Analysis_Pipeline:
 
         Outputs graphs corresponding to these analyses
 
-        THIS FUNCTION CAN BE CUSTOMISED FOR ANY CHANGING CIF PARAMETER
+        THIS FUNCTION IS SPECIFIC TO VT, SO HAS CHANGING PARAM AS "_diffrn_ambient_temperature"
 
         Args:
-            ref_cell (str): full path to reference .ins file
+            ref_ins (str): full path to the reference .ins
             location (str): full path to the folder containing all CIFs for analysis
             cif_parameters (list): list of cif parameters to extract
             atoms_for_analysis (list): list of important atoms to separate
-            param (str): the CIF parameter that is varying in correct CIF syntax
-                        ie "_diffrn_ambient_temperature" for a VT experiment
             bonds (bool): whether or not bond analysis should be run
             angles (bool): whether or not angle analysis should be run
             torsions (bool): whether or not torsion analysis should be run
+            hbonds (bool): whether or not torsion analysis should be run
             adps (bool): whether or not ADP analysis should be run
         """
 
-        CIF_Data = CIF_Read(self.test_mode)
+        CIF_Data = CIF_Read()
         CIF_Data.configure(cif_parameters)
-        CIF_Data.get_data(location, bonds, angles, torsions, hbonds, adps, param)
+        CIF_Data.get_data(location, bonds, angles, torsions, hbonds, adps)
         CIF_Data.data_output()
 
-        geometry = Structural_Analysis(self.test_mode)
+        geometry = Structural_Analysis()
 
         if bonds != False:
             bonds = "Bond_Lengths.csv"
@@ -179,7 +170,7 @@ class Variable_Analysis_Pipeline:
         if torsions != False:
             torsions = "Bond_Torsions.csv"
         if hbonds != False:
-            hbonds = "HBond_details.csv"
+            hbonds = "Hbond_details.csv"
         if adps != False:
             adps = "ADPs.csv"
 
@@ -190,31 +181,29 @@ class Variable_Analysis_Pipeline:
             hbonds,
             atoms_for_analysis,
             location,
-            varying_parameter=param,
+            varying_parameter="_diffrn_ambient_temperature",
         )
 
-        cell = Cell_Deformation(self.test_mode)
-        cell.import_data("CIF_Parameters.csv", ref_cell)
+        cell = Cell_Deformation()
+        cell.import_data("CIF_Parameters.csv", ref_ins)
         cell.calculate_deformations()
         cell.quality_analysis(
-            param,
+            "_diffrn_ambient_temperature",
             {
                 "R1": cell.df["_refine_ls_R_factor_gt"],
                 "Rint": cell.df["_diffrn_reflns_av_R_equivalents"],
                 "Completeness": cell.df["_diffrn_measured_fraction_theta_full"],
             },
-            param,
+            "Temperature (K)",
         )
-        cell.graphical_analysis(param, param)
+        cell.graphical_analysis("_diffrn_ambient_temperature", "Temperature (K)")
 
         if adps != False:
-            adp_object = ADP_analysis(self.test_mode)
+            adp_object = ADP_analysis()
             adp_object.analyse_data(adps, "CIF_Parameters.csv")
 
-        graph = Grapher(self.test_mode)
-        discrete_behaviour = list(
-            dict.fromkeys(self.determine_behaviour(cell.df, param))
-        )
+        graph = Grapher()
+        discrete_behaviour = list(dict.fromkeys(self.determine_temp_behaviour(cell.df)))
         separated_by_behaviour_dfs = []
         for item in discrete_behaviour:
             condition = cell.df["behaviour"] == item

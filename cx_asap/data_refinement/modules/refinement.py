@@ -33,6 +33,7 @@ from typing import Tuple
 
 class Structure_Refinement:
     def __init__(self, test_mode: bool = False) -> None:
+
         """Initialises the class
 
         Sets up the yaml parameters input by the user
@@ -91,14 +92,30 @@ class Structure_Refinement:
                 print("Error in creating .ins files - check error log")
                 exit()
         else:
-            complete_file = (
-                cell[new_x.start() : new_y.start()]
-                + structure[ref_x.start() : ref_y.end()]
-            )
+            # Take TITL->LATT block from the new file, then splice in the Z
+            # value from the reference ZERR line (the autoprocessor often
+            # calculates the wrong Z), keeping the cell ESDs from the new file.
+            new_header = cell[new_x.start() : new_y.start()]
+
+            ref_zerr = re.search(r"^ZERR\s+\S+", structure, re.MULTILINE)
+            new_zerr = re.search(r"^ZERR\s+\S+", new_header, re.MULTILINE)
+
+            if ref_zerr is not None and new_zerr is not None:
+                ref_z = structure[ref_zerr.start() : ref_zerr.end()].split()[1]
+                new_header = re.sub(
+                    r"^(ZERR\s+)\S+",
+                    lambda m: m.group(1) + ref_z,
+                    new_header,
+                    count=1,
+                    flags=re.MULTILINE,
+                )
+
+            complete_file = new_header + structure[ref_x.start() : ref_y.end()]
 
         return complete_file
 
     def import_refinement(self, file_name: str, ref_struct: str) -> None:
+
         """Imports the reference and the new .ins files
 
         Outputs the combined file
@@ -139,6 +156,7 @@ class Structure_Refinement:
         weights_old: list,
         weights_new: list,
     ) -> Tuple[bool, bool]:
+
         """Check if the structure has converged or not
 
         For the structure to have converged, it requires:
@@ -224,6 +242,7 @@ class Structure_Refinement:
         tolerance: float,
         refinement_failed: bool,
     ) -> Tuple[bool, list, bool]:
+
         """Function sets up values to check the convergence of the refinements
 
         The actual convergence check is in a separate function (above).
@@ -309,6 +328,7 @@ class Structure_Refinement:
         tolerance: float,
         max_cycles: int,
     ) -> bool:
+
         """Runs SHELXL on a single structure that has had a reference model
 
         imported into it
