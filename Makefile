@@ -7,26 +7,31 @@ else
 endif
 
 VIRTUAL_ENV := $(CWD)/cxasap_venv
+ifeq ($(OS),Windows_NT)
+PYTHON ?= python
+else
+PYTHON ?= python3
+endif
 
 # installs packages onto the base system
 install-quick:
-	pip install -e . 
-	python3 $(CWD)/cx_asap/system_files/setup_sys_yaml.py
+	$(PYTHON) -m pip install --editable .
+	$(PYTHON) $(CWD)/cx_asap/system_files/setup_sys_yaml.py
 
 # uses the base system - must explicitly use python3
 test-quick:
-	python3 $(CWD)/cx_asap/system_files/test_installation.py
+	$(PYTHON) $(CWD)/cx_asap/system_files/test_installation.py
 
 # create python3 venv, activate it and use the venv python path (python3)
 install-venv:
-	python3 -m venv $(VIRTUAL_ENV) 
+	$(PYTHON) -m venv $(VIRTUAL_ENV)
 ifeq ($(OS),Windows_NT)
-	$(VIRTUAL_ENV)/Scripts/activate.bat && pip install -e . && python $(CWD)/cx_asap/system_files/setup_sys_yaml.py
+	$(VIRTUAL_ENV)/Scripts/python.exe -m pip install --editable . && $(VIRTUAL_ENV)/Scripts/python.exe $(CWD)/cx_asap/system_files/setup_sys_yaml.py
 	@echo virtual environment successfully created
 	@echo please activate by copying below command into your command prompt:
 	@echo $(VIRTUAL_ENV)/Scripts/activate.bat
 else
-	. $(VIRTUAL_ENV)/bin/activate && pip install -e . && python $(CWD)/cx_asap/system_files/setup_sys_yaml.py
+	$(VIRTUAL_ENV)/bin/python -m pip install --editable . && $(VIRTUAL_ENV)/bin/python $(CWD)/cx_asap/system_files/setup_sys_yaml.py
 	@echo virtual environment successfully created
 	@echo please activate by copying below command into your terminal:
 	@echo . $(VIRTUAL_ENV)/bin/activate
@@ -34,7 +39,11 @@ endif
 	
 # run this test ONLY if venv is activated - fails otherwise
 test-venv:
-	python $(CWD)/cx_asap/system_files/test_installation.py
+ifeq ($(OS),Windows_NT)
+	$(VIRTUAL_ENV)/Scripts/python.exe $(CWD)/cx_asap/system_files/test_installation.py
+else
+	$(VIRTUAL_ENV)/bin/python $(CWD)/cx_asap/system_files/test_installation.py
+endif
 
 cxasap-complete:
 ifeq ($(strip $(detected_OS)),Darwin) # MacOS
