@@ -115,13 +115,6 @@ from typing import Union, Tuple
 
 from system_files.utils import Generate, File_Sorter, format_yaml_error_message
 from system_files.test_installation import Test
-from data_reduction.modules.xprep_intensity_compare import Intensity_Compare
-from data_reduction.modules.XDS_cell_transformation import XDS_Cell_Transformation
-from data_reduction.modules.xds_reprocess import XDS_reprocess
-from data_reduction.modules.xprep_module import XPREP
-from data_reduction.pipelines.xprep_intensity_pipeline import Intensity_Pipeline
-from data_reduction.pipelines.xds_pipeline import XDS_Pipeline
-from data_reduction.pipelines.xprep_pipeline import XPREP_Pipeline
 from data_refinement.modules.refinement import Structure_Refinement
 from data_refinement.pipelines.refine_pipeline import Refinement_Pipeline
 from cif_validation.modules.cif_merge import Cif_Merge
@@ -147,12 +140,8 @@ from post_refinement_analysis.pipelines.variable_position_analysis import (
 from post_refinement_analysis.pipelines.variable_temperature_analysis import (
     VT_Analysis_Pipeline,
 )
-from overall_pipelines.variable_position_pipeline import VP_Pipeline
 from overall_pipelines.cxasap_pipeline import General_Pipeline
 from overall_pipelines.rigaku_synergy_vt_pipeline import Synergy_VT
-from overall_pipelines.variable_temperature_pipeline import VT_Pipeline
-from overall_pipelines.AS_brute_pipeline import AS_Brute
-from overall_pipelines.at_AS_brute_pipeline import AS_Brute_Single
 from tools.modules.platon_squeeze import Platon_Squeeze
 from tools.pipelines.platon_squeeze_pipeline import Squeeze_Pipeline
 from tools.modules.platon_twinrotmat import Platon_Twin
@@ -160,7 +149,6 @@ from tools.pipelines.platon_twinrotmat_pipeline import Twin_Pipeline
 from tools.modules.shelx_t import SHELXT
 from tools.pipelines.shelx_t_pipeline import SHELXT_Pipeline
 from tools.pipelines.pipeline_shelx_t_auto import SHELXT_Pipeline_auto
-from tools.modules.molecule_reconstruction import Molecule_Reconstruction
 
 
 def reset_logs() -> None:
@@ -392,6 +380,8 @@ def yaml_extraction(heading: str) -> dict:
             yaml_dict[item] = "nested"
         elif item == "precombine_cifs":
             yaml_dict[item] = False
+        elif item == "calculate_interplane_angle":
+            yaml_dict[item] = False
         elif item == "varying_cif_parameter":
             yaml_dict[item] = "_diffrn_ambient_temperature"
         elif item == "reference_plane" or item == "starting_coordinates":
@@ -574,9 +564,6 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
         "geometry_set_2_symmetry",
     ]
 
-    if heading == "pipeline-AS-Brute-individual":
-        zero_exceptions.append("chemical_formula")
-
     if os.path.exists(yaml_path) == False:
         click.echo("No configuration file, please run with --configure option\n")
     else:
@@ -711,7 +698,7 @@ def cli():
 
     #####################################################################\n
 
-    You are currently running version 1.1.2
+    You are currently running version 2.0.0
 
     #####################################################################\n
 
@@ -5010,10 +4997,7 @@ windows_modules = [
 ]
 
 windows_modules_dev = [
-    module_intensity_compare,
-    pipeline_intensity_compare,
     pipeline_rigaku_vt,
-    module_molecule_reconstruction,
     pipeline_shelxt_auto,
     module_point_geometry,
     pipeline_point_geometry,
@@ -5055,9 +5039,6 @@ else:
 
     ### Modules for dev branch ###
 
-    cli.add_command(pipeline_vp)
-    cli.add_command(module_intensity_compare)
-    cli.add_command(pipeline_intensity_compare)
     cli.add_command(pipeline_rigaku_vt)
     cli.add_command(pipeline_aus_synch_vt)
     cli.add_command(module_xds_cell_transformation)
@@ -5072,8 +5053,6 @@ else:
     cli.add_command(module_cif_analysis)
     cli.add_command(pipeline_cif_analysis)
     cli.add_command(pipeline_position_analysis)
-    cli.add_command(pipeline_AS_Brute)
-    cli.add_command(module_molecule_reconstruction)
     cli.add_command(pipeline_shelxt_auto)
     cli.add_command(module_platon_squeeze)
     cli.add_command(pipeline_platon_squeeze)
