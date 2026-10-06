@@ -1,0 +1,32 @@
+name: Run tests with PyTest
+on: push
+
+jobs:
+  check_unit_tests:
+    runs-on: ubuntu-latest
+        
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v3
+        
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.9"
+          
+      - name: Install pytest
+        run: |
+          pip install pytest 
+          
+      - name: Install requirements
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Install cxasap
+        run: |
+          make install-quick
+          
+      - name: Run Pytest
+        run: |
+          pytest tests
+
