@@ -7,6 +7,56 @@ import unittest
 from system_files.utils import Config, Generate
 import os
 import re
+from pathlib import Path
+import yaml
+import cx_asap.cxasap as cxasap
+
+
+class testConfigValidation(unittest.TestCase):
+    def test_module_cif_analysis_accepts_optional_zero_placeholders(self):
+        conf_path = Path(cxasap.__file__).resolve().parent / "conf.yaml"
+        original = conf_path.read_text()
+
+        try:
+            conf_path.write_text(
+                yaml.dump(
+                    {
+                        "folder_containing_cifs": "/tmp/cifs",
+                        "varying_cif_parameter": "_diffrn_ambient_temperature",
+                        "reference_unit_cell": 0,
+                        "lst_file_location": 0,
+                        "cif_parameters": ["_cell_length_a", "_cell_length_b"],
+                        "structural_analysis_bonds": False,
+                        "structural_analysis_angles": False,
+                        "structural_analysis_torsions": False,
+                        "structural_analysis_hbonds": False,
+                        "ADP_analysis": False,
+                        "atoms_for_analysis": ["Fe1"],
+                        "point_geometry_distances": [
+                            {
+                                "label": "Fe-Fe",
+                                "point_1_atoms": "Fe1",
+                                "point_2_atoms": "Fe2",
+                                "point_1_symmetry": 0,
+                                "point_2_symmetry": 0,
+                            }
+                        ],
+                        "point_geometry_angles": [],
+                        "point_geometry_torsions": [],
+                        "point_geometry_plane_distances": [],
+                        "mercury_output": False,
+                        "rotation_reference_plane": [0, 0, 0],
+                        "rotation_plane_definitions": [],
+                        "mean_plane_definitions": [],
+                        "calculate_interplane_angle": False,
+                    },
+                    sort_keys=False,
+                )
+            )
+            ok, _ = cxasap.configuration_check("module-cif-analysis")
+            self.assertTrue(ok)
+        finally:
+            conf_path.write_text(original)
 
 
 class testGenerate(unittest.TestCase):

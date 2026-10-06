@@ -524,6 +524,9 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
     yaml_path = pathlib.Path(os.path.abspath(__file__)).parent / "conf.yaml"
     # yaml_path =  pathlib.Path(os.path.join(os.getcwd(),"conf.yaml"))
 
+    # Optional placeholders are intentionally generated as 0 for fields that are
+    # not required for a given analysis path (for example, legacy .lst fallback
+    # or optional reference-cell metadata). Required values must still be filled.
     zero_exceptions = [
         "a_gradient",
         "alpha_gradient",
@@ -533,6 +536,8 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
         "gamma_gradient",
         "geometry_set_1_symmetry",
         "geometry_set_2_symmetry",
+        "lst_file_location",
+        "reference_unit_cell",
     ]
 
     if os.path.exists(yaml_path) == False:
