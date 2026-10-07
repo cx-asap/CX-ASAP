@@ -58,6 +58,46 @@ class testConfigValidation(unittest.TestCase):
         finally:
             conf_path.write_text(original)
 
+    def test_module_rotation_planes_accepts_zero_interplane_angle_flag(self):
+        conf_path = Path(cxasap.__file__).resolve().parent / "conf.yaml"
+        original = conf_path.read_text()
+
+        try:
+            conf_path.write_text(
+                yaml.dump(
+                    {
+                        "lst_file_location": "/tmp/x.lst",
+                        "reference_plane": [1, 0, 0],
+                        "calculate_interplane_angle": 0,
+                    },
+                    sort_keys=False,
+                )
+            )
+            ok, _ = cxasap.configuration_check("module-rotation-planes")
+            self.assertTrue(ok)
+        finally:
+            conf_path.write_text(original)
+
+    def test_pipeline_rotation_planes_accepts_zero_interplane_angle_flag(self):
+        conf_path = Path(cxasap.__file__).resolve().parent / "conf.yaml"
+        original = conf_path.read_text()
+
+        try:
+            conf_path.write_text(
+                yaml.dump(
+                    {
+                        "experiment_location": "/tmp/exp",
+                        "reference_plane": [1, 0, 0],
+                        "calculate_interplane_angle": 0,
+                    },
+                    sort_keys=False,
+                )
+            )
+            ok, _ = cxasap.configuration_check("pipeline-rotation-planes")
+            self.assertTrue(ok)
+        finally:
+            conf_path.write_text(original)
+
 
 class testGenerate(unittest.TestCase):
     def setUp(self):

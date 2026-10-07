@@ -534,6 +534,7 @@ def configuration_check(heading: str) -> Tuple[bool, dict]:
         "beta_gradient",
         "c_gradient",
         "gamma_gradient",
+        "calculate_interplane_angle",
         "geometry_set_1_symmetry",
         "geometry_set_2_symmetry",
         "lst_file_location",
